@@ -1,0 +1,1370 @@
+=pod
+
+=begin comment
+
+This file, README.pod, is used to create the README text file that
+orientates new users of Connotea Code, and the Connotea Code web page
+on www.connotea.org that hopefully attracts potential users into
+downloading the source code in the first place.
+
+=end comment
+
+
+=head1 NAME
+
+Connotea Code
+
+
+=head1 COPYRIGHT AND LICENSE
+
+(c) Copyright 2005-2007 Nature Publishing Group.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
+USA.
+
+Some portions regarding RDF are originally from RDF::Core, derived
+from works Copyright (C) 2001 Ginger Alliance Ltd., and carry their
+own copyright and GPL notices.
+
+
+=head1 NAMING
+
+You will the see the names B<Connotea>, B<Bibliotech> and B<Connotea
+Code> used. To eliminate any confusion, we'll clarify the meaning of
+those names here.
+
+B<Connotea> is the name of the online reference management service
+created and run by Nature Publishing Group (NPG). B<Bibliotech> was
+the initial project name used at NPG while the service was being
+developed, and hence this name is used for some class and variable
+names in the code. The release of the underlying technology for
+B<Connotea> is known as B<Connotea Code>. The purpose of this page and
+the SourceForge project is to make the code that runs this site
+publicly available for review and re-use.
+
+Therefore, it makes sense to refer to B<Connotea> the service, or to
+the B<Connotea Code>. However, B<Connotea> is a trademark of Nature
+Publishing Group, so if you use the code to create your own
+bookmarking service, we ask that you don't brand it as B<Connotea>. We
+also ask that you include the following footer on your site:
+
+  This site is powered by
+  <a href="http://sf.net/projects/connotea">Connotea Code</a>,
+  the open source software behind
+  <a href="http://www.connotea.org/">Connotea</a>.
+
+The Connotea logo, the site guide and related documentation, other
+image files and stylesheets are copyrighted by NPG and are not
+released under the GPL.
+
+
+=head1 ABOUT THE CODE
+
+Connotea Code runs a social bookmarking web site for users to save and
+share links, which can have citation data automatically retrieved from
+authoritative sources.
+
+Connotea Code is written in Perl, and uses MySQL as the data store. It
+runs as a mod_perl handler in Apache2, and uses templates for page
+presentation.
+
+
+=head1 DOWNLOAD
+
+Download the tarball from the connotea SourceForge project area at
+L<http://sf.net/projects/connotea>.
+
+The current stable release is version 1.8.
+
+
+=head1 UPGRADING
+
+
+=head2 NEW FEATURES FROM 1.7.1 TO 1.8
+
+=over 4
+
+=item * Web API in regular use.
+
+=item * Template Toolkit based templates in regular use.
+
+=item * More optimized SQL queries for common requests.
+
+=item * Greater use of transactions in MySQL.
+
+=item * Greater flexbility for citation source modules.
+
+=item * New citation source modules, plus improvements to existing modules.
+
+=item * Blog component to create news page from external blog.
+
+=item * Wiki component to create custom wiki.
+
+=item * Admin component with user search.
+
+=item * Integration with Bibutils library for BibTeX and MODS output.
+
+=item * Antispam system with captcha and quarantine responses.
+
+=item * Click tracker for all posts.
+
+=item * Alpha-version proxy module system to handle known proxied post URL's.
+
+=item * Alpha-version stand-alone citation server capability.
+
+=item * Additional tools such as command-line post by API, user recovery, and test suite launch.
+
+=item * Automated deployment scripts, now supporting Darcs instead of CVS.
+
+=item * Updated code to support newer versions of CPAN modules.
+
+=item * More test suite scripts.
+
+=back
+
+
+=head2 NEW FEATURES FROM 1.5.0 TO 1.7.1
+
+=over 4
+
+=item * Many bugs fixed.
+
+=item * Alpha-version Web API.
+
+=item * Alpha-version Template Toolkit based output framework.
+
+=item * Full text searching feature.
+
+=item * Better cache control and throttling.
+
+=item * Better bookmarklets.
+
+=item * Better URI validation.
+
+=item * Better XML encoding for fringe cases.
+
+=item * Better character set decoding of downloaded documents for citations.
+
+=item * Exception email notification.
+
+=item * More support for two instances on same server.
+
+=item * More support for split web/database servers for one instance.
+
+=item * More comprehensive User Agent support for citation modules.
+
+=item * Method to switch from one citation module to another.
+
+=item * Optimized SQL for counting totals and some other operations.
+
+=item * Added methods for profiling code and dumping SQL statements.
+
+=item * Loosen some grammar restrictions, e.g. ok to name a tag "tag".
+
+=item * Tighten some grammar restrictions, e.g. num & start must be numeric.
+
+=item * Better RIS import based on real-world file examples.
+
+=item * New citation modules:
+
+=over 4
+
+=item * Blackwell
+
+=item * PMC
+
+=item * Wiley
+
+=item * ePrints
+
+=back
+
+=item * Several optional administrator utilities:
+
+=over 4
+
+=item * retro: script to update citation data rectroactively.
+
+=item * bibwatch: load monitoring utility.
+
+=item * bibpreempt: preempting and testing utility.
+
+=item * resendreg: utility to resend registration details.
+
+=item * deluser: utility to delete users.
+
+=item * memcache_wrapper: init.d script to keep memcached running.
+
+=back
+
+=item * Several developer testing utilities:
+
+=over 4
+
+=item * import: test import modules
+
+=item * citation_source_test.pl: test citation modules
+
+=item * get_test_urls.pl: retrieve URLs from Yahoo for testing citation modules
+
+=item * htmlise.pl: convert citation module test results to clickable HTML
+      for review in a browser
+
+=back
+
+=back
+
+
+=head2 UPGRADING FROM 1.7.1 TO 1.8
+
+See F<sql/schema_alter.sql> for commands to patch your database. Other
+elements of the upgrade should be optional; that is, you can turn them
+on later.
+
+
+=head2 UPGRADING FROM 1.5.0 TO 1.7.1
+
+The biggest difference between 1.5.0 and 1.7.1 is that 1.7.1 uses two
+databases at once.
+
+In order to support fulltext matching, a new feature, we use a MyISAM
+database in MySQL with FULLTEXT keys (see
+L<http://dev.mysql.com/doc/refman/4.1/en/fulltext-search.html>).
+
+However, InnoDB is still faster for JOIN's and offers referential
+integrity, so as a compromise we run two databases and keep them
+synchronized with MySQL replication (see
+L<http://dev.mysql.com/doc/refman/4.1/en/replication.html>).
+
+If you are upgrading from Connotea Code 1.5.0, please see the section
+below on database setup for the secondary search database. To upgrade,
+you will need to:
+
+=over 4
+
+=item * Create a mysql dump that does not mention schema, just data, as in:
+
+ $ mysqldump -c -t -u bibliotech -p bibliotech > /tmp/dump
+
+=item * Create the MyISAM search database as described below.
+
+=item * Setup replication and restart MySQL as described below.
+
+=item * Run F<sql/wipe.sql> to remove all data from your database:
+
+ $ echo 'source sql/wipe.sql' | mysql -u bibliotech -p bibliotech
+
+=item * Reimport your dump back into your main InnoDB database, from
+where it will flow to the search database because of replication:
+
+ $ echo 'source /tmp/dump' | mysql -u bibliotech -p bibliotech
+
+=back
+
+Except for the addition of a MyISAM database, there are no
+intradatabase schema changes between 1.5.0 and 1.7.1.
+
+
+=head2 UPGRADING FROM VERSIONS PRIOR TO 1.5.0 TO 1.7.1
+
+To upgrade from versions prior to 1.5.0, please edit
+F<sql/schema_alter.sql> to contain only the statements necessary to
+alter the database schema from your version to the current
+schema. There are no schema changes between 1.5.0 and 1.7.1.
+
+ $ $EDITOR schema_alter.sql
+ $ echo 'source schema_alter.sql' | mysql -u root -p bibliotech
+
+Then follow the directions above for upgrading from 1.5.0.
+
+
+=head1 ACQUIRING SOURCE FOR SPECIALIZED PROGRAMMING
+
+=head2 CREATING A CITATION MODULE
+
+Connotea's ability to import bibliographic information from
+third-party websites is enabled by a series of plug-ins.
+
+If you downloaded this source code with the intent of creating a
+citation module, see the comments and code in the file
+F<Bibliotech/CitationSource.pm> which will explain the base class from
+which your citation source module should be derived.
+
+In previous releases testing your citation module required a full
+instance of Connotea Code. In this release, a script named
+F<test_util/citation_source_test.pl> provides a way to test your
+module's return values without an instance. Your module file should be
+placed in the F<Bibliotech/CitationSource> directory to be recognized
+by this script.
+
+You may also test by creating a fully installed instance, which gives
+the added benefit of letting you test via a web browser and ensure
+that citation data is saved properly in MySQL.
+
+If you create a new citation plug-in, please consider releasing it
+back to the Connotea community.
+
+
+=head2 CREATING AN IMPORT MODULE
+
+Connotea's ability to import a batch of links or references depends on
+a series of plug-ins.
+
+If you downloaded this source code with the intent of creating an
+import module, see the comments and code in the file
+F<Bibliotech/Import.pm> which will explain the base class from which
+your import module should be derived.
+
+In previous releases testing your citation module required a full
+instance of Connotea Code. In this release, a script named
+F<test_util/import> provides a way to test your module's return values
+without an instance. Your module file should be placed in the
+F<Bibliotech/Import> directory to be recognized by this script.
+
+You may also test by creating a fully installed instance, which gives
+the added benefit of letting you test via a web browser and ensure
+that imported data is saved properly in MySQL.
+
+If you create a new import plug-in, please consider releasing it back
+to the Connotea community.
+
+
+=head2 CREATING A PROXY MODULE
+
+Connotea's ability to provide proxy translation for specific types of
+URI's depends on a series of plug-ins.
+
+If you downloaded this source code with the intent of creating a proxy
+module, see the comments and code in the file F<Bibliotech/Proxy.pm>
+which will explain the base class from which your import module should
+be derived.
+
+You may test by creating a fully installed instance.
+
+If you create a new proxy plug-in, please consider releasing it back
+to the Connotea community.
+
+
+=head2 ADDING A STATIC WEB PAGE
+
+Any Connotea Code instance that contains the C<Inc> component has the
+ability to deliver static pages through the template system. A URL
+path that is not recognized by C<Bibliotech::Parser> will be tested as
+a filename under the document root with an extension of C<.inc>
+appended. The contents of this file should be XHTML. If found, the
+contents will be served within F<inc.tt> or F<default.tt> according to
+the rules of the template system.
+
+
+=head2 ADDING A DYNAMIC WEB PAGE
+
+To create a new component for your Connotea Code instance that serves
+dynamic web content requires at least the following:
+
+In F<Bibliotech/Parser.pm> you must find the grammar definition and
+add a subrule to the B<page> production which will designate the URL
+path that will activate your component. Keep in mind that a path name
+that is a shortened version of another path name will always eclipse
+the longer one if it appears first, so you should add it after
+(e.g. "urilabel" must come before "uri" or "uri" would always match
+for either).
+
+In F<Bibliotech/Page/Standard.pm> add a package based on
+C<Bibliotech::Page> like the others defined in that file. The name
+should be C<Bibliotech::Page::x> where C<x> is your path name with a
+single capital letter at the beginning even if it is more than one
+word (e.g. C<Bibliotech::Page::Reportspam> for a path of
+C</reportspam>). Include a C<main_component()> method that returns a
+string of the last part of the class name of the main component, a
+C<Bibliotech::Component>-derived class (e.g. 'ReportSpam' for
+C<Bibliotech::Component::ReportSpam>).
+
+In the F<Bibliotech/Component> directory create a module based on
+F<Bibliotech::Component>. Use the others that appear in that diectory
+as examples and refer directly to the source code in
+F<Bibliotech/Component.pm>, particularly the comments, for
+descriptions of expected methods and their expected return values. For
+an HTML compontent be sure to include C<last_updated_basis()> and
+C<html_content()>. In particular, html_content() should return a
+C<Bibliotech::Page::HTML_Content> object; that class is defined in
+F<Bibliotech/Page.pm>.
+
+
+=head2 SPEAKING TO THE WEB API FROM YOUR APPLICATION
+
+The Connotea Web API allows communication with an instance, either the
+Connotea web site at L<http://www.connotea.org/> or your own private
+instance, using a predefined set of commands to access structured data
+and accomplish normal user actions in a programmatic manner.
+
+Your software may be written in any language you choose - the basic
+requirements are the ability to create and parse XML and communicate
+using the HTTP protocol. The ability to interpret the XML as RDF and
+use object orientation to model the objects serialized as RDF may
+prove helpful. Libraries and sample code are available.
+
+See L<http://www.connotea.org/wiki/WebAPI> for Web API documentation.
+
+
+=head1 MINIMUM REQUIREMENTS
+
+This code requires, or has been best tested on:
+
+=over 4
+
+=item * Linux/UNIX operating system (tested on Red Hat Enterprise
+Linux 4 - see L<http://www.redhat.com/>)
+
+=item * Perl 5.8.0 (see L<http://www.perl.org/>)
+
+=item * Perl CPAN modules as identified on the list below
+(see L<http://cpan.perl.org/>)
+
+=item * Apache 2.0.40 (see L<http://httpd.apache.org/>)
+
+=item * MySQL 5.0.17 (see L<http://www.mysql.com/>)
+
+=item * Memcached 1.1.12 (see L<http://www.danga.com/memcached/>)
+
+=back
+
+
+=head2 CPAN
+
+You will need to have the following modules installed from CPAN.
+
+On all Perl systems you can type:
+
+  $ LANG=C cpan
+
+...or...
+
+  $ LANG=C perl -MCPAN -e shell
+
+...to get a CPAN shell prompt, and then type:
+
+  cpan> install XXX::YYY
+
+..or...
+
+  cpan> force install XXX::YYY
+
+...to install a module.
+
+The C<LANG=C> portion of the command line above is B<highly
+recommended> as many modern Linux distributions set your default
+C<LANG> to a locale-based setting and this often interferes with Perl
+module compilations. When it does, the error messages will be very
+misleading and never mention the C<LANG> variable.
+
+Before you embark on what will probably be a long install-fest, it is
+also recommended that you type:
+
+ cpan> install Bundle::CPAN
+
+...inside the CPAN shell and then restart it. This will ensure that
+you are using the latest version of the CPAN code. Some things will go
+more smoothly.
+
+When asked whether to follow dependencies, answer yes. When asked
+about optional utilities and scripts that can be installed to F</bin>
+or F</usr/bin>, answer however you like, as none are necessary for
+this code.
+
+You do not necessarily need the latest version of every module,
+although in one or two cases you do. In general, if your Perl is at
+least 5.8.0, just install the version that a non-force install will
+give you at the CPAN prompt. If you are lower than 5.8.0, upgrade your
+base Perl installation first.
+
+The list:
+
+On Red Hat and some other distros, the following are provided in
+vendor packages, and you're better off using those.
+
+=over 4
+
+=item * Apache2
+
+=item * Apache::Const
+
+=item * Apache::File
+
+=back
+
+...but install these from CPAN so you get new versions:
+
+=over 4
+
+=item * IO::String (for Bio::Biblio::IO, better to preinstall)
+
+=item * XML::Writer (for Bio::Biblio::IO, better to preinstall)
+
+=item * XML::Twig (for Bio::Biblio::IO, better to preinstall)
+
+=item * SOAP::Lite (for Bio::Biblio::IO, better to preinstall)
+
+=item * Pod::Man (for DateTime, better to preinstall)
+
+=item * Bio::Biblio::IO (usually has to be forced unfortunately, there are many tests and some fail)
+
+=item * Cache::Memcached
+
+=item * CGI
+
+=item * CGI::Wiki
+
+=item * CGI::Wiki::Plugin::Diff
+
+=item * Class::DBI
+
+=item * Config::Scoped
+
+=item * Data::Dumper (not just for debugging, actually used in production)
+
+=item * Date::Parse
+
+=item * DateTime (you may need to force installation of DateTime::Set if your timezone is not UTC)
+
+=item * DateTime::Format::ISO8601
+
+=item * DateTime::Format::MySQL
+
+=item * DateTime::Incomplete
+
+=item * Digest::MD5
+
+=item * Encode (you may need to force installation of Encode if some non-English tests fail)
+
+=item * Fcntl
+
+=item * File::Temp
+
+=item * File::Touch
+
+=item * FindBin
+
+=item * HTML::Entities
+
+=item * HTML::Sanitizer (you may need to force installation of HTML::Sanitizer due to some year-old bugs already filed on CPAN)
+
+=item * HTTP::OAI
+
+=item * IO::File
+
+=item * JSON
+
+=item * LWP::UserAgent
+
+=item * List::MoreUtils
+
+=item * List::Util (you may need to force installation of List::Util unless you have a very new version of Perl)
+
+=item * Net::Daemon::Log (you may need to force installation of Net::Daemon::Log for failing a fork test - not used by us)
+
+=item * Netscape::Bookmarks
+
+=item * Parse::RecDescent
+
+=item * RDF::Core
+
+=item * SQL::Abstract
+
+=item * Set::Array
+
+=item * Storable
+
+=item * Template
+
+=item * Test::Exception
+
+=item * Time::HR
+
+=item * URI
+
+=item * URI::Escape
+
+=item * URI::Heuristic
+
+=item * URI::OpenURL
+
+=item * URI::QueryParam
+
+=item * Want
+
+=item * XML::Element
+
+=item * XML::Feed
+
+=item * XML::LibXML
+
+=item * XML::RSS
+
+=item * YAML (you may need to force installation of Test::Simple which is a dependency of YAML, for an unknown reason)
+
+=item * Apache::Emulator (not required for core web service service)
+
+=item * Text::BibTeX (not required for core web service service)
+
+=back
+
+
+=head1 SETUP
+
+=head2 MYSQL
+
+Two databases for user posts need to be created. See F<sql/schema.sql>
+for the database schema which needs to be created in MySQL. The first
+database will be created using InnoDB tables to enforce foreign keys
+and constraints and for table joining speed. A second database then
+should be created with a _search suffix using MyISAM tables that have
+FULLTEXT indexes which are queried when searching for words.
+(FULLTEXT indexes are not available for InnoDB yet.)
+
+The second schema is generated from the first by running:
+
+  $ cd sql
+  $ perl mkschema_search < schema.sql > schema_search.sql
+
+MySQL relication can be used to make the MyISAM database a slave of
+the InnoDB database, even on the same machine. This is a suggested
+configuration for F</etc/my.cnf> that will do just that:
+
+  [mysqld]
+  # local replication of bibliotech to bibliotech_search:
+  server-id=1
+  log-bin=mysql-bin
+  binlog-do-db=bibliotech
+  replicate-same-server-id=1
+  replicate-rewrite-db=bibliotech->bibliotech_search
+  replicate-do-db=bibliotech_search
+  master-host=localhost
+  master-user=search_repl
+  master-password=pass
+  # change stopwords in support of bibliotech freematch feature:
+  #ft_stopword_file=/etc/mysql_stopwords.txt
+  ft_min_word_len=2
+  ft_max_word_len=255
+  # allow packing of queries
+  group_concat_max_len=8192
+
+Change the master-password line! Also change the database names if you
+are not using C<bibliotech>.
+
+You will probably find the MySQL stopwords to be too restrictive in
+practice. The list can be viewed at
+L<http://dev.mysql.com/doc/mysql/en/fulltext-stopwords.html>.  We
+recommend that you pare down this list to a more suitable one, and use
+the ft_stopword_file keyword to tell MySQL to use your list instead.
+
+In any case, if you want the search feature to behave predictably, you
+B<must> specify an external text file stopword list to MySQL.  The
+search handler will query MySQL to find out the stopword list file
+being used, and read it as well, so it can anticipate MySQL reporting
+no matches for words that otherwise should match.
+
+You'll need to execute a grant statement similar to this one:
+
+ GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO
+ search_repl@'localhost.localdomain' IDENTIFIED BY 'pass';
+
+Two notes on the replication grant statement:
+
+=over 4
+
+=item * MySQL seems to consider C<localhost.localdomain> different
+from C<localhost> and while the shorter version normally works, for
+replication it seems that the longer one is needed. If you have
+problems, try both.
+
+=item * You must have the updated privilege table structure. If you
+have had MySQL installed since the 3.x series, your mysql.user table
+lacks the privilege fields mentioned above; check your docs about a
+script called 'mysql_fix_privilege_tables'. On many systems this will
+be a shell script in F</usr/bin> that you can run as root with a
+C<--password=xxx> parameter (to specify the MySQL root user password,
+not the Unix root user password).
+
+=back
+
+The MySQL username used by the Perl handler must have access to both
+databases (username and password as in F</etc/bibliotech.conf>):
+
+  GRANT SELECT, INSERT, UPDATE, DELETE ON bibliotech.* TO
+  user@localhost IDENTIFIED BY 'secret';
+  GRANT SELECT, INSERT, UPDATE, DELETE ON bibliotech_search.* TO
+  user@localhost IDENTIFIED BY 'secret';
+
+=head2 CGI::WIKI
+
+You also need to setup B<CGI::Wiki> so that a wiki is available. This
+is required. You should create a blank database, grant a user rights
+to it, and run the provided setup script.
+
+  CREATE DATABASE conwiki;
+  GRANT ALL ON conwiki.* TO conwiki@localhost IDENTIFIED BY 'secret';
+
+  $ /usr/bin/cgi-wiki-setupdb --type mysql \
+                              --name conwiki \
+                              --user conwiki \
+                              --pass secret \
+                              --host localhost
+
+Remember to populate the C<COMPONENT WIKI> block of your configuration
+file with the wiki database details.
+
+
+=head2 APACHE
+
+Everything under the F<html> subdirectory should be placed or linked
+into an Apache-accessible location, and a location handler should be
+added to F<httpd.conf> (or elsewhere in the Apache configuration) such
+as the following one. We recommend F</var/www/html/bibliotech> on most
+systems, so that your site is accessible under
+C<www.yourdomain.com/bibliotech>.
+
+  PerlOptions +Parent
+  PerlSwitches -I/var/www/perl/...
+  PerlModule Bibliotech::Apache
+  PerlModule Bibliotech::AuthCookie
+  <Location /bibliotech>
+    SetHandler perl-script
+    PerlHandler Bibliotech::Apache
+    PerlAuthenHandler Bibliotech::AuthCookie::authen_handler
+    AuthName Bibliotech
+    AuthType basic
+    require valid-user
+    #ErrorDocument 503 /paused.html
+    ErrorDocument 503 /unavailable.html
+  </Location>
+
+The PerlSwitches line should point to the Perl code.
+
+The 503 lines allow a custom page to be displayed when your site is
+under heavy load (F<unavailable.html>) or when you deliberately pause
+service (F<paused.html>; you must edit your Apache configuration and
+switch which line is commented for this).
+
+
+=head2 MEMCACHED
+
+Memcached is required, and the code is written to assume that a
+memcache is running. Database timestamps, cached HTML, and uploaded
+files are all stored temporarily in this cache.
+
+
+=head2 CONFIGURATION
+
+See F<config> for a configuration that should be copied to
+F</etc/bibliotech.conf> and edited to suit your needs.  Particularly,
+be sure to change C<*_SECRET> and C<*_PASSWORD> variables.
+
+Default configuration:
+
+  (((config)))
+
+=begin comment
+
+NOTE: If all you see is the word config in nested parentheses above,
+please refer externally to the file "config".
+
+=end comment
+
+
+=head2 CUSTOMIZATION
+
+The look and feel of your Connotea Code installation can be modified
+by creating a new stylesheet and new templates. The template system is
+Template Toolkit documented at the web site at
+L<http://www.template-toolkit.org/>. We refer to this system as TT for
+short.
+
+=head3 TEMPLATE LOCATION
+
+Templates are located by default in F<html/defaulttemplate>. This is
+controlled by options in the configuration. It is recommended that
+templates have a F<.tt> extension.
+
+=head3 TEMPLATE SELECTION
+
+The template used to service a particular request is determined by
+the page requested and the available template filenames.
+
+Individual templates can be defined for individual pages; for example,
+to override the template for the add form, create a template called
+F<add.tt>.
+
+For general bookmark listing queries (e.g. C</tag/tagname>), templates
+beginning with F<recent> can be used. F<recent.tt> will be used for
+queries with no user or tag parameters - F<recent_user.tt>,
+F<recent_tag.tt> and F<recent_user_tag.tt> can be created to specify
+the behaviour is there is a user query, a tag query, or both
+respectively.
+
+Unless overridden by a specific template, F<default.tt> is used.
+
+=head3 TEMPLATE EXAMPLES
+
+Templates should not contain the full HTML for the page you want to
+construct, but only that which should appear between the C<< <body> >>
+and C<< </body> >> tags.
+
+This is an example F<default.tt>:
+
+  [% prepare_component_begin() %]
+  [% prepare_component('main',undef,'main,verbose') %]
+  [% prepare_component_end() %]
+  <html>
+  <head>
+  <title>[% main_title %]</title>
+  [% rss_link %]
+  [% component_javascript_block_if_needed %]
+  </head>
+  <body[% component_javascript_onload_if_needed %]>
+  [% component_html('main',undef,'main,verbose') %]
+  </body>
+  </html>
+
+The syntax is from Template Toolkit documented at the web site at
+L<http://www.template-toolkit.org/>. We refer to TT for short.
+
+A Connotea web page is a series of components that are combined
+together, contributing HTML which can be organized in
+separately-placed parts calculated at once, or as one block, and also
+sometimes Javascript to be placed in a C<< <script> >> block in the
+C<< <head> >> or in the C<< <body> >> C<onload> attribute. The
+components are controlled by the template selected to represent the
+HTTP query, and each component running can access the current command,
+the posts that result from the SQL engine processing the query of the
+command, and a variety of support services.
+
+Several functions are provided to TT by the calling
+instance. C<prepare_component_begin()> is called before anything
+happens, and this prepares some internal data structures; then
+C<prepare_component()> is called with the base name of the component
+(e.g. C<Blah> corresponds to C<Bibliotech::Component::Blah>) or the
+special word C<main> which does a lookup for the main component of a
+page described in F<Bibliotech/Parser.pm> and
+F<Bibliotech/Page/Standard.pm>, which allows some templates to be
+reused. The second argument is a comma-separated list of parts, which
+is a mechanism used by some components such as C<ListOfTags>, and the
+third argument is a comma-separated list of options to the components,
+of which the universal ones are C<main> and C<verbose> which should be
+set to true for the main component (the format is key=value but
+ommiting the value is the same as =1 which is true). Later in the
+template, a call to C<component_html()> with the same arguments
+inserts the HTML (if you specified multiple part names in the prepare
+call, you should have multiple calls to insert HTML each with one part
+mentioned).
+
+Individual templates can be defined for individual requests. For
+example, to override the template for the add form, create a template
+called F<add.tt>. For general bookmark listing queries
+(e.g. C</tag/tagname>), templates beginning with F<recent> can be
+used. F<recent.tt> will be used for queries with no user or tag
+parameters - F<recent_user.tt>, F<recent_tag.tt> and
+F<recent_user_tag.tt> can be created to specify the behaviour is there
+is a user query, a tag query, or both respectively.
+
+A more realistic example for F<default.tt> would make calls to a
+F<normalprep.tt> and a F<normal.tt> wrapper:
+
+  [% prepare_component_begin() %]
+  [% INCLUDE normalprep.tt %]
+  [% prepare_component('main',undef,'main,verbose') %]
+  [% prepare_component_end() %]
+  [% WRAPPER normal.tt %]
+  [% component_html('main',undef,'main,verbose') %]
+  [% END %]
+
+In this case, F<normal.tt> would contain a basic look for the web site
+that can be used by many other templates.
+
+A set of working templates is furnished with this distribution.
+
+=head3 TEMPLATES AND COMPONENTS
+
+A Connotea web page is a series of components that are combined
+together, contributing HTML which can be organized in
+separately-placed parts calculated at once, or as one block, and also
+sometimes Javascript to be placed in a C<< <script> >> block in the
+C<< <head> >> or in the C<< <body> >> C<onload> attribute. The
+components are controlled by the template selected to represent the
+HTTP query, and each component running can access the current command,
+the posts that result from the SQL engine processing the query of the
+command, and a variety of support services.
+
+Several functions are provided to TT by the calling instance. Some
+functions are general, and are available in all templates, even small
+snippet templates used by components (conventionally named with a
+F<comp> prefix). Some functions are page-level utilities that largely
+control component insertion.
+
+=head4 TEMPLATE PAGE LEVEL FUNCTIONS
+
+=over 4
+
+=item * C<prepare_component_begin()>
+
+Declare the beginning of C<prepare_component()> calls.
+
+=item * C<prepare_component(module, parts, options)>
+
+Prepare a component.
+
+=over 4
+
+=item * module
+
+The base name of the desired component (e.g. C<Blah> corresponds to
+C<Bibliotech::Component::Blah>) or the special word C<main> which does
+a lookup for the main component of a page described in
+F<Bibliotech/Parser.pm> and F<Bibliotech/Page/Standard.pm>, which
+allows some templates to be reused.
+
+=item * parts
+
+For most components, use C<undef> for one block of HTML output. For
+components that can return multiple parts of HTML, this option is a
+comma-separated list of part names to prepare in one calculation for
+efficiency. Components with parts: C<ListOfTags>, C<ListOfUsers>, and
+C<ListOfGangs>.
+
+=item * options
+
+A comma-separated list of options to the component, of which the
+universal ones are C<main> and C<verbose> which should be set to true
+for the main component (the format is key=value but ommiting the value
+is the same as =1 which is true).
+
+=back
+
+=item * C<prepare_component_end()>
+
+Declare the end of C<prepare_component()> calls.
+
+=item * C<component_html(module, part, options)>
+
+The arguments are the same as C<prepare_component()>, except that the
+part should be at most one part, not more than one.
+
+=item * C<component_javascript_onload()>
+
+Insert the Javascript addressed at the C<onload> handler.
+
+=item * C<component_javascript_onload_if_needed>
+
+Insert the Javascript addressed at the C<onload> handler, but wrap it
+a space followed by the actual attribute itself, as in,
+C< onload="blah">, or if there is no Javascript, insert nothing.
+
+=item * C<component_javascript_block()>
+
+Insert the Javascript addressed at the C<head> of the HTML document.
+
+=item * C<component_javascript_block_if_needed()>
+
+Insert the Javascript addressed at the C<head> of the HTML document,
+but wrap it in a C<< <script> >> block, or if there is no Javascript,
+insert nothing.
+
+=item * C<main_title>
+
+The HTML document title recommended by the main component, or failing
+that, a default constructed from the site name and page name.
+
+=item * C<main_heading>
+
+The HTML document heading (C<H1>) recommended by the main component.
+
+=item * C<main_description>
+
+The description recommended by the main component; used in RSS, etc.
+
+=item * C<css_link>
+
+Insert a C<< <link> >> representing the CSS files dictated by
+C<HOME_CSS_FILE> for the home page or C<GLOBAL_CSS_FILE> otherwise
+(configuration options).
+
+=item * C<rss_link>
+
+Insert a C<< <link> >> representing the RSS format output for the
+currently viewed page.
+
+=back
+
+=head4 TEMPLATE GENERAL FUNCTIONS
+
+=over 4
+
+=item * C<location>
+
+Base URL for the web site, which can be directly prepended to page
+names, as in:
+
+  <a href="[% location %]news">
+
+=item * C<sitename>
+
+The name of the web site as defined in the configuration.
+
+=item * C<siteemail>
+
+The email address of the administrator of the web site as defined in
+the configuration.
+
+=item * C<user>
+
+User object of the current user looking at the web page, e.g.:
+
+  [% IF user %][% user.username %][% ELSE %]Visitor[% END %]
+
+=item * C<is_browser_safari>, C<is_browser_firefox>,
+C<is_browser_ie>, C<is_browser_other>
+
+Can be used in an IF test - true if the user's browser is the type
+indicated.
+
+=item * C<browser_redirect(url)>
+
+Immediately abort and issue a Location header to a new URL. The URL
+can be relative to the root of the web site in which case C<location>
+is prepended.
+
+=item * C<is_virgin>
+
+Can be used in an IF test - true if the user is a first-time visitor.
+
+=item * C<canonical_uri>
+
+Canonical URI for the current page.
+
+=item * C<canonical_location>
+
+Canonical URI using C<location>.
+
+=item * C<object_location>
+
+Canonical URI using C<location> and setting format to HTML.
+
+=item * C<no_num(url)>
+
+Remove the num=x parameter from a URL.
+
+=item * C<encode_xml_utf8(str)>
+
+Escape ampersand, less- and greater-than symbols, normalize HTML
+entities to XML entities, and remove unusual control characters.
+
+=item * C<encode_xhtml_utf8(str)>
+
+Encode characters as XML entities where needed and remove unusual
+control characters.
+
+=item * C<now>
+
+The current date and time, as a C<Bibliotech::DateTime> object, e.g.:
+
+  [% now.label %]
+  [% now.ymd %]
+  [% now.ymdhm %]
+  [% now.iso8601 %]
+  [% now.iso8601_utc %]
+
+=item * C<time>
+
+The current date and time, as a Unix timestamp.
+
+=item * C<join(joinstr, ...)>
+
+Perl's join command.
+
+=item * C<speech_join(jointype, ...)>
+
+Join several elements as in speech. Argument C<jointype> is C<and> or
+C<or>. This function will combine with commas, spaces, and the
+jointype operator (if at least three items), e.g.:
+
+  speech_join('and', 'bob') -> 'bob'
+  speech_join('and', 'bob', 'alice') -> 'bob and alice'
+  speech_join('and', 'bob', 'alice', 'tom') -> 'bob, alice, and tom'
+
+=item * C<plural(amount, singular, plural, no_space)>
+
+Join a number with the appropriate singular or plural noun, e.g.:
+
+  plural(6, 'second', 'seconds') -> '6 seconds'
+  plural(1, 'second', 'seconds') -> '1 second'
+
+=item * C<commas(num)>
+
+Decorate a number with commas every three digits (thousands) per the
+American style, e.g.:
+
+  commas(5000000) -> '5,000,000'
+
+=item * C<divide(a, b, places, multiplier)>
+
+Divide two numbers, but avoid a division by zero error by returning
+zero. Return a number formatted to the number of decimals indicated in
+C<places> (default 1 if omitted), and multiplied by C<multiplier>
+(default 1 if omitted), e.g.:
+
+  divide(10, 0) -> 0
+  divide(10, 2) -> 5
+  divide(10, 4, 2) -> 2.50
+  divide(10, 4, 2, 100) -> 250
+
+=item * C<percent(a, b, places)>
+
+Same as C<divide> but multiplier is 100 and a percent sign is
+appended.
+
+  percent(1, 2) -> 50.0%
+  percent(4, 100) -> 4.0%
+
+=item * C<bookmarklets>
+
+Insert all the bookmarklets.
+
+=item * C<bookmarklet(page, popup)>
+
+Insert a bookmarklet. Argument C<page> should be C<add>,
+C<addcomment>, or C<comments>. Argument C<popup> should be C<direct>
+or C<popup>.
+
+=item * C<bookmarklet_js(page, popup)>
+
+Same as C<bookmarklet> but only insert the Javascript.
+
+=item * C<user_in_own_library>
+
+Can be used in an IF test - true if the user is looking at a page that
+has a current filter of C</user> with their username.
+
+=item * C<user_in_another_library>
+
+Can be used in an IF test - true if the user is looking at a page that
+has a current filter of C</user> with a username other than their own.
+
+=item * C<click_counter_onclick(url, new_window)>
+
+Insert a hyperlink run through the click counter, to the URL provided,
+optionally in a new window if C<new_window> is true.
+
+=back
+
+=head4 TEMPLATE COMPONENT SNIPPET FUNCTIONS
+
+=over 4
+
+=item * C<sticky(parameter)>
+
+Used primarily inside the C<value> attributes of HTML C<ipnut> tags,
+this function allows the form to remember values between refreshes, so
+if a message must be displayed to the user causing the form to be
+redisplayed, the user's form responses are not lost.
+
+=item * C<has_validation_error>
+
+True if the form is redisplayed with an active error.
+
+=item * C<has_validation_error_for(field)>
+
+True if the form is redisplayed with an active error concerning the
+field specified. Note that some errors are not tied to a field.
+
+=item * C<validation_error_field>
+
+If the form is redisplayed with an active error, the field name that
+gave rise to the error. Note that some errors are not tied to a field.
+
+=item * C<validation_error>
+
+If the form is redisplayed with an active error, the error message.
+
+=back
+
+
+=head2 LOGROTATE
+
+A log file will be created at the place specified in C<LOG_FILE> in
+the configuration. This file can grow quickly so you may like to
+configure logrotate to deal with it on a weekly basis. This is the
+contents of a suggested F</etc/logrotate.d/bibliotech> file:
+
+  /var/log/bibliotech.log {
+          create 644 apache root
+          notifempty
+          weekly
+          rotate 5
+          compress
+      postrotate
+          /bin/kill -HUP `cat /var/run/httpd.pid 2>/dev/null` 2> /dev/null || true
+      endscript
+  } 
+
+
+=head2 SUPPORT
+
+To subscribe to the Connotea Code development mailing list, go to
+L<https://lists.sourceforge.net/lists/listinfo/connotea-code-devel>.
+
+This list is for the discussion of the core code and citation and
+import plug-ins. It is intended for use by people who are installing
+their own instance of Connotea Code, or who are reviewing the code to
+see how Connotea handles their data, or who would like to help enable
+the importing of bibliographic information from more sources.
+
+There is a separate list, connotea-discuss, for discussion of Connotea
+itself - i.e. for discussion of L<http://www.connotea.org/>. That list
+is the appropriate place for questions about how to use the site, or
+requests or suggestions for new features.
+
+
+=head2 WEBCITE
+
+The Connotea Code has a module called WebCite which can be employed
+separately as a simple web service providing citation information
+using the Connotea Code citation modules.
+
+A WebCite instance requires the full codebase to be present, as well
+as the CPAN module dependencies, and a compatible version of Apache,
+just as you might setup for Connotea Code proper. However, MySQL,
+Memcache, and CGI::Wiki are not required.
+
+You should create a configuration file as directed for Connotea Code,
+but only the WEBCITE section and sections for your active citation
+modules are required.
+
+WebCite provides caching not with memcached but via the filesystem,
+so the results survive Apache restarts.
+
+WebCite can be turned on inside a normal Connotea Code deployment, but
+will perform its duties separately from the main codebase.
+
+The main page for WebCite simply presents a form with two fields:
+
+=over 4
+
+=item * C<uri> - text field for the URL
+
+=item * C<fmt> - select field for the format:
+
+=over 4
+
+=item * C<ris>
+
+=item * C<mods>
+
+=item * C<json>
+
+=back
+
+=back
+
+A submit button is provided for human users but the value is ignored.
+
+The form can be called by programs by performing an HTTP POST to the
+installed location with C<uri> and C<fmt> parameters.
+
+Programs should evaluate the HTTP status code first.
+
+=over 4
+
+=item * C<200> - citation data returned
+
+=item * C<404> - no citation data found
+
+=item * C<500> - internal error
+
+=back
+
+In the case of a C<404> code, a brief message such as C<No citation>
+may be displayed, but programs should not expect this value, and
+should rely exclusively on the HTTP status code to determine this
+condition.
+
+In the case of a C<200> code, the C<Content-Type> header should be
+appropriate for the format requested, and the data payload should
+present the citation data in the format requested.
+
+A C<500> code will occur if an exception is thrown retrieving the
+citation data, and the data payload will be plain text giving the
+error message.
+
+All transactions are separate. There is no concept of sessions.
+
+There are no authentication checks in the WebCite code, although the
+system administrator is free to add restrictions in the Apache
+configuration.
+
+Subsequent requests within 90 days for the same URL will return data
+cached from the original request. Data is cached in an internal
+structure form so the same cache entry can produce all output formats.
+
+The Apache configuration block for WebCite is as follows:
+
+  PerlSwitches -I/var/www/perl/...
+  <Location /bibliotech>
+    SetHandler perl-script
+    PerlHandler Bibliotech::WebCite
+  </Location>
+
+The PerlSwitches line should point to the directory that contains the
+Bibliotech directory.
+
+This may or may not appear in the same Apache configuration as
+Connotea Code proper.
+
+A suggested configuration for F</etc/bibliotech.conf> is as follows:
+
+  WEBCITE {
+    CACHE_ENABLED = true
+    CACHE_PATH = '/var/cache/webcite'
+    CACHE_TIMEOUT = 7776000
+    LOG_ENABLED = true
+    LOG_FILE = '/var/log/webcite.log'
+  }
+
+Again this may be a file exclusively for WebCite or a file with
+intermixed configuration for Connotea Code proper.
+
+You should create the cache directory and log file and give the Apache
+user write access before starting Apache.
+
+=head1 ACKNOWLEDGMENTS
+
+The look, structure, documentation and source code of
+L<http://www.connotea.org/> are the collective work of Martin Flack,
+Ben Lund, Timo Hannay, Joanna Scott, Stefania Bojano, Grant Farrelly,
+Euan Adie, and Ian Mulvany. The vast majority of the programming was
+done by Martin Flack of NeoReality, Inc.,
+L<http://www.neoreality.com/>.
+
+The materials available from L<http://sf.net/projects/connotea> are
+released under the GNU General Public License; reuse of all other
+materials requires the express written permission of Nature Publishing
+Group.
+
+
+=head1 MORE INFORMATION
+
+Please visit this URL for more information:
+L<http://www.connotea.org/code>
+
+If you have questions, email us or try our mailing lists:
+L<http://www.connotea.org/contact>

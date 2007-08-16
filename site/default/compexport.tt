@@ -1,0 +1,77 @@
+<h1>Export a List of References</h1>
+
+<h2 class="subtitle">[% normal_heading %]</h2>
+
+<p>
+This collection contains <b>[% count_str %]</b>.
+[% IF count == 0 %](Note that without any results this export will probably not be useful.)
+[% ELSIF count > 500 %](Note that it may take a few seconds to generate your export file.)[% END %]
+</p>
+
+<p>How would you like that?</p>
+
+<form name="export-ris" action="[% output_uri('ris') %]" method="get">
+  <fieldset>
+    <legend>RIS</legend>
+    <input type="hidden" name="download" value="[% download_value %]" />
+    <p>Suitable for importing into Reference Manager and similar software</p>
+    <p>
+    <input type="submit" class="download-button" name="button" value="Download RIS" />
+    <a href="[% output_uri_view('ris') %]">View in Browser</a>
+    </p>
+  </fieldset>
+</form>
+
+<form name="export-end" action="[% output_uri('end') %]" method="get">
+  <fieldset>
+    <legend>EndNote</legend>
+    <input type="hidden" name="download" value="[% download_value %]" />
+    <p>May work better than RIS with some versions of EndNote</p>
+    <p>
+    <input type="submit" class="download-button" name="button" value="Download for EndNote" /><a href="[% output_uri_view('end') %]">View in Browser</a></p>
+  </fieldset>
+</form>
+
+<form name="export-bibtex" action="[% output_uri('bib') %]" method="get">
+  <fieldset>
+    <legend>BibTeX</legend>
+    <input type="hidden" name="download" value="[% download_value %]" />
+    <p>Bibliographic information file for LaTeX</p>
+    <p>
+    <input type="submit" class="download-button" name="button" value="Download BibTeX" /><a href="[% output_uri_view('bib') %]">View in Browser</a></p>
+  </fieldset>
+</form>
+
+<form name="export-mods" action="[% output_uri('mods') %]" method="get">
+  <fieldset>
+    <legend>MODS (XML)</legend>
+    <input type="hidden" name="download" value="[% download_value %]" />
+    <p>U.S. Library of Congress Metadata Object Description Schema (<a href="http://www.loc.gov/standards/mods/">MODS</a>) format</p>
+    <p>
+    <input type="submit" class="download-button" name="button" value="Download MODS" /><a href="[% output_uri_view('mods') %]">View in Browser</a></p>
+  </fieldset>
+</form>
+
+[% IF has_geo %]
+<form name="export-mods" action="[% output_uri('geo') %]" method="get">
+  <fieldset>
+    <legend>Google Earth (KML)</legend>
+    <input type="hidden" name="download" value="[% download_value %]" />
+    <p>Display the <a href="[% location %]guide#geodata">geotagged bookmarks</a> in Google Earth</p>
+    <p>
+    <input type="submit" class="download-button" name="button" value="Download for Google Earth" /><a href="[% output_uri_view('geo') %]">View in Browser</a></p>
+  </fieldset>
+</form>
+[% END %]
+
+<h2 class="subtitle">Other Formats</h2>
+
+<h3>RSS</h3>
+<p>RSS 1.0 feed with extra RDF metadata</p>
+<p><a href="[% output_uri_download('rss') %]">Download</a></p>
+<p><a href="[% output_uri_view('rss') %]">View in Browser</a></p>
+
+<h3>RDF</h3>
+<p>Full data dump in RDF as used in the <a href="[% location %]wiki/WebAPI">Web API</a> (requires logging in again)</p>
+<p><a href="[% output_uri_download('data') %]">Download</a></p>
+<p><a href="[% output_uri_view('data') %]">View in Browser</a></p>

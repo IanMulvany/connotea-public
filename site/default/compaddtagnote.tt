@@ -1,0 +1,38 @@
+<h1>[% IF is_add %]Add[% ELSE %]Edit[% END %] Tag Note</h1>
+
+[% IF is_add %]
+<p class="welcome">You can use this form to add notes to describe your
+tags.</p>
+<p class="welcome">A tag note allows you to explain your collection
+for a specific tag to yourself and other users.  The note will appear
+at the top of the list of links you have saved under that tag. For
+more information and help, see the
+<a href="[% location %]guide#tagnotes">site guide.</a></p>
+[% END %]
+
+[% IF validation_error %]
+  <div class="errormsg">
+    [% validation_error %]
+  </div>
+[% IF overwrite %][% overwrite_output %][% END %]
+[% END %]
+
+<form name="add" action="[% location %][% action %]tagnote" method="post">
+  <table>
+    <tr>
+      <td class="addfgroupormlabelcell" id="taglabelcell">Tag:</td>
+      <td class="addutadatacell" id="tagdatacell"><input type="text" name="tag" size="40" class="textctl" id="tagbox" value="[% sticky('tag') %]" /></td>
+    </tr>
+    <tr>
+      <td class="addutaformlabelcell" id="entrylabelcell">Note:</td>
+      <td class="addutaformdatacell" id="entrydatacell"><textarea name="entry" rows="4" cols="60" class="textareactl" id="entrybox">[% sticky('entry') %]</textarea>
+[% IF is_edit AND NOT overwrite %]<div id="entryhelpbox" class="ctlhelp">Erasing all the text will remove the note.</div>[% END %]
+      </td>
+    </tr>
+    <tr>
+     <td></td>
+     <td><input type="submit" name="button" value="[% IF is_add %]Add[% ELSE %]Save[% END %]" class="buttonctl" id="addbutton" />
+       <input type="submit" name="button" value="Cancel" class="buttonctl" id="removebutton" /></td>
+    </tr>
+  </table>
+</form>

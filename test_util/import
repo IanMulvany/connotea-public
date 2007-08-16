@@ -1,0 +1,114 @@
+#!/usr/bin/perl
+use strict;
+#use Exception;
+use CGI;
+use URI;
+use Bibliotech::Parser;
+use Bibliotech::Command;
+use Bibliotech::Fake;
+use Bibliotech;
+use Bibliotech::Plugin;
+
+my ($writable, $writable_user);
+
+# test importer
+
+unless (@ARGV) {
+  die "Test Importer\nDoes not actually import.\nUsage: import autodetect [-w] [filename]\n";
+}
+
+#Exception->debugLevel(Exception::DEBUG_STACK);
+
+my $doc_type = shift @ARGV or die "No type specified.\n";
+$doc_type = undef if $doc_type =~ /^(?:auto)?detect$/i;
+
+if (@ARGV && $ARGV[0] eq '-w') {
+  shift @ARGV;
+  $writable = 1;
+  $writable_user = Bibliotech::User->retrieve(1);
+}
+
+my $doc = do { local $/; <>; } or die "No document.\n";
+
+my $bibliotech = Bibliotech->new({cgi      => new CGI::Fake,
+				  parser   => new Bibliotech::Parser,
+				  command  => new Bibliotech::Command,
+				  log      => new Bibliotech::Fake::Log,
+				  location => URI->new('http://localhost/'),
+				 });
+my $importer;
+if ($doc_type) {
+  my $class = 'Bibliotech::Import::'.$doc_type;
+  eval "use $class"; die "cannot use $class: $@" if $@;
+  $importer = $class->new ({bibliotech => $bibliotech,
+			    doc => $doc,
+			    use_keywords => 1}) or die 'no importer object: '.$doc_type;
+}
+else {
+  $importer = Bibliotech::Plugin::Import->scan($doc, [{bibliotech => $bibliotech,
+						       doc => $doc,
+						       use_keywords => 1}]) or die 'no importer object (scan)';
+}
+
+my @tags = ('uploaded');
+$importer->given_tags(\@tags);
+$importer->user($writable_user) if $writable;
+my $entries = $writable ? $importer->user_bookmarks_write_bookmarks : $importer->user_bookmarks;
+my $count = 0;
+while (my $result = $entries->fetch) {
+  $count++;
+  report('--- start result');
+  my $user_bookmark = $result->user_bookmark;
+  report(title       		  => $user_bookmark->title);
+  report(description 		  => $user_bookmark->description);
+  my $warning = $result->warning;
+  report(warning                  => $warning) if $warning;
+  my $error = $result->error;
+  #$error->confess if $error;
+  report(error                    => $error) if $error;
+  report(ref                      => ref $user_bookmark);
+  report('text content'           => $user_bookmark->plain_content($bibliotech, 'add', 1, 1));
+  report('html content as text'   => fix_html($user_bookmark->html_content($bibliotech, 'add', 1, 1)));
+  report('authoritative citation' => do { $writable
+					      ? do { my $citation = $user_bookmark->bookmark->citation;
+						     $citation
+							 ? join("\n",
+								'line: '.$citation->citation_line($bibliotech),
+								'authors: '.$citation->author_list(1, $bibliotech),
+								'source: '.($citation->cs_source || 'unrecorded'))
+							 : undef; }
+					      : '[cannot get authoritative metadata without writing to db]'; });
+  report('personal citation'      => do { my $personal_citation = $user_bookmark->citation;
+					  $personal_citation
+					      ? join("\n",
+						     'line: '.$personal_citation->citation_line($bibliotech),
+						     'authors: '.$personal_citation->author_list(1, $bibliotech))
+					      : undef; });
+  report('--- end result');
+  print "\n";
+}
+print "count: $count\n";
+
+sub report {
+  my ($label, $value) = @_;
+  if ($label =~ /^-/) {
+    print $label, "\n";
+    return;
+  }
+  my $print_kv = sub { print sprintf("%26s %s\n", @_); };
+  if ($value) {
+    my @lines = split(/\n/, $value);
+    $print_kv->($label.' =' => shift @lines);
+    $print_kv->('' => $_) foreach (@lines);
+  }
+  else {
+    $print_kv->($label.' -' => '(none)');
+  }
+}
+
+sub fix_html {
+  local $_ = shift;
+  s/\A\n//;
+  s/\&nbsp;\n?//g;
+  return $_;
+}

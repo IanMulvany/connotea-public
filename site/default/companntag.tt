@@ -1,0 +1,5 @@
+[% INCLUDE segmentcompann.tt
+   subhead="Recent \"" _ viewed_tag.name _ "\" articles"
+   note="These articles and links have been posted by Connotea users using the tag \"" _ viewed_tag.name _ "\"."
+   canadd=1
+%]

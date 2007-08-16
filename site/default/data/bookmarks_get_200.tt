@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<rdf:RDF
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:dcterms="http://purl.org/dc/terms/"
+  xmlns:prism="http://prismstandard.org/namespaces/1.2/basic/"
+  xmlns:foaf="http://xmlns.com/foaf/0.1/"
+  xmlns="http://www.connotea.org/2005/01/schema#"
+>
+  [% FOREACH b IN answer.list %]
+  <dcterms:URI rdf:about="[% encode_xml_utf8(b.url) %]">
+    <link>[% encode_xml_utf8(b.url) %]</link>
+    <dc:title>[% encode_xml_utf8(b.title) #bookmark_details.title %]</dc:title>
+    [% FOREACH tag IN b.tags %]
+    <tag>[% encode_xml_utf8(tag.label) %]</tag>
+    [% END %]
+    [% FOREACH user IN b.users %]
+    <postedBy>[% user.label %]</postedBy>
+    [% END %]
+    <postCount>[% b.count_user_bookmarks %]</postCount>
+    <hash>[% b.hash %]</hash>
+    <bookmarkID>[% b.bookmark_id %]</bookmarkID>
+    <created>[% b.created.iso8601_utc %]</created>
+    [% IF b.updated %][% IF b.updated.valid %]<updated>[% b.updated.iso8601_utc %]</updated>[% END %][% END %]
+    <firstUser>[% b.first_user.label %]</firstUser>
+    [% IF (c = b.cite) %]
+        <citation>
+          <rdf:Description>
+            <citationID>[% c.citation_id %]</citationID>
+            <prism:title>[% encode_xml_utf8(c.title) %]</prism:title>
+            [% FOREACH a IN c.authors %]
+            <foaf:maker>
+              <foaf:Person>
+                <foaf:name>[% encode_xml_utf8(a.name) %]</foaf:name>
+              </foaf:Person>
+            </foaf:maker>
+            [% END %]
+            [% IF c.date %]
+            <dc:date>[% c.date.iso8601_utc %]</dc:date>
+            [% END %]
+            [% IF c.journal %]
+            <journalID>[% c.journal.journal_id %]</journalID>
+            <prism:publicationName>[% IF c.journal.medline_ta %][% encode_xml_utf8(c.journal.medline_ta) %][% ELSE %][% encode_xml_utf8(c.journal.name) %][% END %]</prism:publicationName>
+            [% IF c.journal.issn %]
+            <prism:issn>[% encode_xml_utf8(c.journal.issn) %]</prism:issn>
+            [% END %]
+            [% END %]
+            [% IF c.volume %]
+            <prism:volume>[% encode_xml_utf8(c.volume) %]</prism:volume>
+            [% END %]
+            [% IF c.issue %]
+            <prism:number>[% encode_xml_utf8(c.issue) %]</prism:number>
+            [% END %]
+            [% IF c.start_page %]
+            <prism:startingPage>[% encode_xml_utf8(c.start_page) %]</prism:startingPage>
+            [% END %]
+            [% IF c.end_page %]
+            <prism:endingPage>[% encode_xml_utf8(c.end_page) %]</prism:endingPage>
+            [% END %]
+            [% IF c.doi %]
+            <doiResolver rdf:resource="http://dx.doi.org/[% encode_xml_utf8(c.doi) %]"/>
+            <dc:identifier>doi:[% encode_xml_utf8(c.doi) %]</dc:identifier>
+            [% END %]
+            [% IF c.pubmed %]
+            <pmidResolver rdf:resource="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&amp;db=pubmed&amp;dopt=Abstract&amp;list_uids=[% encode_xml_utf8(c.pubmed) %]"/>
+            <dc:identifier>PMID: [% encode_xml_utf8(c.pubmed) %]</dc:identifier>
+            [% END %]
+          </rdf:Description>
+        </citation>
+    [% END %]
+    <rdfs:seeAlso rdf:resource="[% location %]data/uri/[% b.hash %]" /> <!-- GET this URI to retrieve further information -->
+  </dcterms:URI>
+  [% END %]
+</rdf:RDF>

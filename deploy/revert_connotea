@@ -1,0 +1,12 @@
+#!/bin/bash
+. /root/bin/connotea_vars
+cd $BASE
+if [ ! -e bibliotech_old ]; then
+  echo "Cannot revert - no bibliotech_old"
+  exit 1
+fi
+[ -e bibliotech_bad ] && rm -rf bibliotech_bad
+mv -f bibliotech bibliotech_bad
+mv -f bibliotech_old bibliotech
+echo "Revert completed OK."
+exec /root/bin/restart_connotea

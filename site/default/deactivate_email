@@ -1,0 +1,11 @@
+Subject: Your $sitename Account ($username)
+
+Dear $firstname $lastname,
+
+We have deactivated your $sitename account in response to the content
+of your posts. Please reply if you disagree with our decision or would
+otherwise like to discuss your situation.
+
+Thank you,
+
+$sitename Administrator

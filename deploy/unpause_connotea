@@ -1,0 +1,14 @@
+#!/bin/bash
+
+. /root/bin/connotea_vars
+bconfig=$CONF
+hconfig=$APCONF
+
+rm -f $bconfig.bak
+perl -i.bak -pe 's/(SERVICE_PAUSED\s*=\s*)true/${1}false/' $bconfig
+
+rm -f $hconfig.bak
+perl -i.bak -pe 's/#+(ErrorDocument 503 \/unavailable.html)/$1/; s/(ErrorDocument 503 \/paused.html)/#$1/' $hconfig
+
+echo "Reconfiguration for unpause completed OK."
+exec /root/bin/restart_connotea

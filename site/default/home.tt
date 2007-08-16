@@ -1,0 +1,6 @@
+[% prepare_component_begin() %]
+[% INCLUDE normalprep.tt %]
+[% prepare_component_end() %]
+[% WRAPPER normal.tt %]
+[% INCLUDE segmenthome.tt %]
+[% END %]

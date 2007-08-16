@@ -1,0 +1,164 @@
+#!/usr/bin/perl
+use strict;
+use Bibliotech::Config;
+use Getopt::Long;
+
+# perl test_util/dldump -h connoteadb.nature.com -C -d connotea -u root -p '' -D connotea -U root -P ''
+
+# this script will assist you in connecting to a remote server,
+# dumping the bibliotech database out of MySQL on that server, and
+# then inserting it to MySQL locally
+
+my $remote_host;
+my $remote_ssh_username;
+my $remote_mysql_database = just_database(cfg('DBI_CONNECT'));
+my $remote_mysql_username = cfg('DBI_USERNAME');
+my $remote_mysql_password = cfg('DBI_PASSWORD');
+my $remote_dump_file = '/tmp/dump';
+my $local_dump_file = '/tmp/dump';
+my $keep_remote_dump_file = 0;
+my $keep_local_dump_file = 1;
+my $use_existing_local_dump_file = 0;
+my $local_mysql_database = $remote_mysql_database;
+my $local_mysql_username = $remote_mysql_username;
+my $local_mysql_password = $remote_mysql_password;
+my $wipe_script = 'wipe.sql';
+my $command_debug = 1;
+
+parse_options();
+get_remote_dump();
+wipe_local_data();
+insert_new_data();
+optionally_remove_dump();
+
+sub parse_options {
+  Getopt::Long::Configure('bundling');
+  GetOptions('remote-host|h=s'                => \$remote_host,
+	     'remote-ssh-username|s=s'        => \$remote_ssh_username,
+	     'remote-mysql-database|d=s'      => \$remote_mysql_database,
+	     'remote-mysql-username|u=s'      => \$remote_mysql_username,
+	     'remote-mysql-password|p=s'      => \$remote_mysql_password,
+	     'local-dump-file|f=s'            => \$local_dump_file,
+	     'keep-local-dump-file|k'         => \$keep_local_dump_file,
+	     'use-existing-local-dump-file|e' => \$use_existing_local_dump_file,
+	     'local-mysql-database|D=s'       => \$local_mysql_database,
+	     'local-mysql-username|U=s'       => \$local_mysql_username,
+	     'local-mysql-password|P=s'       => \$local_mysql_password,
+	     'wipe-script|w=s'                => \$wipe_script,
+	     'command-debug|C'                => \$command_debug,
+            );
+  die "Please specify remote host.\n" unless $remote_host;
+}
+
+sub get_remote_dump {
+  if (-s $local_dump_file) {
+    if ($use_existing_local_dump_file) {
+      say('Using existing local dump file: ', $local_dump_file);
+      return;
+    }
+    else {
+      unlink($local_dump_file);
+    }
+  }
+  create_and_download_dump();
+}
+
+sub create_and_download_dump {
+  my $ssh        = 'ssh '.host_and_user($remote_host, $remote_ssh_username);
+  my $scp        = 'scp';
+  my $mysqldump  = cat('mysqldump',
+		       $remote_mysql_username ? '-u '.$remote_mysql_username : undef,
+		       defined $remote_mysql_password
+		         ? ($remote_mysql_password ? '--password='.$remote_mysql_password : '-p')
+		         : undef,
+		       '-c', # use complete insert statements
+		       '-t', # don't write table creation info
+		       #'-K', # disable keys
+		       #'--single-transaction', # MySQL 5.0
+		       '-q',
+		       $remote_mysql_database);
+
+  # dumping to a file and downloading is faster than dumping to stdout over ssh
+  my $dump_cmd   = cat($ssh, $mysqldump, '\>', $remote_dump_file);
+  my $tx_cmd     = cat($scp, full_filename($remote_host, $remote_ssh_username, $remote_dump_file), $local_dump_file);
+
+  say('Logging into ', $remote_host, ' via ssh and running mysqldump (dump may take some time)...');
+  run($dump_cmd)      or exit 1;
+  run($tx_cmd)        or exit 2;
+  -s $local_dump_file or exit 3;
+}
+
+sub wipe_local_data {
+  my $mysql      = cat('mysql',
+		       $local_mysql_username ? '-u '.$local_mysql_username : undef,
+		       defined $local_mysql_password
+		         ? ($local_mysql_password ? '--password='.$local_mysql_password : '-p')
+		         : undef,
+		       $local_mysql_database);
+
+  my $wipe_cmd   = cat($mysql, '-e', "\'source $wipe_script\'");
+
+  say('Wiping ', $local_mysql_database, '...');
+  run($wipe_cmd) or exit 1;
+}
+
+sub insert_new_data {
+  my $mysql      = cat('mysql',
+		       $local_mysql_username ? '-u '.$local_mysql_username : undef,
+		       defined $local_mysql_password
+		         ? ($local_mysql_password ? '--password='.$local_mysql_password : '-p')
+		         : undef,
+		       $local_mysql_database);
+
+  my $data_cmd   = join(' ', $mysql, '-e', "\'source $local_dump_file\'");
+
+  say('Inserting data from ', $remote_host, ':', $remote_mysql_database, ' into localhost:', $local_mysql_database, '...');
+  run($data_cmd) or exit 1;
+}
+
+sub optionally_remove_dump {
+  if ($keep_local_dump_file) {
+    say('Data retained in: ', $local_dump_file);
+  }
+  else {
+    unlink($local_dump_file);
+  }
+  say('Done.');
+}
+
+sub cfg {
+  Bibliotech::Config->get(@_);
+}
+
+sub cat {
+  join(' ', grep { defined $_ } @_);
+}
+
+sub say {
+  print @_, "\n";
+}
+
+sub just_database {
+  my $dbi_connect = shift or return;
+  $dbi_connect =~ /^(?:dbi:)?mysql:(\w+)/i;
+  return $1;
+}
+
+sub host_and_user {
+  my ($host, $user) = @_;
+  return ($user ? $user.'@' : '').$host;
+}
+
+sub full_filename {
+  my ($host, $user, $filename) = @_;
+  return host_and_user($host, $user).':'.$filename;
+}
+
+sub run {
+  my $cmd = shift or die 'cannot run empty command';
+  warn "$cmd\n" if $command_debug;
+  my $rc = system $cmd;
+  return -1 if $rc == -1        # command not run
+            || $rc & 0x0F == 2; # CTRL+C
+  return $rc >> 8 ? 0 : 1;
+}

@@ -1,0 +1,44 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Bibliotech;
+use Bibliotech::Log;
+
+my $test_mode = 1;
+
+use constant LOG_FILE       => 'email_reminder.log';
+use constant EMAIL_TEMPLATE => 'html/reminder_email';
+
+my $bibliotech = Bibliotech->new;
+my $log        = Bibliotech::Log->new(LOG_FILE); start_log($bibliotech, $log, $test_mode);
+my $query      = $test_mode ? 'search_test_no_bookmarks_posted' : 'search_no_bookmarks_posted';
+my $iter       = Bibliotech::User->$query or die 'no iter';
+my $count      = 0;
+
+while (my $user = $iter->next) {
+  $count++;
+  my $report = join(' ', 'Send email to user:', map { $user->$_ } qw/id username email/);
+  warn $report."\n";
+  $log->info($report);
+  send_reminder($bibliotech, $user);
+  $user->set_datetime_now('reminder_email');
+  $user->update;
+}
+
+end_log($log, $count);
+
+sub send_reminder {
+  my ($bibliotech, $user) = @_;
+  return $bibliotech->notify_user($user, file => EMAIL_TEMPLATE);
+}
+
+sub start_log {
+  my ($bibliotech, $log, $test) = @_;
+  $log->info('email reminder startup'.($test ? ' (test mode)' : ''));
+}
+
+sub end_log {
+  my ($log, $count) = @_;
+  $log->info("finished: sent $count message".($count == 1 ? '' : 's'));
+}

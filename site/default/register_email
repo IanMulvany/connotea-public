@@ -1,0 +1,10 @@
+Subject: $sitename Registration
+
+Dear $firstname $lastname,
+
+Thank you for signing up for $sitename!
+
+To complete your registration, just follow this link:
+$url
+
+Thank you!

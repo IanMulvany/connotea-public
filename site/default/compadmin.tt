@@ -1,0 +1,120 @@
+<h1>Administrative User Search</h1>
+
+[% IF results %]
+<fieldset>
+<legend>Results</legend>
+<table>
+[% FOREACH matched_user IN results %]
+<tr>
+  <td align="right">#[% matched_user.user_id %]</td>
+  <td><a href="[% location %]user/[% matched_user.username %]">[% matched_user.username %]</a>
+      <a href="[% location %]adminrenameuser?old=[% matched_user.username %]">...</a></td>
+  <td>[% matched_user.firstname %]</td>
+  <td>[% matched_user.lastname %]</td>
+  <td>[% matched_user.created.ymd %]</td>
+  <td align="right">[% matched_user.count_user_bookmarks %]</td>
+  <td>[% IF matched_user.active %]<a href="[% location %]killspammer?user=[% matched_user.username %]">active</a>[% ELSE %]inactive[% END %]</td>
+  <td>[% IF matched_user.verifycode %]<a href="[% location %]verify?userid=[% matched_user.user_id %]&code=[% matched_user.verifycode %]" onclick="return confirm('Are you sure you wish to follow this link and verify the user?')">[% matched_user.verifycode %]</a>[% ELSE %]verified[% END %]</td>
+  <td><a href="mailto:[% matched_user.email %]?subject=[% sitename %]">[% matched_user.email %]</a></td>
+  <td>[% matched_user.password %]</td>
+</tr>
+[% END %]
+</table>
+<p><br />[% plural(commas(total_user_count), 'user') %] found
+         [% IF total_user_count %] ([% commas(active_user_count) %] active;
+                                    [% commas(inactive_user_count) %] inactive)[% END %]
+         with [% plural(commas(total_user_bookmarks), 'total bookmark') %][%#
+         %][% IF total_user_bookmarks %] ([% commas(average_user_bookmarks) %]/user average;
+                                          [% commas(median_user_bookmarks) %]/user median)[% END %].</p>
+</fieldset>
+[% END %]
+
+<div id="adminform">
+  <form name="admin" action="[% location %]admin" method="post" class="compform">
+
+    <fieldset[% IF has_validation_error_for('firstname','lastname','username','email') %] class="haserrors"[% END %]>
+      <legend>User Search</legend>
+
+      [% IF has_validation_error_for('firstname','lastname','username','email') %]
+      <p class="validation">[% validation_error %]</p>
+      [% END %]
+
+      <p><label for="user_id"[% IF validation_error_field == "user_id" %] class="validation"[% END %]>ID#</label>
+	<input id="user_id" name="user_id" size="10" type="text" value="[% sticky('user_id') %]" />
+      </p>
+
+      <p><label for="username"[% IF validation_error_field == "username" %] class="validation"[% END %]>Username</label>
+	<select id="typeusername" name="typeusername">
+	  <option value="eq"[% IF sticky('typeusername') == "eq" %] selected="selected"[% END %]>=</option>
+	  <option value="like"[% IF sticky('typeusername') == "like" %] selected="selected"[% END %]>...</option>
+	  <option value="rlike"[% IF sticky('typeusername') == "rlike" %] selected="selected"[% END %]>=~</option>
+	</select>
+	<input id="username" name="username" size="30" type="text" value="[% sticky('username') %]" />
+      </p>
+
+      <p><label for="email"[% IF validation_error_field == "email" %] class="validation"[% END %]>Email address</label>
+	<select id="typeemail" name="typeemail">
+	  <option value="eq"[% IF sticky('typeemail') == "eq" %] selected="selected"[% END %]>=</option>
+	  <option value="like"[% IF sticky('typeemail') == "like" %] selected="selected"[% END %]>...</option>
+	  <option value="rlike"[% IF sticky('typeemail') == "rlike" %] selected="selected"[% END %]>=~</option>
+	</select>
+	<input id="email" name="email" size="30" type="text" value="[% sticky('email') %]" />
+      </p>
+
+      <p><label for="lastname"[% IF validation_error_field == "lastname" %] class="validation"[% END %]>Last name</label>
+	<select id="typelastname" name="typelastname">
+	  <option value="eq"[% IF sticky('typelastname') == "eq" %] selected="selected"[% END %]>=</option>
+	  <option value="like"[% IF sticky('typelastname') == "like" %] selected="selected"[% END %]>...</option>
+	  <option value="rlike"[% IF sticky('typelastname') == "rlike" %] selected="selected"[% END %]>=~</option>
+	</select>
+	<input id="lastname" name="lastname" size="30" type="text" value="[% sticky('lastname') %]" />
+      </p>
+
+      <p><label for="firstname"[% IF validation_error_field == "firstname" %] class="validation"[% END %]>First name</label>
+	<select id="typefirstname" name="typefirstname">
+	  <option value="eq"[% IF sticky('typefirstname') == "eq" %] selected="selected"[% END %]>=</option>
+	  <option value="like"[% IF sticky('typefirstname') == "like" %] selected="selected"[% END %]>...</option>
+	  <option value="rlike"[% IF sticky('typefirstname') == "rlike" %] selected="selected"[% END %]>=~</option>
+	</select>
+	<input id="firstname" name="firstname" size="30" type="text" value="[% sticky('firstname') %]" />
+      </p>
+			
+      <p><label for="created"[% IF validation_error_field == "created" %] class="validation"[% END %]>Creation Date</label>
+	<input id="created1" name="created1" size="10" type="text" value="[% sticky('created1') %]" /> to
+	<input id="created2" name="created2" size="10" type="text" value="[% sticky('created2') %]" /> (inclusive; YYYY-MM-DD format)
+      </p>
+
+      <p><label for="bookmarks"[% IF validation_error_field == "bookmarks" %] class="validation"[% END %]>No. Bookmarks</label>
+	<select id="typebookmarks" name="typebookmarks">
+	  <option value="eq"[% IF sticky('typebookmarks') == "eq" %] selected="selected"[% END %]>=</option>
+	  <option value="lt"[% IF sticky('typebookmarks') == "lt" %] selected="selected"[% END %]>&lt;</option>
+	  <option value="le"[% IF sticky('typebookmarks') == "le" %] selected="selected"[% END %]>&le;</option>
+	  <option value="gt"[% IF sticky('typebookmarks') == "gt" %] selected="selected"[% END %]>&gt;</option>
+	  <option value="ge"[% IF sticky('typebookmarks') == "ge" %] selected="selected"[% END %]>&ge;</option>
+	</select>
+	<input id="bookmarks" name="bookmarks" size="10" type="text" value="[% sticky('bookmarks') %]" /> (number)
+      </p>
+
+      <p><label for="group"[% IF validation_error_field == "group" %] class="validation"[% END %]>Group Member of</label>
+	<select id="typegroup" name="typegroup">
+	  <option value="eq"[% IF sticky('typegroup') == "eq" %] selected="selected"[% END %]>=</option>
+	  <option value="like"[% IF sticky('typegroup') == "like" %] selected="selected"[% END %]>...</option>
+	  <option value="rlike"[% IF sticky('typegroup') == "rlike" %] selected="selected"[% END %]>=~</option>
+	</select>
+	<input id="group" name="group" size="30" type="text" value="[% sticky('group') %]" /> (one group name)
+      </p>
+
+      <p><label for="active">Active (Verified)</label>
+	<select id="active" name="active">
+	  <option value=""></option>
+	  <option value="1"[% IF sticky('active') == "1" %] selected="selected"[% END %]>Active</option>
+	  <option value="0"[% IF sticky('active') == "0" %] selected="selected"[% END %]>Inactive</option>
+	</select>
+      </p>
+
+    </fieldset>
+    
+    <p><span class="cleardiv"><!-- clear --></span>
+      <input type="submit" class="submitbutton" name="button" value="search" /></p>
+  </form>
+</div>

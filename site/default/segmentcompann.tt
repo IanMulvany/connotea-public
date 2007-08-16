@@ -1,0 +1,16 @@
+	  <div id="se-landing">
+	  	<div class="left">
+			<p class="se-title">Free online reference management for clinicians and scientists</p>
+			<p><a href="[% location %]register" class="buttonlink">Sign up now</a></p>
+		</div>
+		<div class="right">
+			<p class="se-subhead">[% subhead %]</p>
+
+			<ul>
+				<li>[% note %]</li>
+				<li>[% IF canadd %]To add to this collection, or t[% ELSE %]T[% END %]o start your own library:</li>
+			</ul>
+			<p><a href="[% location %]about">Learn more</a></p>
+		        <p><a href="[% location %]A_Quick_Tour.html">Watch a short video</a> (2m 41s)</p>
+	  	</div>
+	</div>

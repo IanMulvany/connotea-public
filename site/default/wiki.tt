@@ -1,0 +1,26 @@
+[% prepare_component_begin() %]
+[% INCLUDE normalprep.tt %]
+[% prepare_component('Wiki','interject,sidebar,main','main,verbose') %]
+[% prepare_component_end() %]
+[% WRAPPER normal.tt %]
+
+<div id="interject">
+[% component_html('Wiki','interject','main,verbose') %]
+</div>
+
+<!-- this is the sidebar on the right -->
+<div id="right">
+
+<!-- start login -->
+[% INCLUDE account.tt %]
+<!-- end login -->
+
+[% component_html('Wiki','sidebar','main,verbose') %]
+</div>
+
+<!-- content -->
+<div id="main_less_right">
+[% component_html('Wiki','main','main,verbose') %]
+</div>
+
+[% END %]

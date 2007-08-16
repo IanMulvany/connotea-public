@@ -1,0 +1,289 @@
+#!/usr/bin/perl
+#
+# Copyright 2007 Nature Publishing Group
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+=pod
+
+recoveruser
+
+Recovers a user from a Connotea database backup installed at a
+secondary location to the live database. Uses raw database access, not
+the internal API. Assumes that any auto_increment counters have been
+moving only upwards on the live database. The problem that gave rise
+to this script is a non-spammer being deleted by the killspammer
+interface accidentally and the need to resurrect that user. Since
+auto_increment counters are not reused in normal operation, it is
+possible to re-insert the deleted rows throughout the database and
+thusly bring back the user. Both databases must have the same tables
+and columns - no intervening changes between backup and now. This
+script handles foreign key constraints on the live database by
+resorting the copied rows to a compliant order that will not be
+blocked by the constraints; this makes it possible to insert them on a
+live image without turning off constraints. The entire process is
+wrapped in a database transaction and should it fail, will warn and
+rollback.
+
+=cut
+use strict;
+use DBI;
+
+our %tx;
+our %done;
+our %struct;
+
+die USAGE() unless @ARGV;
+db_disconnect(run_actions_in_sequence(start_at_user(make_connections(@ARGV), [follow_list()])));
+exit 0;
+
+# cascading out from the user record, this list explains how to
+# discover and select related rows in the backup database
+# order: [start table, related table, related primary field, select]
+# note: the select statements do not just select the identifier (there
+# are cases like bookmark_details where it seems silly because you
+# already know the identifier); it causes a query that checks for the
+# *presence* of the rows as well - zero results is handled gracefully
+sub follow_list {
+  (['user',                  'user_bookmark',         'user_bookmark_id',
+    'select user_bookmark_id from user_bookmark where user = ?'],
+   ['user_bookmark',         'bookmark',              'bookmark_id',
+    'select bookmark from user_bookmark where user_bookmark_id = ?'],
+   ['bookmark',              'bookmark_details',      'bookmark_id',
+    'select bookmark_id from bookmark_details where bookmark_id = ?'],
+   ['bookmark',              'citation',              'citation_id',
+    'select citation from bookmark where bookmark_id = ?'],
+   ['user_bookmark',         'user_bookmark_comment', 'user_bookmark_comment_id',
+    'select user_bookmark_comment_id from user_bookmark_comment where user_bookmark = ?'],
+   ['user_bookmark_comment', 'comment',               'comment_id',
+    'select comment from user_bookmark_comment where user_bookmark_comment_id = ?'],
+   ['user_bookmark',         'user_bookmark_details', 'user_bookmark_id',
+    'select user_bookmark_id from user_bookmark_details where user_bookmark_id = ?'],
+   ['user_bookmark',         'user_bookmark_tag',     'user_bookmark_tag_id',
+    'select user_bookmark_tag_id from user_bookmark_tag where user_bookmark = ?'],
+   ['user_bookmark',         'citation',              'citation_id',
+    'select citation from user_bookmark where user_bookmark_id = ?'],
+   ['user_bookmark_tag',     'tag',                   'tag_id',
+    'select tag from user_bookmark_tag where user_bookmark_tag_id = ?'],
+   ['user_gang',             'gang',                  'gang_id',
+    'select gang from user_gang where user_gang_id = ?'],
+   ['user',                  'user_tag_annotation',   'user_tag_annotation_id',
+    'select user_tag_annotation_id from user_tag_annotation where user = ?'],
+   ['citation',              'citation_author',       'citation_author_id',
+    'select citation_author_id from citation_author where citation = ?'],
+   ['citation_author',       'author',                'author_id',
+    'select author from citation_author where citation_author_id = ?'],
+   ['citation',              'journal',               'journal_id',
+    'select journal from citation where citation_id = ?'],
+  );
+}
+
+# inserting rows in this order guarantees that foreign key constraints are honored
+sub sequence_list {
+  qw/user journal citation
+     bookmark bookmark_details user_bookmark user_bookmark_details
+     comment user_bookmark_comment tag user_bookmark_tag gang user_gang
+     author citation_author user_tag_annotation/;
+}
+
+# (db handle, db handle, action list) -> (db handle, db handle)
+# action list elements are [table name, code ref]
+# sorts actions by sequence_list()
+# also runs 'begin' and either 'commit' or 'rollback' actions
+sub run_actions_in_sequence {
+  my ($dbh_backup, $dbh_live, @actions) = @_;
+  my %by_table;
+  foreach (@actions) {
+    die 'expected arrayref' unless ref $_;
+    my ($table, $code) = @{$_};
+    die 'action provided without a table/key name' unless $table and not ref $table;
+    die 'undefined or incorrect action provided for table/key '.$table unless defined $code and ref $code eq 'CODE';
+    $by_table{$table} = [] unless exists $by_table{$table};
+    push @{$by_table{$table}}, $code;
+  }
+  my $run = sub {
+    my $current = shift;
+    if (exists $by_table{$current}) {
+      foreach my $code (@{$by_table{$current}}) {
+	eval { $code->(); };
+	die "on $current: $@" if $@;
+      }
+      delete $by_table{$current};
+    }
+    else {
+      warn "run has nothing to do for $current\n";
+    }
+  };
+  eval { $run->($_) foreach ('begin', sequence_list(), 'commit'); };
+  if ($@) { warn "caught error\n", $@; $run->('rollback'); }
+  return ($dbh_backup, $dbh_live);
+}
+
+# reading the backup database, create closures that when executed will
+# update the live database
+sub copy_actions {
+  my ($dbh_backup, $dbh_live, $table, $primary_field, $primary_value, $follow_table) = @_;
+  return (do { print "checking $table $primary_value\n";
+	       my ($check_primary_field, $check_primary_value) = translate_values($table, $primary_field, $primary_value);
+	       my ($count) = $dbh_live->selectrow_array
+		   (join(' ', 'select count(*) from', $table, 'where', $check_primary_field, '= ?'),
+		    undef, $check_primary_value);
+	       $count = 1 if $count == 0 and check_for_readded($dbh_backup, $dbh_live, $table, $primary_field, $primary_value);
+	       $count == 0 && !done_record($table, $primary_value);
+	  } ? do {
+	    mark_done_record($table, $primary_value);
+	    [$table,
+	     sub {
+	       my $sth1 = $dbh_backup->prepare(join(' ', 'select * from', $table, 'where', $primary_field, '= ?'));
+	       $sth1->execute($primary_value);
+	       if ($sth1->rows > 0) {
+		 my %data = translate_values($table, %{$sth1->fetchrow_hashref});
+		 my @fields = limit_to_live_fields($dbh_live, $table, keys %data);
+		 my $sth2 = $dbh_live->prepare(join('', ('insert into ', $table, ' (', join(', ', @fields), ') ',
+							 'values (', join(', ', map('?', @fields)), ')')));
+		 eval { $sth2->execute(map($data{$_}, @fields)); };
+		 die "error with table $table [".join(', ',map($_.'='.$data{$_}, @fields))."]: $@" if $@;
+		 print "copied $table $primary_value\n";
+	       }
+	     }];
+	  }
+	  : (),
+	  # recursion to related tables using follow list - calls back into copy_actions():
+	  map {
+	    my (undef, $next_table, $next_primary_field, $next_select) = @{$_};
+	    map { copy_actions($dbh_backup, $dbh_live, $next_table, $next_primary_field, $_, $follow_table);
+	        } (grep { $_ } @{$dbh_backup->selectcol_arrayref($next_select, undef, $primary_value)});
+	  } (grep { $_->[0] eq $table } @{$follow_table}));
+}
+
+sub reset_actions {
+  my ($dbh_live, $user_id) = @_;
+  ['user',
+   sub {
+     $dbh_live->do('update user set active = 1 where user_id = ?', undef, $user_id);
+     print "updated user $user_id (made active)\n";
+   }];
+}
+
+sub check_for_readded {
+  my ($dbh_backup, $dbh_live, $table, $primary_field, $primary_value) = @_;
+  if ($table eq 'bookmark') {
+    my ($url) = $dbh_backup->selectrow_array('select url from bookmark where bookmark_id = ?', undef, $primary_value);
+    my ($new_bookmark_id) = $dbh_live->selectrow_array('select bookmark_id from bookmark where url = ?', undef, $url);
+    return unless $new_bookmark_id;
+    add_translation($table, $primary_field, $primary_value, $new_bookmark_id);
+    return $new_bookmark_id;
+  }
+  elsif ($table eq 'tag') {
+    my ($tag) = $dbh_backup->selectrow_array('select name from tag where tag_id = ?', undef, $primary_value);
+    my ($new_tag_id) = $dbh_live->selectrow_array('select tag_id from tag where name = ?', undef, $tag);
+    return unless $new_tag_id;
+    add_translation($table, $primary_field, $primary_value, $new_tag_id);
+    return $new_tag_id;
+  }
+  elsif ($table eq 'gang') {
+    my ($gang) = $dbh_backup->selectrow_array('select name from gang where gang_id = ?', undef, $primary_value);
+    my ($new_gang_id) = $dbh_live->selectrow_array('select gang_id from gang where name = ?', undef, $gang);
+    return unless $new_gang_id;
+    add_translation($table, $primary_field, $primary_value, $new_gang_id);
+    return $new_gang_id;
+  }
+  return;
+}
+
+sub add_translation {
+  my ($table, $field, $old, $new) = @_;
+  $tx{$table}{$old} = $new;
+  print "added translation for $table $old to $new to accommodate recoverable change\n";
+}
+
+sub translate_values {
+  my ($table, %data) = @_;
+  foreach my $tx_table (keys %tx) {  # e.g. 'bookmark'
+    foreach my $tx_field ($tx_table, $tx_table.'_id') {  # e.g. 'bookmark', 'bookmark_id'
+      if (exists $data{$tx_field}) {
+	$data{$tx_field} = $tx{$tx_table}{$data{$tx_field}} if exists $tx{$tx_table}{$data{$tx_field}};
+      }
+    }
+  }
+  return %data;
+}
+
+sub done_record {
+  my ($table, $primary_value) = @_;
+  return unless exists $done{$table};
+  return exists $done{$table}{$primary_value};
+}
+
+sub mark_done_record {
+  my ($table, $primary_value) = @_;
+  $done{$table}{$primary_value} = 1;
+}
+
+sub limit_to_live_fields {
+  my ($dbh_live, $table, @all_fields) = @_;
+  my @ok_fields = fields_for($dbh_live, $table);
+  return grep { my $field = $_; scalar grep { $field eq $_ } @ok_fields; } @all_fields;
+}
+
+sub fields_for {
+  my ($dbh, $table) = @_;
+  $struct{$table} = _fields_for($dbh, $table) unless exists $struct{$table};
+  return @{$struct{$table}};
+}
+
+sub _fields_for {
+  my ($dbh, $table) = @_;
+  my $sth = $dbh->prepare(join(' ', 'select * from', $table, 'limit 1'));
+  $sth->execute;
+  my @fields = keys %{$sth->fetchrow_hashref};
+  $sth->finish;
+  return wantarray ? @fields : \@fields;
+}
+
+sub make_connections {
+  my ($backup_connect, $backup_username, $backup_password,
+      $live_connect,   $live_username,   $live_password,
+      $connotea_username) = @_;
+  print "Connecting to backup...\n";
+  my $dbh_backup = DBI->connect($backup_connect, $backup_username, $backup_password, dbopts()) or die $DBI::errstr;
+  print "Connecting to live...\n";
+  my $dbh_live   = DBI->connect($live_connect,   $live_username,   $live_password,   dbopts()) or die $DBI::errstr;
+  my ($user_id) = $dbh_backup->selectrow_array('select user_id from user where username = ? OR email = ?',
+					       undef, $connotea_username, $connotea_username);
+  die "username $connotea_username not found in backup database\n" unless $user_id;
+  print "username $connotea_username found in backup database with user_id $user_id\n";
+  return ($dbh_backup, $dbh_live, $user_id);
+}
+
+sub dbopts {
+  {RaiseError => 1, AutoCommit => 0};
+}
+
+sub start_at_user {
+  my ($dbh_backup, $dbh_live, $user_id, $follow_table) = @_;
+  my $on_live = sub { _transaction_cmd($dbh_live, shift); };
+  ($dbh_backup, $dbh_live,
+   $on_live->('begin'),
+   copy_actions($dbh_backup, $dbh_live, 'user', 'user_id', $user_id, $follow_table),
+   reset_actions($dbh_live, $user_id),
+   $on_live->('commit'),
+   $on_live->('rollback'));  # these are keyed by first element so this only runs on failure
+}
+
+sub _transaction_cmd {
+  my ($db, $cmd) = @_;
+  die 'must provide database handle' unless defined $db and ref $db;
+  die 'cannot create a transaction for no command' unless $cmd and not ref $cmd;
+  [$cmd => sub { $db->do($cmd); print "transaction $cmd\n"; }];
+}
+
+sub db_disconnect {
+  $_->disconnect foreach (@_);
+}
+
+sub USAGE {
+  "usage: recoveruser b_connect b_username b_password l_connect l_username l_password connotea_user\n".
+  "Where b_ fields are for the backup database and l_ for live.\n";
+}

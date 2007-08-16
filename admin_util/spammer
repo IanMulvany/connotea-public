@@ -1,0 +1,45 @@
+#!/usr/bin/perl
+
+# If I decide that a particular user is posting spam, we will:
+#   * Delete his community page
+#   * Delete all his bookmarks (by default)
+#    * or optionally just make them all private
+#   * De-activate his account.  Note that this is not the same as deleting the
+# record in the DB -- we need to keep the email address around to avoid anyone
+# using it again.  I think there's an 'active' field that we can set to false
+# -- is that right?
+#
+#   * Send the user an email, notifiying them that their account has been
+# deactivated, politely requesting that they desist from spamming, and telling
+# them that they can contact us if they disagree with what we've done.  We can
+# put this text in a template.
+
+use strict;
+use Bibliotech;
+
+my $location   = shift @ARGV;
+my $docroot    = shift @ARGV;
+my $private    = $ARGV[0] eq '-p' ? shift @ARGV : 0;
+my $bibliotech = Bibliotech->new({location => $location, docroot => $docroot});
+
+@ARGV or die "Please provide username.\n";
+while (my $username = shift @ARGV) {
+  deactivate_username($username, $bibliotech);
+}
+
+sub deactivate_username {
+  my $username   = shift or die 'no username';
+  my $bibliotech = shift or die 'no bibliotech object';
+  my $rc = eval {
+    print "Deactivating $username...\n";
+    my $user = Bibliotech::User->new($username) or die "Cannot find $username.\n";
+    die "$username already deactivated.\n" unless $user->active;
+    $user->deactivate($bibliotech, $private);
+    print "Done.\n";
+  };
+  if ($@) {
+    die $@ if $@ =~ / at .* line /;
+    warn $@;
+  }
+  return $rc;
+}

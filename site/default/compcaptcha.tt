@@ -1,0 +1,19 @@
+<div id="captcha">
+
+  <p>We sometimes ask users to confirm their posting. Please enter the
+  characters in the image into the box below. If you have any problems
+  with this, please email us at
+  <a href="mailto:[% siteemail %]">[% siteemail %]</a>.
+  When your posting is saved, it may be quarantined for a
+  period of time, which means you can see it logged in, but no other
+  can user can see it.</p>
+
+  <div id="captchawork">
+    <img id="captchaimg" src="[% captchasrc %]" alt="CAPTCHA" />
+    <input type="text" id="captchacodebox" class="textctl" name="captchacode" value="" />
+    <input type="submit" id="captchasubmit" class="buttonctl" name="button" value="Submit" />
+    <input type="hidden" name="captchamd5sum" value="[% captchamd5sum %]" />
+    <span id="captchawhy"><a href="[% location %]faq#captcha" target="_blank">Why?</a></span>
+  </div>
+
+</div>

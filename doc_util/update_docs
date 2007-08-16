@@ -1,0 +1,7 @@
+#!/bin/bash
+pwd | grep -q doc_util && cd ..
+cat doc_util/README.pod | pod2text > README
+for file in `find site -name code.inc`; do
+  cat doc_util/README.pod | perl doc_util/prepod | pod2html --title=this_will_be_stripped | perl doc_util/postpod2html > $file
+fi
+rm -f pod2htm*.tmp

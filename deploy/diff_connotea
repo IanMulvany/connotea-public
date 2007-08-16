@@ -1,0 +1,4 @@
+#!/bin/bash
+. /root/bin/connotea_vars
+cd $BASE/bibliotech
+darcs whatsnew $*

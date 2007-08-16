@@ -1,0 +1,40 @@
+[% prepare_component_begin() %]
+[% INCLUDE normalprep.tt %]
+[% prepare_component('ListOfActiveTags',undef,'noheading') %]
+[% prepare_component('ListOfActiveUsers',undef,'noheading') %]
+[% prepare_component('ListOfPopular',undef,'main,verbose,noheading') %]
+[% prepare_component_end() %]
+[% WRAPPER normal.tt %]
+
+<!-- start Bookmarks area -->
+<div id="content-bkmk-wrap" >
+  <!-- this is the sidebar on the right with 2 next boxes -->
+
+  <div id="bkmk-right">
+    <!-- popular tags box -->
+    <div id="populartags-home">
+      <h2 class="populartags-home">Popular tags</h2>
+      [% component_html('ListOfActiveTags',undef,'noheading') %]
+    </div>
+
+    <!-- active users box -->
+    <div id="activeusers-home">
+      <h2 class="activeusers-home">Active users</h2>
+      [% component_html('ListOfActiveUsers',undef,'noheading') %]
+    </div>
+  </div>
+
+  <!-- bookmark -->
+  <div id="bkmk">
+    <h2 class="bookmark-home">
+      <div id="mybookmarkrss">
+        <a href="[% location %]ris/popular"><img class="rssicon" title="Export this list to a local reference manager" src="[% location %]exportlist_button.gif" alt="EXPORT LIST" /></a>         <a href="[% location %]rss/popular"><img class="rssicon" title="RSS" src="[% location %]rss_button.gif" alt="RSS" /></a> <a href="[% location %]guide#rss"><img class="helpicon" src="[% location %]help_button2.gif" alt="?" title="What are these?"/></a></div>
+      Popular links</h2>
+    [% component_html('ListOfPopular',undef,'main,verbose,noheading') %]
+  </div>
+
+  <div class="clearing-bkmk">&nbsp;</div>
+</div>
+<!-- end Bookmarks area at the bottom of the page -->
+
+[% END %]

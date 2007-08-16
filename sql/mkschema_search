@@ -1,0 +1,15 @@
+#!/usr/bin/perl
+use strict;
+
+my $has_comma = 0;
+
+while (<>) {
+  s/^DROP DATABASE \`?(\w+)\`?/DROP DATABASE ${1}_search/;
+  s/^CREATE DATABASE \`?(\w+)\`?/CREATE DATABASE ${1}_search/;
+  s/^USE \`?(\w+)\`?/USE ${1}_search/;
+  s/ENGINE\s*=\s*InnoDB( DEFAULT)?/ENGINE=MyISAM/i;
+  #s/CONSTRAINT.*$//;
+  s/-- SEARCH: / $has_comma ? '' : ',' /e;
+  $has_comma = /,\s*$/ if /\w/;
+  print;
+}

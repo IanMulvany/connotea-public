@@ -1,0 +1,13 @@
+<h1>Register for [% sitename %]</h1>
+
+<p>Thank you! Please check your email for a verification message.</p>
+
+<p>Usually the message takes a couple minutes to reach you, and please
+note that (depending on your email settings) it can occasionally fall
+into a junk or spam folder, however we have been having a problem with
+some mail servers blocking our messages altogether. If you do not
+receive a confirmation in the next 24 hours then this might be
+happening with your registration.  We are working to fix this
+problem. If you need confirmation urgently please use the
+<a href="[% location %]reportproblem">Report a Problem</a> page, which
+you will find linked from many pages of this web site.</p>

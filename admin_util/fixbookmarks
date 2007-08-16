@@ -1,0 +1,205 @@
+#!/usr/bin/perl
+use strict;
+use Bibliotech::DBI;
+
+=pod
+
+This script has the ability to run through every bookmark in the
+database and perform a Perl substitution on the URL string. If a
+substitution is made, it then saves the updated bookmark; however it
+is clever enough to check first for another row in the bookmark table
+already exists with that URL. If a conflict is seen, it runs through
+the user_bookmark's for the "bad" bookmark and tries to switch the
+user_bookmark to point to the preexisting "correct" bookmark; however,
+again, it is clever enough to check first to see if a user has added
+both bookmarks, in which case it deletes the user_bookmark associated
+with the "bad" bookmark and leaves the other one.
+
+=cut
+
+unless (@ARGV) {
+  print STDERR "Usage: $0 [where] regex\n";
+  print STDERR "The required regex parameter is a Perl substition (s///) to act on the bookmark URL.\n";
+  print STDERR "The optional where parameter is a SQL WHERE clause snippet to limit the bookmarks considered.\n";
+  print STDERR "The where parameter is intended for search speed optimization but can be used to limit effects.\n";
+  print STDERR "e.g.: $0 \'url like \"doi:%\"\' \'s|^doi:(.*)\$|http://dx.doi.org/\$1|\'\n";
+  exit 1;
+}
+
+sub say { print @_; }
+
+my $where = @ARGV > 1 ? shift @ARGV : undef;
+my $url_regex_statement = shift @ARGV;
+
+my $bad_bookmark_iter = bad_bookmark_iter($where);
+my $total = $bad_bookmark_iter->count;
+my ($count, $affected) = (0, 0);
+$| = 1;  # support the \r ending on the counter output
+
+while (my $bad_bookmark = $bad_bookmark_iter->next) {
+  say report_place(++$count, $total);
+  next unless test_bookmark($bad_bookmark);
+  change_bookmark($bad_bookmark);
+  $affected++;
+}
+
+say report_done($count => $affected);
+exit 0;
+
+sub test_bookmark {
+  my ($bookmark) = @_;
+
+  # save some values so they can be changed in the eval and checked later
+  my $loaded_rep = report_old($bookmark);
+  my $loaded_id  = $bookmark->bookmark_id;
+  my $loaded_url = $bookmark->url;
+  $_ = $loaded_url;  # for the convenience of the eval
+
+  my $code = eval $url_regex_statement;
+
+  warn "Error: $@" if $@;
+  return 0 unless $code;
+
+  say report_found($loaded_id), $loaded_rep;
+
+  # update the object if they just used the $_ shortcut
+  $bookmark->url($_) if $_ ne $loaded_url;
+
+  return 1;
+}
+
+sub change_bookmark {
+  my ($bad_bookmark) = @_;
+  my $new_url = $bad_bookmark->url;  # reset since load by user's eval
+
+  # change the bookmark
+  my $existing_bookmark_with_new_url = bookmark_with_url($new_url);
+  if ($existing_bookmark_with_new_url) {
+    modify_user_bookmarks_from_bookmark_to_bookmark($bad_bookmark => $existing_bookmark_with_new_url);
+  }
+  else {
+    simple_bookmark_update($bad_bookmark);
+  }
+}
+
+sub bad_bookmark_iter {
+  my ($where) = @_;
+  return Bibliotech::Bookmark->_sth_to_objects(Bibliotech::Bookmark->sql_where($where)) if $where;
+  return Bibliotech::Bookmark->retrieve_all;
+}
+
+sub report_place {
+  my ($count, $total) = @_;
+  return report_percentage($count, $total)."\r";
+}
+
+sub report_percentage {
+  my ($numerator, $denominator) = @_;
+  my $ratio = $denominator ? $numerator/$denominator : 0;
+  return sprintf('%.1f%%', $ratio*100);
+}
+
+sub report_found {
+  my ($bookmark_id) = @_;
+  return "Found \#$bookmark_id\n";
+}
+
+sub report_bookmark {
+  my ($bookmark) = @_;
+  return $bookmark->plain_content;
+}
+
+sub report_user_bookmark {
+  my ($user_bookmark) = @_;
+  return $user_bookmark->plain_content;
+}
+
+sub report_old {
+  my ($bookmark) = @_;
+  my $info = report_bookmark($bookmark);
+  return "Old: $info\n";
+}
+
+sub report_new {
+  my ($bookmark) = @_;
+  my $info = report_bookmark($bookmark);
+  return "New: $info\n";
+}
+
+sub report_merge {
+  my ($bookmark) = @_;
+  my $info = report_bookmark($bookmark);
+  return "Merge: $info\n";
+}
+
+sub report_migrate {
+  my ($user_bookmark) = @_;
+  my $info = report_user_bookmark($user_bookmark);
+  return "Migrating user_bookmark: $info\n";
+}
+
+sub report_retaining {
+  my ($bookmark) = @_;
+  my $info = report_bookmark($bookmark);
+  return "Retaining: $info\n";
+}
+
+sub bookmark_with_url {
+  my ($url) = @_;
+  return (Bibliotech::Bookmark->search(url => $url))[0];
+}
+
+sub user_bookmark_with_user_and_bookmark {
+  my ($user, $bookmark) = @_;
+  return (Bibliotech::User_Bookmark->search(user => $user, bookmark => $bookmark))[0];
+}
+
+sub report_conflict {
+  my ($user_bookmark) = @_;
+  my $info = report_user_bookmark($user_bookmark);
+  return "Conflict: $info\n";
+}
+
+sub modify_user_bookmarks_from_bookmark_to_bookmark {
+  my ($bad_bookmark, $good_bookmark) = @_;
+  say report_merge($good_bookmark);
+  my $user_bookmark_iter = Bibliotech::User_Bookmark->search(bookmark => $bad_bookmark);
+  my $failures = 0;
+  while (my $user_bookmark = $user_bookmark_iter->next) {
+    say report_migrate($user_bookmark);
+    modify_one_user_bookmark($user_bookmark => $good_bookmark) or $failures++;
+  }
+  if (!$failures) {
+    $bad_bookmark->delete;
+  }
+  else {
+    $bad_bookmark->discard_changes;
+    say report_retaining($bad_bookmark);
+  }
+}
+
+sub modify_one_user_bookmark {
+  my ($user_bookmark, $new_bookmark) = @_;
+
+  if (my $conflicting_user_bookmark
+        = user_bookmark_with_user_and_bookmark($user_bookmark->user, $new_bookmark)) {
+    # no action can be taken
+    say report_conflict($conflicting_user_bookmark);
+    return 0;
+  }
+
+  $user_bookmark->bookmark($new_bookmark);
+  $user_bookmark->update;
+  return 1;
+}
+
+sub simple_bookmark_update {
+  my ($bookmark) = @_;
+  $bookmark->update;
+  say report_new($bookmark);
+}
+
+sub report_done {
+  my ($examined, $affected) = @_;
+  return "Done ($examined examined, $affected affected).\n";
+}

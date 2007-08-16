@@ -1,0 +1,20 @@
+<div id="loginaccount-box">
+			[% IF user %]
+					
+				<h2>You are logged in as</h2>
+					
+				<div class="login-buttons">
+					<p class="username">[% user.username %]</p>
+					<p><a href="[% location %]library" class="mylibrary">My library</a></p>
+					<p><a href="[% location %]logout" class="log">Log out</a></p>
+				</div>
+				[% ELSE %]
+				
+				<h2>Log in</h2>
+				<div class="login-buttons">
+					<p><a href="[% location %]register" class="signup">Sign up</a></p>
+					<p><a href="[% location %]login" class="log">Log in</a></p>
+				</div>				
+            [% END %]
+		
+		</div>

@@ -1,0 +1,146 @@
+#!/usr/bin/perl
+use strict;
+use Bibliotech::Config;
+
+# ----------------------------------------------------------------------
+# a surrogate for the Apache $r:
+package InternalRequest;
+use base 'Class::Accessor';
+__PACKAGE__->mk_accessors(qw/notes filename path_info user/);
+# ----------------------------------------------------------------------
+
+package main;
+use Getopt::Long;
+use URI;
+use Bibliotech;
+use Bibliotech::Config;
+use Bibliotech::DBI;
+use Bibliotech::Log;
+use Bibliotech::Cache;
+use Bibliotech::Page::Standard;
+use Bibliotech::Profile;
+
+our $DOCROOT = Bibliotech::Config->get('DOCROOT') || $ENV{DOCROOT};
+our $LINK = Bibliotech::Config->get('LOCATION') || $ENV{LOCATION};
+$LINK =~ s|/$||;
+our $VERBOSE = 2;
+our $DELAY_DB = 4;
+our $DELAY_LOAD = 1;
+our $DELAY_EXTRA = 1;
+our $LOG_FILE = '/tmp/bibpreempt.log';
+
+my $location_str = $LINK ? $LINK.'/' : undef;
+my $pages;
+my $run_immediately = 0;
+my $run_once = 0;
+
+GetOptions ('log|L=s'       => \$LOG_FILE,
+	    'docroot|d=s'   => \$DOCROOT,
+	    'location|l=s'  => \$location_str,
+	    'pages|p=s'     => \$pages,
+	    'verbose|v=i'   => \$VERBOSE,
+	    'waitdb|w=i'    => \$DELAY_DB,
+	    'waitload|W=i'  => \$DELAY_LOAD,
+	    'waitextra|E=i' => \$DELAY_EXTRA,
+	    'immediately|i' => \$run_immediately,
+	    'once|1'        => \$run_once,
+	    );
+
+$DOCROOT or die "DOCROOT must be defined (cannot be detected outside Apache)\n";
+
+our @LIST = $pages ? split(/:/, $pages) : ('/');
+our $LOCATION = new URI ($location_str);
+$run_immediately = 1 if $run_once;
+
+my $cgi = CGI->new;
+my $log = Bibliotech::Log->new($LOG_FILE);
+my $memcache = Bibliotech::Cache->new({log => $log});
+$Bibliotech::Apache::MEMCACHE = $memcache;
+
+if ($VERBOSE >= 2) {
+  Bibliotech::Profile->activate();
+  Bibliotech::DBI->activate_warn_sql() if $VERBOSE >= 3;
+}
+
+my $INTERRUPT = 0;
+$SIG{INT} = sub { $INTERRUPT++; };
+
+my $dbtime;
+my $last_dbtime = $memcache->get('DB');
+
+while (!$INTERRUPT) {
+  if (!$run_immediately) {
+    print "Waiting for database change...\n" if $VERBOSE;
+    do {
+      last if $INTERRUPT;
+      sleep $DELAY_DB;
+      $dbtime = $memcache->get('DB');
+    } while ($dbtime == $last_dbtime);
+    last if $INTERRUPT;
+    print "Waiting for low load...\n" if $VERBOSE;
+    while ((my $load = $memcache->get('LOAD')) > 2) {
+      last if $INTERRUPT;
+      sleep $DELAY_LOAD + $load;
+    }
+    last if $INTERRUPT;
+    if ($DELAY_EXTRA > 0) {
+      print "Waiting a little longer...\n" if $VERBOSE;
+      sleep $DELAY_EXTRA;
+    }
+    last if $INTERRUPT;
+  }
+  else {
+    $dbtime = $memcache->get('DB');
+  }
+  $last_dbtime = $dbtime;
+  foreach my $uri (@LIST) {
+    last if $INTERRUPT;
+    request($uri);
+    if (!$run_once) {
+      $dbtime = $memcache->get('DB');
+      if ($dbtime != $last_dbtime) {
+	print "Noticed another database change during calculations, cutting short\n" if $VERBOSE;
+	last;
+      }
+    }
+  }
+  $INTERRUPT = 1 if $run_once;
+}
+
+print "Exit...\n" if $VERBOSE;
+exit 0;
+
+sub request {
+  my ($uri) = @_;
+  print "Calculating [$uri]...\n" if $VERBOSE;
+  $Bibliotech::Apache::USER_ID = undef;
+  %Bibliotech::Apache::QUICK = ();
+  my $request = new InternalRequest ({notes => {}, filename => $DOCROOT.$uri, path_info => '', user => undef});
+  my $bibliotech = new Bibliotech({cgi => $cgi, log => $log, memcache => $memcache, request => $request});
+  $bibliotech->docroot($DOCROOT.'/');
+  $bibliotech->path($uri);
+  $bibliotech->link($LINK.$uri);
+  $bibliotech->location($LOCATION);
+  $bibliotech->process;
+  my $command = $bibliotech->command;
+  my $canonical_path = $command->canonical_uri(undef, undef, 1);
+  $bibliotech->canonical_path($canonical_path);
+  my $canonical_path_for_cache_key = $canonical_path;
+  my $args = '';
+  if ($args =~ /[\?\&](uri=.*)[^\&]/) {
+    $canonical_path_for_cache_key .= '?'.$1;
+  }
+  $bibliotech->canonical_path_for_cache_key($canonical_path_for_cache_key);
+  my $page = $command->page;
+  die "you\'re asking me to precalculate a static page? (".join(',',@{$page}).')' if ref $page eq 'ARRAY';
+  my $fmt = $command->output;
+  my $func = $fmt.'_content';
+  my $class = 'Bibliotech::Page::'.ucfirst($page);
+  my $pageobj = $class->new({bibliotech => $bibliotech});
+  my ($last_updated, $last_updated_without_login) = $pageobj->last_updated($fmt);
+  my $cache_key = Bibliotech::Cache::Key->new($bibliotech, class => 'Bibliotech::Apache', method => 'query_handler', path => undef);
+  unless ($memcache->get_with_last_updated($cache_key, $last_updated_without_login, 0, 1)) {
+    my $result = $pageobj->$func($bibliotech);
+    $memcache->set_with_last_updated($cache_key, $result, $last_updated_without_login);
+  }
+}

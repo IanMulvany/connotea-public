@@ -1,0 +1,19 @@
+<h1>Forgotten Password - Step 2</h1>
+
+[% IF validation_error %]
+  <div class="errormsg">
+    [% validation_error %]
+  </div>
+[% END %]
+
+<form name="forgotpw" action="[% location %]forgotpw" method="post">
+  <span class="label">Please enter your new password:</span><br />
+  <input class="field" name="password" type="password" value="[% sticky('password') %]" /><br />
+  <span class="label">Please re-enter the same password:</span><br />
+  <input class="field" name="password2" type="password" value="[% sticky('password2') %]" /><br />
+  <input class="button" name="button" type="submit" value="Save" />
+  <input type="hidden" name="user" value="[% sticky('user') %]" />
+  <input type="hidden" name="time" value="[% sticky('time') %]" />
+  <input type="hidden" name="code" value="[% sticky('code') %]" />
+</form>
+<p class="welcome"><br />After submission, your password will be changed and you will be automatically logged in.</p>

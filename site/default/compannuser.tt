@@ -1,0 +1,5 @@
+[% INCLUDE segmentcompann.tt
+   subhead="Bookmarks by \"" _ viewed_user.name _ "\"."
+   note="These articles and links have been posted by Connotea user \"" _ viewed_user.name _ "\"."
+   canadd=0
+%]

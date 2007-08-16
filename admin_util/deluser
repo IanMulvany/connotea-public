@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+use strict;
+use Bibliotech;
+
+my $just_erase_user_bookmarks = ($ARGV[0] eq '-u' ? shift @ARGV : 0);
+my $username = shift @ARGV or die "Please provide username.\n";
+
+my $user = Bibliotech::User->new($username) or die "Cannot find $username.\n";
+my $username = $user->username;
+
+# override filtering
+$Bibliotech::Apache::USER = $user;
+$Bibliotech::Apache::USER_ID = $user->user_id;
+
+unless ($just_erase_user_bookmarks) {
+  $user->delete;
+  print "User \"$username\" deleted.\n";
+}
+else {
+  my $count = 0;
+  my $iter = $user->user_bookmarks;
+  while (my $user_bookmark = $iter->next) {
+    print $user_bookmark->id, "\n";
+    $user_bookmark->delete;
+    $count++;
+  }
+  print "$count post(s) of user \"$username\" deleted.\n";
+}

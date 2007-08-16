@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+while (<>) {
+  s/^(.*)\(\(\((.*)\)\)\)(.*)$/include($2,$1,$3)/e;
+  print;
+}
+
+sub include {
+  my $filename = shift;
+  my $prefix = shift || '';
+  my $suffix = shift || '';
+  open FILE, "<$filename" or die "cannot open $filename: $!";
+  my $doc = do { local $/; <FILE>; };
+  close FILE;
+  return join('', map { "$prefix$_$suffix\n" } split(/\n/, $doc));
+}

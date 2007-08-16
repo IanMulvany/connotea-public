@@ -1,0 +1,14 @@
+<h1>Forgotten Password</h1>
+
+[% IF validation_error %]
+  <div class="errormsg">
+    [% validation_error %]
+  </div>
+[% END %]
+
+<form name="forgotpw" action="[% location %]forgotpw" method="post">
+  <span class="label">Please enter the email address you used to register: </span>
+  <input class="field" name="email" type="text" value="[% sticky('email') %]" />
+  <input class="button" name="button" type="submit" value="Submit" />
+  <p class="welcome">We will send an email telling you how to reactivate your account to this address.</p>
+</form>

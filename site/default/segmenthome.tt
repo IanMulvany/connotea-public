@@ -1,0 +1,19 @@
+<div id="home">
+
+  <div>
+  [% IF NOT bookmark %]
+    <h1>Welcome to [% sitename %]</h1>
+    <p><a href="[% location %]register">Register</a></p>
+  [% ELSE %]
+    <h1>You are saving this article on [% sitename %]:</h1>
+    <div class="citation">
+      <p class="articletitle">[% IF (c = bookmark.cite) %] [% c.title %] [% ELSE %] [% bookmark.title %] [% END %]</p>
+      [% IF (c = bookmark.cite) %]
+      <p>[% IF (j = c.journal) %]<span class="journalname">[% IF j.medline_ta %][% j.medline_ta %][% ELSE %][% j.name %][% END %]</span>[% END %] [% IF c.volume %] <span class="volumenumber">[% c.volume %]</span>, <span class="issuenumber">[% c.issue %]</span> [% END %] ([% c.date.citation %]) <br/>[% c.author_list(undef, bibliotech) %]</p>
+      [% END %]
+    </div>
+    <p><a href="[% location %]register" class="buttonlink">Register to save this article</a></p>
+  [% END %]
+  </div>
+
+</div>

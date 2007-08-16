@@ -1,0 +1,98 @@
+#!/usr/bin/perl
+# Keep memcached going by restarting it on error
+use strict;
+use warnings;
+use Net::Server::Daemonize qw(daemonize);
+use POSIX qw(sys_wait_h);
+
+my $user = 'nobody';
+my $group = 'nobody';
+# we can get away with this because we tell memcached not to daemonize:
+my $wrapper_pidfile = '/var/run/memcached.pid';
+my $watch_delay = 2;
+my $loop_delay = 1;
+my $cmd = join(' ', @ARGV) or die "Please provide memcached command.\n";
+$cmd =~ s/-d\s*//;  # do not ask memcached to daemonize
+my $be_daemon = 1;
+my $debug = $be_daemon ^ 1;
+
+daemonize($user, $group, $wrapper_pidfile) if $be_daemon;
+
+my $END_PROGRAM = 0;
+sub handle_term {
+  $END_PROGRAM = 1;
+}
+
+my $CHILD_CHANGED_STATE = 0;
+sub handle_child {
+  $CHILD_CHANGED_STATE = 1;
+  $SIG{CHLD} = \&handle_child;
+}
+
+$SIG{TERM} = \&handle_term;
+$SIG{INT}  = \&handle_term;
+$SIG{CHLD} = \&handle_child;
+$SIG{HUP}  = 'IGNORE';
+$SIG{STOP} = 'IGNORE';
+$SIG{TSTP} = 'IGNORE';
+
+# main loop
+until ($END_PROGRAM) {
+  $CHILD_CHANGED_STATE = 0;
+  defined(my $child = fork) or die "cannot fork: $!";
+  unless ($child) {
+    warn "I am child ($$), exec'ing $cmd...\n" if $debug;
+    exec $cmd;
+  }
+  warn "I am parent ($$), watching...\n" if $debug;
+  my $CHILD_DIED = 0;
+  until ($CHILD_DIED || $END_PROGRAM) {
+    sleep $watch_delay;
+    if ($CHILD_CHANGED_STATE) {
+      $CHILD_DIED = waitpid($child, WNOHANG);
+    }
+  }
+  if ($CHILD_DIED) {
+    warn "child died flag set\n" if $debug;
+  }
+  if ($END_PROGRAM) {
+    warn "end program flag set\n" if $debug;
+    kill 'TERM' => $child;
+    waitpid $child, 0;
+  }
+  sleep $loop_delay if $loop_delay;  # mitigate runaway loops
+}
+
+Net::Server::Daemonize::unlink_pid_file($wrapper_pidfile) if $be_daemon;
+exit 0;
+
+package Net::Server::Daemonize;
+
+# in older versions of POSIX, set_uid() did not set $< ... this is perl 5.8.0 compatible
+sub set_uid {
+  my $uid = get_uid( shift() );
+
+  POSIX::setuid($uid);
+  $< = $> = $uid;
+  if ($< != $uid) {
+    die "Couldn't become uid \"$uid\": $!\n";
+  }
+
+  return 1;
+}
+
+# in older versions of POSIX, set_gid() did not set $( ... this is perl 5.8.0 compatible
+sub set_gid {
+  my $gids = get_gid( @_ );
+  my $gid  = (split /\s+/, $gids)[0];
+  eval { $) = $gids }; # store all the gids - this is really sort of optional
+
+  POSIX::setgid($gid);
+  $( = $gid;
+  my $_gid = (split /\s+/, $()[0];
+  if ($_gid != $gid) {
+    die "Couldn't become gid \"$gid\": $!\n";
+  }
+
+  return 1;
+}

@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<rdf:RDF
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:dcterms="http://purl.org/dc/terms/"
+  xmlns:prism="http://prismstandard.org/namespaces/1.2/basic/"
+  xmlns:foaf="http://xmlns.com/foaf/0.1/"
+  xmlns="http://www.connotea.org/2005/01/schema#"
+>
+  [% FOREACH p IN answer.list %]
+  <Post rdf:about="[% location %]user/[% p.user.label %]/uri/[% p.bookmark.hash %]">
+    [% IF (p.title) %]<title>[% encode_xml_utf8(p.title) %]</title>[% END %]
+    [% IF p.description %]
+    <description>[% encode_xml_utf8(p.description) %]</description>
+    [% END %]
+    [% FOREACH tag IN p.tags %]
+    <dc:subject>[% encode_xml_utf8(tag.label) %]</dc:subject>
+    [% END %]
+    <userBookmarkID>[% p.user_bookmark_id %]</userBookmarkID>
+    <dc:creator>[% p.user.label %]</dc:creator>
+    [% IF p.user_is_author %]
+    <myWork>1</myWork>
+    [% END %]
+    <private>[% p.private %]</private>
+    [% IF p.private_gang %]<privateGroup>[% encode_xml_utf8(p.private_gang.label) %]</privateGroup>[% END %]
+    [% IF p.private_until %]<privateUntil>[% p.private_until.iso8601_utc %]</privateUntil>[% END %]
+    [% IF p.quarantined %]<quarantined>1</quarantined>[% END %]
+    [% FOREACH c IN p.comments %]
+      <comment>
+        <rdf:Description>
+          <entry>[% encode_xml_utf8(c.entry) %]</entry>
+          <created>[% c.created.iso8601_utc %]</created>
+          [% IF c.updated %][% IF c.updated.valid %]<updated>[% c.updated.iso8601_utc %]</updated>[% END %][% END %]
+        </rdf:Description>
+      </comment>
+    [% END %]
+    <created>[% p.created.iso8601_utc %]</created>
+    [% IF p.updated %][% IF p.updated.valid %]<updated>[% p.updated.iso8601_utc %]</updated>[% END %][% END %]
+    <uri>
+      <dcterms:URI rdf:about="[% encode_xml_utf8(p.bookmark.uri) %]">
+        [% IF (p.bookmark.title) %]<dc:title>[% encode_xml_utf8(p.bookmark.title) %]</dc:title>[% END %]
+        <link>[% encode_xml_utf8(p.bookmark.uri) %]</link>
+        <hash>[% p.bookmark.hash %]</hash>
+	[% IF (c = p.bookmark.cite) %]
+        <citation>
+          <rdf:Description>
+            <citationID>[% c.citation_id %]</citationID>
+            <prism:title>[% encode_xml_utf8(c.title) %]</prism:title>
+            [% FOREACH a IN c.authors %]
+            <foaf:maker>
+              <foaf:Person>
+                <foaf:name>[% encode_xml_utf8(a.name) %]</foaf:name>
+              </foaf:Person>
+            </foaf:maker>
+            [% END %]
+            [% IF c.date %]
+            <dc:date>[% c.date.iso8601_utc %]</dc:date>
+            [% END %]
+            [% IF c.journal %]
+            <journalID>[% c.journal.journal_id %]</journalID>
+            <prism:publicationName>[% IF c.journal.medline_ta %][% encode_xml_utf8(c.journal.medline_ta) %][% ELSE %][% encode_xml_utf8(c.journal.name) %][% END %]</prism:publicationName>
+            [% IF c.journal.issn %]
+            <prism:issn>[% encode_xml_utf8(c.journal.issn) %]</prism:issn>
+            [% END %]
+            [% END %]
+            [% IF c.volume %]
+            <prism:volume>[% encode_xml_utf8(c.volume) %]</prism:volume>
+            [% END %]
+            [% IF c.issue %]
+            <prism:number>[% encode_xml_utf8(c.issue) %]</prism:number>
+            [% END %]
+            [% IF c.start_page %]
+            <prism:startingPage>[% encode_xml_utf8(c.start_page) %]</prism:startingPage>
+            [% END %]
+            [% IF c.end_page %]
+            <prism:endingPage>[% encode_xml_utf8(c.end_page) %]</prism:endingPage>
+            [% END %]
+            [% IF c.doi %]
+            <doiResolver rdf:resource="http://dx.doi.org/[% encode_xml_utf8(c.doi) %]"/>
+            <dc:identifier>doi:[% encode_xml_utf8(c.doi) %]</dc:identifier>
+            [% END %]
+            [% IF c.pubmed %]
+            <pmidResolver rdf:resource="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&amp;db=pubmed&amp;dopt=Abstract&amp;list_uids=[% encode_xml_utf8(c.pubmed) %]"/>
+            <dc:identifier>PMID: [% encode_xml_utf8(c.pubmed) %]</dc:identifier>
+            [% END %]
+          </rdf:Description>
+        </citation>
+        [% END %]
+      </dcterms:URI>
+    </uri>
+  </Post>
+  [% END %]
+</rdf:RDF>

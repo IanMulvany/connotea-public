@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<rdf:RDF
+ xmlns="http://purl.org/rss/1.0/"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:doap="http://usefulinc.com/ns/doap#"
+ xmlns:foaf="http://xmlns.com/foaf/0.1/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+ xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+ xmlns:modwiki="http://www.usemod.com/cgi-bin/mb.pl?ModWiki"
+ xmlns:content="http://purl.org/rss/1.0/modules/content/"
+>
+
+<channel rdf:about="[% encode_xml_utf8(rssurl) %]">
+  <dc:publisher>[% location %]</dc:publisher>
+  <title>[% sitename %] Community Pages</title>
+  <link>[% prefix %]Generate:RecentChanges</link>
+  <description>Recent changes to [% sitename %] Community Pages</description>
+  <dc:date>[% now.iso8601_utc %]</dc:date>
+  <modwiki:interwiki>[% interwiki %]</modwiki:interwiki>
+  <items>
+    <rdf:Seq>
+[% FOREACH change IN changes -%]
+      <rdf:li rdf:resource="[% prefix _ encode_xml_utf8(change.name) _ "?version=" _ change.version %]" />
+[% END -%]
+    </rdf:Seq>
+  </items>
+</channel>
+[% FOREACH change IN changes %]
+[% SET versionlink  = prefix _ encode_xml_utf8(change.name) _ "?version=" _ change.version -%]
+[% SET versiontitle = encode_xml_utf8(change.name) _ " #" _ change.version -%]
+<item rdf:about="[% versionlink %]">
+  <title>[% versiontitle %]</title>
+  <link>[% versionlink %]</link>[% IF (change.comment) %]
+  <description>[% encode_xml_utf8(change.comment) %]</description>[% END %]
+  <dc:date>[% change.last_modified.iso8601_utc %]</dc:date>
+  <dc:contributor>[% encode_xml_utf8(change.username) %]</dc:contributor>
+  <modwiki:version>[% change.version %]</modwiki:version>
+  <modwiki:status>[% change.status %]</modwiki:status>
+  <modwiki:importance>[% change.importance %]</modwiki:importance>
+  <modwiki:diff>[% prefix _ encode_xml_utf8(change.name) _ "?action=diff&amp;version=" _ change.version %]</modwiki:diff>
+  <modwiki:history>[% prefix _ "Generate:History_" _ encode_xml_utf8(change.name) %]</modwiki:history>
+  <content:encoded>&lt;link rel="stylesheet" type="text/css" href="[% location %]global.css" /&gt;&lt;h1&gt;[% versiontitle %]&lt;/h1&gt;&lt;p&gt;&lt;a href="[% versionlink %]"&gt;[% versiontitle %]&lt;/a&gt;&lt;br /&gt;[% encode_xml_utf8(change.comment) %]&lt;br /&gt;- &lt;a href="[% prefix _ "User:" _ encode_xml_utf8(change.username) %]"&gt;User:[% encode_xml_utf8(change.username) %]&lt;/a&gt;&lt;/p&gt;[% IF (change.version > 1) %][% encode_xml_utf8(change.diff_html) %][% END %]</content:encoded>
+</item>
+[% END %]
+</rdf:RDF>

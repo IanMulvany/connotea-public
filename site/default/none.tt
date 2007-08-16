@@ -1,0 +1,1 @@
+[% SET template = bibliotech.command.page_or_inc_filename %][% INCLUDE $template %]

@@ -1,0 +1,235 @@
+<h1>Add a bookmark</h1>
+
+<form method="POST"
+      action="[% location %][% action_with_popup %]"
+      enctype="application/x-www-form-urlencoded"
+      name="[% action %]">
+[% IF is_already_known %]
+  <div class="note">
+    You have already bookmarked this page, but if you would like to edit this entry in your
+    library then you can do so using the form below.
+  </div>
+[% END %]
+[% IF captcha %][% captcha %][% END %]
+[% IF validation_error %]
+  <div class="errormsg">
+    [% validation_error %]
+  </div>
+[% END %]
+
+[% IF NOT is_add OR bookmark %]
+  <input type="hidden" name="uri" value="[% sticky('uri') %]" />
+[% END %]
+  <table>
+[% IF is_add AND NOT bookmark %]
+    <tr>
+      <td class="addformlabelcell" id="bookmarklabelcell">Bookmark URL:</td>
+      <td class="addformdatacell" id="bookmarkdatacell"><input type="text" name="uri" value="[% sticky('uri') %]" size="[% IF is_main %]55[% ELSE %]70[% END %]" class="textctl" id="urlbox" />[% IF is_main %]<input type="submit" name="button" value="[% look_up_button_label %]" class="buttonctl" id="addbutton" />[% END %]</td>
+    </tr>
+[% END %]
+[% IF NOT is_addcomment %]
+[% IF show_citation %]
+    <tr>
+      <td valign="top" class="addformlabelcell">Identified:</td>
+      <td valign="top" class="addformdatacell preadd">
+        <div class="identifed">
+          [% identified %]
+        </div>
+        <div style="clear: both" class="editcitation">
+          <input id="editcitationbutton" type="button" name="button" value="[% citation_button_label %]" onclick="var s = document.getElementById(&#39;caddarea&#39;).style; var el = document.getElementById(&#39;editcitationbutton&#39;); if (s.display) { s.display = &#39;&#39;; el.value = &#39;Hide Form&#39;; } else { s.display = &#39;none&#39;; el.value = &#39;[% citation_button_label %]&#39;; } " class="buttonctl" />
+        </div>
+      </td>
+    </tr>
+  </table>
+  <input type="hidden" name="uri" value="[% sticky('uri') %]" />
+  <div id="caddarea">
+    <table id="cadd">
+      <tr>
+        <td class="addformlabelcell" id="ctitlelabelcell">Title Proper:</td>
+        <td class="addformdatacell" id="ctitledatacell"><input id="ctitle" type="text" name="ctitle" value="[% sticky('ctitle') %]" size="70" class="textctl" id="ctitlebox" onchange="var el = document.getElementById(&#39;ctitle&#39;); var yourtitleel = document.getElementById(&#39;usertitle&#39;); yourtitleel.value = el.value"/><input type="hidden" name="ctitle2" value="[% sticky('ctitle2') %]" /></td>
+      </tr>
+      <tr>
+        <td class="addformlabelcell" id="cjournallabelcell">Publication name:</td>
+        <td class="addformdatacell" id="cjournaldatacell"><input type="text" name="cjournal" value="[% sticky('cjournal') %]" size="70" class="textctl" id="cjournalbox" /><input type="hidden" name="ctitle2" value="[% sticky('cjournalbox2') %]" /></td>
+      </tr>
+      <tr>
+        <td class="addformlabelcell" id="cvolumelabelcell">Volume No.:</td>
+        <td class="addformdatacell" id="cvolumedatacell"><input type="text" name="cvolume" value="[% sticky('cvolume') %]" size="10" class="textctl" id="cvolumebox" /><input type="hidden" name="cvolume2" value="[% sticky('cvolume2') %]" /></td>
+      </tr>
+      <tr>
+        <td class="addformlabelcell" id="cissuelabelcell">Issue No.:</td>
+        <td class="addformdatacell" id="cissuedatacell"><input type="text" name="cissue" value="[% sticky('cissue') %]" size="10" class="textctl" id="cissuebox" /><input type="hidden" name="cissue2" value="[% stick('cissue2') %]" /></td>
+      </tr>
+      <tr>
+        <td class="addformlabelcell" id="cpageslabelcell">Pages:</td>
+        <td class="addformdatacell" id="cpagesdatacell"><input type="text" name="cpages" value="[% sticky('cpages') %]" size="10" class="textctl" id="cpagesbox" /><span class="formhelp">e.g. 365-9 or 28-42</span></td>
+      </tr>
+      <tr>
+        <td class="addformlabelcell" id="cdatelabelcell">Publication Date:</td>
+        <td class="addformdatacell" id="cdatedatacell"><input type="text" name="cdate" value="[% sticky('cdate') %]" size="25" class="textctl" id="cdatebox" /><input type="hidden" name="cdate2" value="[% sticky('cdate2')%]"  /><span class="formhelp">e.g. 29th Feb 1940 or 1940-02-29</span><!-- Fred'ric's out of his indentures! --></td>
+      </tr>
+      <tr>
+        <td class="addformlabelcell" id="cauthorslabelcell">Authors:</td>
+        <td class="addformdatacell" id="cauthorsdatacell"><input type="text" name="cauthors" value="[% sticky('cauthors') %]" size="70" class="textctl" id="cauthorsbox" /> <input type="hidden" name="cauthors2" value="[% sticky('cauthors2') %]" /></td>
+      </tr>
+      <tr>
+        <td class="addformlabelcell" id="cauthorslabelcell">&nbsp;</td>
+        <td class="addformdatacell" id="cauthorsdatacell"><span class="formhelp">e.g. "Forename Surname, Firstname Lastname" or  "A. B. Surname" or "X Y Z Lastname, W X Surname and T H Othername" or "Surname, A.B."</span></td>
+      </tr>
+    <tr>
+      <td class="addformlabelcell" id="cristypelabelcell">Ref. Type:</td>
+      <td class="addformdatacell" id="cristypedatacell">
+        [% SET cristype_value = sticky('cristype') %]
+        <select name="cristype" class="textctl" id="cristypebox">
+          <option [% IF NOT cristype_value %] selected="selected"[% END %]value=""></option>
+          <option [% IF cristype == 'JOUR' %] selected="selected"[% END %]value="JOUR">Journal article</option>
+          <option [% IF cristype == 'ABST' %] selected="selected"[% END %]value="ABST">Abstract</option>
+          <option [% IF cristype == 'ADVS' %] selected="selected"[% END %]value="ADVS">Audiovisual material</option>
+          <option [% IF cristype == 'ART' %] selected="selected"[% END %]value="ART">Art Work</option>
+          <option [% IF cristype == 'BILL' %] selected="selected"[% END %]value="BILL">Bill/Resolution</option>
+          <option [% IF cristype == 'BOOK' %] selected="selected"[% END %]value="BOOK">Book, Whole</option>
+          <option [% IF cristype == 'CASE' %] selected="selected"[% END %]value="CASE">Case</option>
+          <option [% IF cristype == 'CHAP' %] selected="selected"[% END %]value="CHAP">Book chapter</option>
+          <option [% IF cristype == 'COMP' %] selected="selected"[% END %]value="COMP">Computer program</option>
+          <option [% IF cristype == 'CONF' %] selected="selected"[% END %]value="CONF">Conference proceeding</option>
+          <option [% IF cristype == 'CTLG' %] selected="selected"[% END %]value="CTLG">Catalog</option>
+          <option [% IF cristype == 'DATA' %] selected="selected"[% END %]value="DATA">Data file</option>
+          <option [% IF cristype == 'ELEC' %] selected="selected"[% END %]value="ELEC">Electronic citation</option>
+          <option [% IF cristype == 'GEN' %] selected="selected"[% END %]value="GEN">Generic</option>
+          <option [% IF cristype == 'HEAR' %] selected="selected"[% END %]value="HEAR">Hearing</option>
+          <option [% IF cristype == 'ICOMM' %] selected="selected"[% END %]value="ICOMM">Internet communication</option>
+          <option [% IF cristype == 'INPR' %] selected="selected"[% END %]value="INPR">In Press</option>
+          <option [% IF cristype == 'JFULL' %] selected="selected"[% END %]value="JFULL">Journal (full)</option>
+          <option [% IF cristype == 'MAP' %] selected="selected"[% END %]value="MAP">Map</option>
+          <option [% IF cristype == 'MGZN' %] selected="selected"[% END %]value="MGZN">Magazine article</option>
+          <option [% IF cristype == 'MPCT' %] selected="selected"[% END %]value="MPCT">Motion picture</option>
+          <option [% IF cristype == 'MUSIC' %] selected="selected"[% END %]value="MUSIC">Music score</option>
+          <option [% IF cristype == 'NEWS' %] selected="selected"[% END %]value="NEWS">Newspaper</option>
+          <option [% IF cristype == 'PAMP' %] selected="selected"[% END %]value="PAMP">Pamphlet</option>
+          <option [% IF cristype == 'PAT' %] selected="selected"[% END %]value="PAT">Patent</option>
+          <option [% IF cristype == 'PCOMM' %] selected="selected"[% END %]value="PCOMM">Personal communication</option>
+          <option [% IF cristype == 'RPRT' %] selected="selected"[% END %]value="RPRT">Report</option>
+          <option [% IF cristype == 'SER' %] selected="selected"[% END %]value="SER">Serial (Book, Monograph)</option>
+          <option [% IF cristype == 'SLIDE' %] selected="selected"[% END %]value="SLIDE">Slide</option>
+          <option [% IF cristype == 'SOUND' %] selected="selected"[% END %]value="SOUND">Sound recording</option>
+          <option [% IF cristype == 'STAT' %] selected="selected"[% END %]value="STAT">Statute</option>
+          <option [% IF cristype == 'STD' %] selected="selected"[% END %]value="STD">Standard Citation</option>
+          <option [% IF cristype == 'THES' %] selected="selected"[% END %]value="THES">Thesis/Dissertation</option>
+          <option [% IF cristype == 'UNBIL' %] selected="selected"[% END %]value="UNBIL">Unenacted bill/resolution</option>
+          <option [% IF cristype == 'UNPB' %] selected="selected"[% END %]value="UNPB">Unpublished work</option>
+          <option [% IF cristype == 'VIDEO' %] selected="selected"[% END %]value="VIDEO">Video recording</option>
+          </select>
+          <input type="hidden" name="cristype2" value="[% sticky('cristype2') %]" />
+        </td>
+      </tr>
+      <tr>
+        <td class="addformlabelcell" id="cdoilabelcell"><abbr title="Digital Object Identifier">DOI</abbr>:</td>
+        <td class="addformdatacell" id="cdoidatacell"><input type="text" name="cdoi" value="[% sticky('cdoi') %]" size="25" class="textctl" id="cdoibox" /><input type="hidden" name="cdoi2" value="[% sticky('cdoi2') %]" /></td>
+      </tr>
+      <tr>
+        <td class="addformlabelcell" id="cpubmedlabelcell"><abbr title="PubMed Unique Identifier">PMID</abbr>:</td>
+        <td class="addformdatacell" id="cpubmeddatacell"><input type="text" name="cpubmed" value="[% sticky('cpubmed') %]" size="25" class="textctl" id="cpubmedbox" /><input type="hidden" name="cpubmed2" value="[% sticky('cpubmed2') %]"  /></td>
+      </tr>
+      <tr>
+        <td class="addformlabelcell" id="casinlabelcell"><abbr title="International Standard Book Number / Amazon Standard Identification Number">ISBN/ASIN</abbr>:</td>
+        <td class="addformdatacell" id="casindatacell"><input type="text" name="casin" value="[% sticky('casin') %]" size="25" class="textctl" id="casinbox" /><input type="hidden" name="casin2" value="[% sticky('casin2') %]" /></td>
+      </tr>
+    </table>
+  </div>
+  <table>
+[% END %]
+    <tr>
+      <td class="addformlabelcell" id="titlelabelcell">Display Title: <span class="optional">(what you will see)</span></td>
+      <td class="addformdatacell" id="titledatacell"><input type="text" id="usertitle" name="usertitle" value="[% sticky('usertitle') %]" size="[% IF is_popup %]40[% ELSE %]63[% END %]" class="textctl" id="titlebox" /></td>
+    </tr>
+    <tr>
+      <td class="addformlabelcell" id="tagslabelcell">Tags:</td>
+      <td class="addformdatacell" id="tagsdatacell"><input type="text" name="tags" value="[% sticky('tags') %]" size="50" onkeyup="autocompletetags()" autocomplete="off" class="textctl" id="tagsbox" /><input type="submit" name="button" value="[% IF is_add %]Add to my library[% ELSE %]Save[% END %]" class="buttonctl" id="addbutton" /></td>
+    </tr>
+    <tr>
+      <td class="addformlabelcell" id="tagsuggestlabelcell">Tag Suggestions: <span class="optional">(click to add)</span></td>
+      <td class="addformdatacell" id="tagsuggestdatacell">
+        <div id="tbox-closed" class="auto-complete">
+          Tags will appear here as you type in the tags box above.
+        </div>
+        <div id="tbox-suggest-wrapper">
+          <div id="tbox-suggest" class="auto-complete" style="display:none">
+            <div id="slink-alpha"></div>
+            <div id="slink-usage" style="display:none"></div>
+            <div id="add-form-ac-results-suggest" class="add-form-ac-results"></div>
+          </div>
+        </div>
+        <div id="tbox-all-usage" class="auto-complete" style="display:none">
+          <div id="add-form-ac-results-usage" class="add-form-ac-results"></div>
+        </div>
+        <div id="tbox-all-alpha" class="auto-complete" style="display:none">
+          <div id="add-form-ac-results-alpha" class="add-form-ac-results"></div>
+        </div>
+        <div class="ctlhelp" id="taghelpbox">
+          Separate tags with spaces or commas. Enclose multi-word tags in "quotes". For example:<br />
+          <span class="tagexample">genetics "DNA structure" history</span><br />
+          <span class="tagexample">"C. elegans", "neuromuscular development"</span><br />
+          See the <a href="[% location %]guide#tags"[% IF is_popup %] target="_blank"[% END %]>site guide</a> for more details.
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td class="addformlabelcell" id="descriptionlabelcell">Description: <span class="optional">(optional)</span></td>
+      <td class="addformdatacell" id="descriptiondatacell"><textarea name="description" class="textareactl" id="descriptionbox">[% sticky('description') %]</textarea></td>
+    </tr>
+    <tr>
+      <td class="addformlabelcell" id="myworklabelcell">My work:</td>
+      <td class="addformdatacell" id="myworkdatacell"><label><input type="checkbox"[% IF sticky('mywork') %] checked="checked"[% END %] name="mywork" value="1" class="checkboxctl" id="myworkbox" />I am the author or one of the co-authors of this work.</label></td>
+    </tr>
+    <tr>
+      <td class="addformlabelcell" id="privatelabelcell">Private:</td>
+      <td class="addformdatacell" id="privatedatacell">
+        <div class="privacybasic">
+          <label><input type="radio"[% IF sticky('private') == 0 %] checked="checked"[% END %] name="private" value="0" checked="checked" />Share with all.</label><br />
+          [% IF has_groups %]
+          <label><input type="radio"[% IF sticky('private') == 2 %] checked="checked"[% END %] name="private" value="2" />Share with members of group:</label>
+            [% group_control %]
+            <br />
+          [% END %]
+          <label><input type="radio"[% IF sticky('private') == 1 %] checked="checked"[% END %] name="private" value="1" />Keep this bookmark private to me.</label><br />
+        </div>
+        <div class="privacyrelease">Release to all on:
+          <input type="text" name="embargo" value="[% sticky('embargo') %]" size="20" class="textctlminor" id="embargobox" /> UTC (yyyy-mm-dd hh:mm)
+        </div>
+      </td>
+    </tr>
+[% END %]
+[% IF is_edit AND sticky('lastcomment') %]
+    <tr>
+      <td class="addformlabelcell" id="lastcommentlabelcell">You said:</td>
+      <td class="addformdatacell" id="lastcommentdatacell"><textarea name="lastcomment" rows="4" cols="60" class="textareactl" id="lastcommentbox">[% sticky('lastcomment') %]</textarea><div id="commenthelpbox" class="ctlhelp">Here you may alter your last posted comment. Erase all the text to remove the comment entirely.</div></td>
+    </tr>
+[% END %]
+    <tr>
+      <td class="addformlabelcell" id="commentlabelcell">Comment: <span class="optional">(optional)</span></td>
+      <td class="addformdatacell" id="commentdatacell"><textarea name="comment" rows="4" cols="60" class="textareactl" id="commentbox">[% sticky('comment') %]</textarea></td>
+    </tr>
+    <tr>
+     <td></td>
+     <td><input type="submit" name="button" value="[% IF is_add %]Add to my library[% ELSE %]Save[% END %]" class="buttonctl" id="addbutton2" /></td>
+    </tr>
+  </table>
+[% IF is_addcomment AND NOT sticky('continue') %]
+<input type="hidden" name="continue" value="comments[% IF is_popup %]popup[% END %]" />
+[% ELSE %]
+<input type="hidden" name="continue" value="[% sticky('continue') %]" />
+[% END %]
+[% IF is_add OR is_edit %]
+<input type="hidden" name="title" value="[% sticky('title') %]" />
+[% END %]
+[% IF is_add %]
+<input type="hidden" name="from" value="[% sticky('from') %]" />
+[% END %]
+  <div>
+    <input type="hidden" name=".cgifields" value="private" />
+    <input type="hidden" name=".cgifields" value="mywork"  />
+  </div>
+[% IF sticky('prefilled') %]
+<input type="hidden" name="prefilled" value="[% sticky('prefilled') %]" />
+[% END %]
+</form>

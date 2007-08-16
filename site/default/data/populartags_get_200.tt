@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<rdf:RDF
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns="http://www.connotea.org/2005/01/schema#"
+>
+  <TagList rdf:about="[% encode_xml_utf8(object_location) %]">
+    [% FOREACH tag IN answer.list %]
+    <item>
+      <Tag>
+        <rdf:value>[% encode_xml_utf8(tag.label) %]</rdf:value>
+        <postCount>[% tag.filtered_count %]</postCount>
+        <userCount>[% tag.filtered_user_count %]</userCount>
+      </Tag>
+    </item>
+    [% END %]
+  </TagList>
+</rdf:RDF>

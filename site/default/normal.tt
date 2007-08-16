@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head profile="http://www.nature.com/common/xmdp-profiles/xoxo.html">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>[% main_title %]</title>
+[% rss_link %]
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<style type="text/css" media="screen"><!--/*--><![CDATA[/*><!--*/
+	@import "[% location %]legacy.css";
+	@import "[% location %]program.css";
+	@import "[% location %]design.css";
+[% IF design_test_param %]
+	@import "[% location %][% design_test_param %].css";
+[% END %]
+/*]]>*/--></style>
+[% component_javascript_block_if_needed %]
+</head>
+<body[% component_javascript_onload_if_needed %]>
+[% component_html('SearchForm') %]
+
+<h1>[% sitename %]</h1>
+
+<div id="nav">
+<a href="[% location %]">Home</a> |
+<a href="[% location %]library">My Library</a> |
+<a href="[% location %]popular">Popular</a> |
+<a href="[% location %]recent">Recent</a> |
+<a href="[% location %]cloud">Cloud</a> |
+<a href="[% location %]about">About</a> |
+<a href="[% location %]register">My Account</a> |
+<a href="[% location %]advanced">Advanced</a> |
+<a href="[% location %]bookmarklets">Bookmarklets</a>
+</div>
+
+<div id="normal">
+[% content %]
+</div>
+
+[% INCLUDE footer.tt %]
+
+</body>
+</html>

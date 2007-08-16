@@ -1,0 +1,37 @@
+<h1>[% IF is_add %]Add[% ELSE %]Edit[% END %] Group</h1>
+
+[% IF validation_error %]
+  <div class="errormsg">
+    [% validation_error %]
+  </div>
+[% END %]
+
+<form name="add" action="[% location %][% action %]group" method="post" class="compform">
+  <table>
+    <tr>
+      <td class="addfgroupormlabelcell" id="namelabelcell">Group name:</td>
+      <td class="addgroupdatacell" id="namedatacell"><input type="text" name="name" size="40" class="textctl" id="namebox" value="[% sticky('name') %]" /></td>
+    </tr>
+    <tr>
+      <td class="addgroupformlabelcell" id="descriptionlabelcell">Description: <span class="optional">(optional)</span></td>
+      <td class="addgroupformdatacell" id="descriptiondatacell"><input type="text" name="description" size="70" class="textctl" id="descriptionbox" value="[% stick('description') %]" /></td>
+    </tr>
+    <tr>
+      <td class="addgroupformlabelcell" id="privatelabelcell">Private:</td>
+      <td class="addgroupformdatacell" id="privatedatacell"><label><input type="checkbox" name="private" value="1" class="checkboxctl" id="privatebox" [% IF sticky('private') %]checked="true" [% END %]/>Keep this group private; do not display in group list.</label></td>
+    </tr>
+    <tr>
+      <td class="addgroupformlabelcell" id="memberslabelcell">Member roster:</td>
+      <td class="addgroupformdatacell" id="membersdatacell"><textarea name="members" rows="4" cols="60" class="textareactl" id="membersbox">[% sticky('members') %]</textarea>
+        <div class="ctlhelp" id="membershelpbox">Enter the usernames
+        of the members of this group, separated by commas, spaces, or
+        line breaks. Note that erasing all the names will remove the
+        group.</div></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><input type="submit" name="button" value="[% IF is_add %]Add[% ELSE %]Save[% END %]" class="buttonctl" id="addbutton" />
+        <input type="submit" name="button" value="Cancel" class="buttonctl" id="removebutton" /></td>
+    </tr>
+  </table>
+</form>

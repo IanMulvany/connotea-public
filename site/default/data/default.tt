@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<rdf:RDF
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns="http://www.connotea.org/2005/01/schema#"
+>
+  <Response rdf:about="[% xml_encode_utf8(object_location) %]">
+[% INCLUDE data/code_message.tt -%]
+  </Response>
+</rdf:RDF>

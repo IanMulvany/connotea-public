@@ -1,0 +1,64 @@
+[% prepare_component_begin() %]
+[% INCLUDE normalprep.tt %]
+[% prepare_component('ListOfGangPeers') %]
+[% prepare_component('ListOfTags','cabinet') %]
+[% prepare_component('ListOfRecent',undef,'main,verbose') %]
+[% prepare_component('Toolbox') %]
+[% prepare_component('Inc',undef,'filename=/reportproblembox') %]
+[% prepare_component('ListOfTags','related') %]
+[% prepare_component('ListOfUsers','related') %]
+[% prepare_component_end() %]
+[% WRAPPER normal.tt %]
+
+<!-- start area for My bookmarks -->
+<div id="outer-wrapper">
+  <div id="wrapper">
+    <div id="container">
+      <div id="postingcontent">
+	<!-- fixed left column "Tags used by this group" and "Users in this group"-->
+	<div id="left">
+	  <div id="sideusers_group" class="users">[% component_html('ListOfGangPeers') %]</div>
+	  <br />
+	  <div id="sidetags_cabinet" class="tags">[% component_html('ListOfTags','cabinet') %]</div>
+	</div>
+	<!-- flexible centre column "My bookmarks" -->
+	<div id="main" class="main">[% component_html('ListOfRecent',undef,'main,verbose') %]</div>
+      </div>
+    </div>
+
+    <!-- start fixed right column "Tool Box" + "Related tags" + "Related users" -->	
+    <div id="sidebar">
+    
+      <!-- start login -->
+      [% INCLUDE account.tt %]
+      <!-- end login -->
+
+      <!-- start tool box -->
+      <div id="toolbox">[% component_html('Toolbox') %]</div>
+      <!-- end tool box -->
+
+      [% INCLUDE rhs_ads.tt %]
+
+      <!-- start report problem -->
+      <div id="reportproblembox">[% component_html('Inc',undef,'filename=/reportproblembox') %]</div>
+      <br />
+      <!-- end report problem -->
+
+      <!-- start related tags -->
+      <div id="sidetags_related" class="tags">[% component_html('ListOfTags','related') %]</div>
+      <br />
+      <!-- end related tags -->
+
+      <!-- start related users -->
+      <div id="sideusers_related" class="users">[% component_html('ListOfUsers','related') %]</div>
+      <br />
+      <!-- end related users -->
+    </div>
+    <!-- end fixed right column "Tool Box" + "Related tags" + "Related users" -->
+		
+    <div class="clearing">&nbsp;</div>
+  </div>
+</div>
+<!-- end area for My bookmark -->
+
+[% END %]

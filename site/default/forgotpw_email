@@ -1,0 +1,16 @@
+Subject: $sitename Password
+
+Dear $firstname $lastname,
+
+Someone recently requested a password reset for your account on
+$sitename by providing your email address. If this was you, please
+click on the verification link below and you may proceed with your
+password reset. If this was not you, you may ignore this message as no
+changes have been made to your account.
+
+Your $sitename username is $username.
+
+Please click the following link to reset your password:
+$url
+
+Thank you!

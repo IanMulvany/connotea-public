@@ -1,0 +1,37 @@
+<h1>Login to [% sitename %]</h1>
+
+[% IF user %]
+<p>You are currently logged in as "[% user.username %]".
+   This action will log you out and switch to the new user.</p>
+[% END %]
+
+<p>If you don't have an account yet, please <a href="[% location %]register">register</a>.
+   The registration process only takes a minute or so.</p>
+
+<div id="loginform">
+  <form name="login" action="[% location %]login" method="post" class="compform">
+    <input type="hidden" name="dest" value="[% sticky('dest') %]" />
+
+    <fieldset[% IF has_validation_error_for('username','password') %] class="haserrors"[% END %]>
+      <legend>Username &amp; password</legend>
+
+      [% IF has_validation_error_for('username','password') %]
+      <p class="validation">[% validation_error %]</p>
+      [% END %]
+
+      <p><label for="username"[% IF validation_error_field == "username" %] class="validation"[% END %]>Username</label>
+	<input id="username" name="username" size="30" type="text" value="[% sticky('username') %]" />
+      </p>
+      <p><label for="password"[% IF validation_error_field == "password" %] class="validation"[% END %]>Password</label>
+	<input id="password" name="password" size="30" type="password" value="[% sticky('password') %]" />
+      </p>
+    </fieldset>
+
+    <p><span class="cleardiv"><!-- clear --></span>
+      <input type="submit" class="submitbutton" name="button" value="login" /></p>
+  </form>
+</div>
+
+<div class="forgot-pw">
+  <a href="[% location %]forgotpw">Forgotten your username or password?</a>
+</div>

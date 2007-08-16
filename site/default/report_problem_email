@@ -1,0 +1,13 @@
+Subject: Problem reported for $sitename
+
+Username: $username?
+Name: $firstname? $lastname?
+Email: $email?
+Referer: $referer?
+Click Time: $clicktime?
+
+Exception:
+$exception?
+
+Problem:
+$problem?

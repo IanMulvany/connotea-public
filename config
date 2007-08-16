@@ -1,0 +1,374 @@
+# Configuration
+# Should be installed to /etc/bibliotech.conf
+# Commented lines represent default values
+
+GENERAL {
+  # Public service name and contact details
+  # - if your base URL will be www.yourdomain.com/somename, SITE_NAME
+  # should be 'somename' although the capitalization may be different
+  # as long as the directory containing the HTML files in lower case
+  # - if your base URL will be a plain domain name, you have more
+  # freedom to set SITE_NAME to whatever you like
+  SITE_NAME = 'My Bookmarking Service'
+  SITE_EMAIL = 'admin@example.org'
+
+  # optionally set document root and home page hyperlink, or they can
+  # be detected
+  #DOCROOT = '/var/www/perl/connotea_code/html'
+  #LOCATION = 'http://www.mydomain.com/'
+  # set prepath if location has a component after the domain,
+  # e.g. /bibliotech
+  #PREPATH = ''
+
+  # send emails to a system administrator when an unhandled Perl
+  # exception is thrown defaults to undefined which skips the sending
+  # of an email
+  #EXCEPTION_ERROR_REPORTS_TO = 'admin@example.org'
+  #EXCEPTION_ERROR_REPORTS_TO = [ 'admin1@example.org', 'admin2@example.org' ]
+
+  # database connection details
+  # connection string to the main InnoDB database
+  DBI_CONNECT = 'dbi:mysql:bibliotech'
+  DBI_USERNAME = 'user'
+  DBI_PASSWORD = 'secret'
+  # just the database name of the replicated MyISAM FULLTEXT-enabled database
+  DBI_SEARCH = 'bibliotech_search'
+
+  # memcached server address
+  #MEMCACHED_SERVERS = [ '127.0.0.1:11211' ]
+
+  # directory in which your templates will reside
+  TEMPLATE_ROOT = 'defaulttemplate'
+
+  # where does Apache create its pid file?
+  #PID_FILE = '/var/run/httpd.pid'
+
+  # which system binary should we use for mail (should be, or emulate,
+  # sendmail)
+  SENDMAIL = '/usr/lib/sendmail'
+
+  # Change these!
+  # *************
+  # These are secret strings used as part of the data when creating
+  # MD5 hashes so we can provide those hashes to public users and then
+  # verify them later
+  USER_COOKIE_SECRET = 'secretsecret'
+  USER_VERIFYCODE_SECRET = 'veryverysecret'
+  FORGOTTEN_PASSWORD_SECRET  = 'datagone';
+
+  # set to true on RHEL 3 or when you get an error starting up about
+  # Apache::compat
+  #MOD_PERL_WORKAROUND = false
+
+  # set to true when debugging a problem with the site not coming up
+  # (causes many HTTP error code pages to be replaced with status 200
+  # text/plain with explanation)
+  #EXPLAIN_HTTP_CODES = false
+
+  # Send 304 codes when we can
+  #CLIENT_SIDE_HTTP_CACHE = true
+  # send a cache control header to tell all clients and intermediate
+  # caches not to hold this data (if you uncomment this setting you do
+  # not need the next one as it will have no effect)
+  #NO_CACHE_HEADER = false
+  # send a cache control header to set an expiration time, in seconds
+  # from now
+  #CACHE_AGE_HEADER = 3
+
+  # what is the time zone setting on MySQL? ('local' means local time
+  # on database host)
+  #TIME_ZONE_ON_DB_HOST = 'local'
+  # what time zone should the site display? (e.g. 'UTC',
+  # 'America/New_York', 'Europe/London', etc.)
+  #TIME_ZONE_PROVIDED = 'Europe/London'
+
+  # control how many bookmarks are considered for "linked" lists
+  #LINKED_RECENT_INTERVAL = '24 HOUR'
+  #LINKED_MAX_USER_BOOKMARKS = 100
+
+  # set to true if you don't want to bother checking a new user's
+  # email address and instead just log them straight in
+  #SKIP_EMAIL_VERIFICATION = false
+
+  # which citation source modules are active
+  CITATION_MODULES = [ Self Pubmed NPG Hubmed Dlib Amazon Highwire
+                       DOI PMC Blackwell Wiley ePrints ]
+
+  # which import modules are active
+  IMPORT_MODULES = [ FirefoxBookmarks RIS ]
+
+  # which proxy translation modules are active
+  PROXY_MODULES = [ Ads ]
+
+  # install bibutils and then provide the path to support MODS,
+  # BibTeX, etc.: http://www.scripps.edu/~cdputnam/software/bibutils/
+  #BIBUTILS_PATH = /usr/local/bin/bibutils
+
+  # disallow users or groups starting with these words
+  RESERVED_PREFIXES = [ 'connotea' 'bibliotech' ]
+
+  # define global CSS stylesheet(s)
+  #GLOBAL_CSS_FILE = 'global.css'
+  # also supports multiple...
+  #GLOBAL_CSS_FILE = [ 'global.css' 'global_dev.css' ]
+
+  # optionally define separate CSS filename for the home page, will
+  # replace GLOBAL_CSS_FILE option there
+  #HOME_CSS_FILE = 'home.css'
+
+  # limit uploaded RIS files to a certain number of entries
+  #IMPORT_MAX_COUNT = 1000
+
+  # pause web services
+  #SERVICE_PAUSED = true
+  # takes IP addresses - no wildcards or ranges allowed, must be
+  # explicit addresses
+  #SERVICE_NEVER_PAUSED_FOR = [ '192.168.1.10', '192.168.1.11' ]
+  # "early" means before last_updated is computed and HTTP HEAD and
+  # If-Modified-Since/304 transactions are handled Useful if you are
+  # pausing to fix a bug in these areas
+  #SERVICE_PAUSED_EARLY = false
+
+  # let visitors with a foreign/blank Referer see slightly old data if
+  # we are not current in the cache
+  #FRESH_VISITOR_LAZY_UPDATE = 180
+
+  # override HTML <title> for certain pages
+  TITLE_OVERRIDE = { home = '\u$sitename - social bookmarking' }
+
+  # create a log file
+  #LOG_FILE = '/var/log/bibliotech.log'
+
+  # two major kinds of throttling
+  #BOT_THROTTLE = false
+  #DYNAMIC_THROTTLE = false
+
+  # indicate known bot User-Agent strings
+  #THROTTLE_FOR = [ ]
+
+  # avoid throttling likely human User-Agent strings
+  #ANTI_THROTTLE_FOR = ['^Mozilla/[\d\.]+ .*(Gecko|KHTML|MSIE)',
+  #                     '^Opera/[\d\.]+\b',
+  #                     '^amaya/[\d\.]+\b',
+  #                     '^Democracy/[\d\.]+\b',
+  #                     '^Dillo/[\d\.]+\b',
+  #                     '^iCab/[\d\.]+\b',
+  #                     '^IBrowse/[\d\.]+\b',
+  #                     '^ICE Browser/[\d\.]+\b',
+  #                     '^(Lynx/[\d\.]+|Links)\b',
+  #                     'NetPositive',
+  #                     '^Emacs-',
+  #                     'WWW::Connotea',
+  #                     ]
+
+  # defer requests when load is higher than this number
+  #LOAD_MAX = 25
+
+  # when load is high (>LOAD_MAX) we first "defer" a query, which
+  # means we sleep, and then we check the load again; if it's still
+  # too high, we send a 503 with a Retry-After which we call a "wait";
+  # each of the LOAD_DEFER_* and LOAD_WAIT_* sets of variables are
+  # four variables that decide the interval based on a formula that
+  # uses the current load number:
+  # interval = max(min(load*multiplier+adjustment,minimum),maximum)
+  #LOAD_DEFER_MUL = 1
+  #LOAD_DEFER_ADJ = 0
+  #LOAD_DEFER_MIN = 0
+  #LOAD_DEFER_MAX = 30
+  #LOAD_WAIT_MUL = 1
+  #LOAD_WAIT_ADJ = 0
+  #LOAD_WAIT_MIN = 0
+  #LOAD_WAIT_MAX = 30
+
+  # throttle rapid fire hosts
+  #DYNAMIC_THROTTLE_TIME = 15
+  #DYNAMIC_THROTTLE_HITS = 10
+  # protect Web API User-Agent string
+  #DYNAMIC_THROTTLE_NEVER_FOR = [ 'WWW::Connotea' ]
+
+  # time for a single host rapid fire
+  #BOT_LONE_THROTTLE_TIME = 30
+  # time for all hosts rapid fire
+  #BOT_ALL_THROTTLE_TIME = 2
+
+  # when a request is throttled it can be "slept" for some time,
+  # unless there are too many already sleeping
+  #SLEEPING_MAX = 10
+
+  # some components compute site-wide lists using "recent" data; these
+  # ask "how recent?" (specify in labeled units of HOUR or DAY)
+  #ACTIVE_TAGS_WINDOW = '30 DAY'
+  #ACTIVE_USERS_WINDOW = '30 DAY'
+  #TAG_CLOUD_WINDOW = '60 DAY'
+  #POPULAR_WINDOW = '60 DAY'
+
+  # details governing the definition of popular tags
+  #POPULAR_TAGS_WINDOW = '7 DAY'
+  #POPULAR_TAGS_LAG = '10 MINUTE'
+  #POPULAR_TAGS_IGNORE = [ uploaded ]
+  #POPULAR_TAGS_POST_MIN = 5
+  #POPULAR_TAGS_USER_MIN = 5
+  #POPULAR_TAGS_BOOKMARK_MIN = 5
+
+  # how many words can be entered in the freematch search box for a
+  # single query?
+  #MAX_FREEMATCH_TERMS = 12
+
+  # limit how many posts can be exported or imported at once to avoid
+  # lengthy calculations
+  #EXPORT_MAX_COUNT = 1000
+  #IMPORT_MAX_COUNT = 1000
+}
+
+# Some citation modules need credentials or other minor configuration:
+
+CITATION AMAZON {
+  AWSID = ''
+}
+
+CITATION DOI {
+  CR_USER = ''
+  CR_PASSWORD = ''
+}
+
+CITATION HIGHWIRE {
+  SCI_USER = ''
+  SCI_PASSWORD = ''
+}
+
+CITATION {
+  #DNS_LISTS = [ sbl.spamhaus.org multi.surbl.org ]
+  #WHITE_LIST = []
+  #SCORE = 2
+}
+
+# Component modules:
+
+COMPONENT BLOG {
+  #FEED_URL = 'file:///tmp/blog.xml'
+}
+
+COMPONENT WIKI {
+  #DBI_CONNECT = 'dbi:mysql:conwiki'
+  #DBI_USERNAME = 'conwiki'
+  #DBI_PASSWORD = 'secret'
+  #ADMIN_USERS = [ 'admin' ]
+  #LOCK_TIME = '10 MINUTE'
+  #HOME_NODE = 'System:Home'
+}
+
+COMPONENT KILLSPAMMER {
+  #ADMIN_USERS = []
+}
+
+COMPONENT ADMIN {
+  #ADMIN_USERS = []
+}
+
+COMPONENT ADMINSTATS {
+  #ADMIN_USERS = []
+}
+
+# Other:
+
+# specify file paths for the captchas generated
+CAPTCHA {
+  #DATA_FOLDER = '/tmp/captcha/data'
+  # next line actually defaults to DOCROOT + /captcha
+  #OUTPUT_FOLDER = '/var/www/perl/connotea_code/html/captcha'
+  #OUTPUT_LOCATION = '/captcha/'
+}
+
+ANTISPAM {
+  # filenames to comma-separated-values log files that can be generated
+  # make sure apache has write access
+  #SCORE_LOG = ''
+  #CAPTCHA_LOG = ''
+
+  # Generic "bad phrases", see below for where it's used
+  #BAD_PHRASE_LIST = []
+
+  # URI_BAD_PHRASE_LIST defaults to BAD_PHRASE_LIST if not specified
+  #URI_BAD_PHRASE_LIST = []
+  #URI_BAD_PHRASE_SCORE = 1
+
+  #USERNAME_ENDS_IN_DIGIT_SCORE = 1
+
+  #USERNAME_DIGIT_MIDDLE_SCORE = 1
+
+  # TAG_BAD_PHRASE_LIST defaults to BAD_PHRASE_LIST if not specified
+  #TAG_BAD_PHRASE_LIST = []
+  #TAG_BAD_PHRASE_SCORE = 1
+
+  #TAG_REALLY_BAD_PHRASE_LIST = []
+  #TAG_REALLY_BAD_PHRASE_SCORE = 3
+
+  #TAGS_TOO_MANY_MAX = 7
+  #TAGS_TOO_MANY_SCORE = 1
+
+  #EMAIL_GENERIC_SERVICE_LIST = []
+  #EMAIL_GENERIC_SERVICE_SCORE = 1
+
+  #TAGS_TWO_ALLITERATIVE_SCORE = 1
+
+  #LIBRARY_EMPTY_SCORE = 1
+
+  #LIBRARY_TAGS_TOO_MANY_MAX = 50
+  #LIBRARY_TAGS_TOO_MANY_SCORE = 1
+
+  #LIBRARY_RECENT_ACTIVE_MAX = 5
+  #LIBRARY_RECENT_ACTIVE_WINDOW = '24 HOUR'
+  #LIBRARY_RECENT_ACTIVE_SCORE = 1
+
+  #LIBRARY_HAS_HOST_MAX = 3
+  #LIBRARY_HAS_HOST_WHITE_LIST = []
+  #LIBRARY_HAS_HOST_SCORE = 1
+
+  # DESCRIPTION_BAD_PHRASE_LIST defaults to BAD_PHRASE_LIST if not specified
+  #DESCRIPTION_BAD_PHRASE_LIST = []
+
+  #DESCRIPTION_BAD_PHRASE_SCORE = 1
+
+  #COMMENT_TAGS_SCORE = 1
+
+  #URI_BAD_TLD_LIST = []
+  #URI_BAD_TLD_SCORE = 1
+
+  # TITLE_BAD_PHRASE_LIST defaults to BAD_PHRASE_LIST if not specified
+  #TITLE_BAD_PHRASE_LIST = []
+  #TITLE_BAD_PHRASE_SCORE = 1
+
+  #URI_BAD_HOST_LIST = []
+  #URI_BAD_HOST_SCORE = 1
+
+  #TAG_POPULAR_SCORE = 1
+
+  #STRANGE_TAG_COMBO_LIST = []
+  #STRANGE_TAG_COMBO_SCORE = 1
+
+  #DESCRIPTION_HAS_TITLE_SCORE = 1
+
+  #TOO_MANY_COMMAS_MAX = 3
+  #TOO_MANY_COMMAS_SCORE = 1
+
+  #REPEATED_WORDS_SCORE = 1
+
+  #REPEATED_WORDS_URI_BONUS = 1
+
+  #PREFILLED_ADD_FORM_SCORE = 1
+
+  #AUTHORITATIVE_CITATION_SCORE = -1
+
+  #USERNAME_CONSONANTS_SCORE = 1
+
+  #TITLE_SITEMAP_SCORE = 2
+
+  # >SCORE_MAX means spam
+  #SCORE_MAX = 4
+
+  # test tag is 'i_am_spam'
+  #I_AM_SPAM_SCORE = 10
+
+  # these users are not subjected to spam checks
+  #TRUSTED_USER_LIST = []
+}

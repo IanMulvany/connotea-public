@@ -1,0 +1,9 @@
+RDIR=yoursite
+REPO=http://repohost/repo/$RDIR/
+BASE=/var/www/perl/connotea
+HTML=/var/www/html/connotea
+CONF=/etc/bibliotech.conf
+APCONF=/etc/httpd/conf.d/virtualhost-yoursite.conf
+URL=http://www.yoursite.com/
+HOST=www.yoursite.com
+HOMETEST="<title>Your Site"

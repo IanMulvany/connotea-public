@@ -1,0 +1,23 @@
+#!/usr/bin/perl
+use strict;
+use Bibliotech::Cache;
+
+my $memcache = Bibliotech::Cache->new;
+my $KEY = ($ARGV[0] eq 'SLEEPING' ? shift @ARGV : 'LOAD');
+
+if (defined (my $value = shift @ARGV)) {
+  if ($value =~ /^\+(\d*)$/) {
+    $memcache->incr($KEY, $1 || undef);
+  }
+  elsif ($value =~ /^\-(\d*)$/) {
+    $memcache->decr($KEY, $1 || undef);
+  }
+  elsif ($value =~ /^(\d+)$/) {
+    $memcache->set($KEY, $1);
+  }
+  else {
+    die "\"$value\" not understood.\n";
+  }
+}
+
+print $KEY, '=', $memcache->get($KEY), "\n";

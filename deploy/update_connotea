@@ -1,0 +1,42 @@
+#!/bin/bash
+. /root/bin/connotea_vars
+if perl -e "exit('$PWD' =~ m|^$BASE.+| ? 0 : 1)"; then
+  echo "You are within the base directory structure which is altered by this script."
+  echo "Change directory back to at least $BASE and rerun."
+  exit 1
+fi
+cd $BASE
+echo Working...
+if [ "$1" == "+c" ]; then
+  # fresh checkout
+  shift 1
+  fresh=1
+  [ -e bibliotech_new ] && rm -rf bibliotech_new
+  [ -e bibliotech_co ] && rm -rf bibliotech_co
+  mkdir bibliotech_co
+  cd bibliotech_co
+  darcs get $* $REPO || exit 2
+  mv $RDIR ../bibliotech_new
+  cd ..
+  rmdir bibliotech_co
+  cd bibliotech_new
+else
+  # update, preserving local changes
+  fresh=0
+  [ -e bibliotech_new ] && rm -rf bibliotech_new
+  cp -a bibliotech bibliotech_new
+  cd bibliotech_new
+  darcs pull -a $* || exit 2
+fi
+perl t/00*.t || exit 3
+if [ -d deploy ]; then
+  cp -f deploy/* /root/bin/
+  for file in /root/bin/*; do head -n1 $file | grep -q '^#!' && chmod a+x $file; done
+fi
+[ "$fresh" == "1" ] && /root/bin/mkexec_connotea -d
+cd ..
+[ -e bibliotech_old ] && rm -rf bibliotech_old
+mv -f bibliotech bibliotech_old
+mv -f bibliotech_new bibliotech
+echo "Update completed OK."
+exec /root/bin/restart_connotea

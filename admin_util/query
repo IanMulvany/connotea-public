@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Nature Publishing Group
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# The 'query' script is a test script that runs a query.
+
+use strict;
+use Bibliotech;
+
+my $verbose = 1, shift @ARGV if $ARGV[0] eq '-v';
+my $text = join(' ', @ARGV) || <> or exit 0;
+
+my $bibliotech = new Bibliotech({path => $text});
+$bibliotech->process(1);
+my $page = $bibliotech->command->page;
+$page = 'page' if ref $page;
+warn "page = $page\n";
+my $class = 'Bibliotech::Page::'.ucfirst($page);
+eval 'use '.$class;
+my $pageobj = $class->new({bibliotech => $bibliotech});
+print map("$_\n", $pageobj->plain_content($verbose));

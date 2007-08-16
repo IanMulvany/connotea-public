@@ -1,0 +1,14 @@
+<h1>Resend Verification</h1>
+
+[% IF validation_error %]
+  <div class="errormsg">
+    [% validation_error %]
+  </div>
+[% END %]
+
+<form name="resendreg" action="[% location %]resendreg" method="post">
+  <span class="label">Please enter the email address you used to register: </span>
+  <input class="field" name="email" type="text" value="[% sticky('email') %]" />
+  <input class="button" name="button" type="submit" value="Submit" />
+  <p class="welcome"><br />We will send an email telling you how to verify your account.</p>
+</form>

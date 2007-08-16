@@ -1,0 +1,16 @@
+#!/bin/bash
+# post something to Connotea from the command line, requires lwp-request
+# lwp-request is part of libwww-perl which is a package on some Linux platforms and available on CPAN
+# edit the variables below for input
+# output is a dump of the HTTP transaction to stdout including Connotea's XML response
+
+user=EDIT
+pass=EDIT
+host=www.connotea.org
+# note all following fields should be url escaped
+uri=http%3A//www.cnn.com
+# separate tags with %20 (spacebar)
+tags=abc%20def%20ghi
+# could also pass in usertitle, description, mywork, private, etc.
+
+echo "uri=$uri&tags=$tags" | lwp-request -C "$user:$pass" -u -U -s -S -e -m POST "http://$host/data/add"

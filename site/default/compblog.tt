@@ -1,0 +1,25 @@
+<h1>[% feed.title %]</h1>
+
+<ul class="bullets">
+  <li style="list-style-image: url(arrow.gif)"><a href="[% feed.link %]">Visit this blog</a></li>
+  <li style="list-style-image: url(arrow.gif)"><a href="[% url %]">RSS Feed</a></li>
+</ul>
+
+[% FOREACH entry IN feed.entries %]
+[% SET issued = entry.issued %]
+<a name="#[% issued.ymd %]"></a>
+<div class="hentry" id="[% issued.ymd %]">
+ <h2 class="entry-title subtitle">[% entry.title %]</h2>
+  <h3 class="newsdate">
+    <abbr class="updated" title="[% issued.iso8601_utc %]">[% issued.strftime("%A %e %B %Y") %]</abbr>
+  </h3>
+  <div class="entry-content">
+    <p class="entry-summary">[% entry.content.body %]</p>
+  </div>
+  <div class="permalink">
+    <ul class="bullets">
+      <li style="list-style-image: url(arrow.gif)"><a href="[% entry.link %]">Visit original blog entry for permalink and comments</a></li>
+    </ul>
+  </div>
+</div>
+[% END %]

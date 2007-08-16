@@ -1,0 +1,54 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# implement a set of transformations to html created by pod2html README.pod
+# to reflect preferences for posting on connotea.org via an inc file
+
+local $_ = do { local $/; <>; };
+
+s|\A(.*?)<body[^>]*>||s;
+s|</body>(.*?)\z||s;
+# s|<p>|<p class="welcome">|g;
+s|<hr />||g;
+s|(</?h)(\d)(>)|$1.($2+1).$3|ge;
+s|(<h2><a name="[\w\.\%]+">)(.*?)(</a></h2>)|$1.titlecase($2).$3|ge;
+s|(<li><a href="#[\w\.\%]+">)(.*?)(</a></li>)|$1.titlecase($2).$3|ge;
+s|<h2>|<h2 class="subtitle">|g;
+s|<h3>|<h3 class="about">|g;
+s|(<a name="[\w\.\%]+">)(.*?<a href=[.\n]+?</a>.*?)(</a>)|$1$3$2|g;
+s|(<a name="[\w\.\%]+">)([^<]+)(</a>)|$1$3$2|gs;
+s|(<li>)<strong>(<a name="[\w\.\%]+">)|$1$2</a>|g;
+s|</a></strong>(<br />)|$1|g;
+s|(Copyright )\([Cc]\)|$1&copy;|g;
+s|\([Cc]\)( Copyright)|&copy;$1|g;
+s|<li>|<li style="list-style-image: url(arrow.gif)">|g;
+s|<li style="list-style-image: url\(arrow.gif\)">(<a href=)|<li>$1|g;
+s|(<p><a name="__index__"></a></p>.*?)<ul>|$1<ul class="indexlist">|gs;
+s|\A|<div id="outer-wrapper">\n<div id="postingcontent">\n<div id="fullpage-container">\n<h1 class="pagetitle">Connotea Code</h1>\n<div id="fullpage-content">\n<p class="welcome">The source code for Connotea is available for you to use and modify under the terms of the GNU GPL.</p>|;
+s/\[\%/[\% tt_start_tag !!]/g;
+s/\%\]/[\% tt_end_tag \%]/g;
+s/tt_start_tag !!\]/tt_start_tag \%]/g;
+s|\A|[% tt_start_tag = "[\\%"
+   tt_end_tag   = "%\\]"
+%]
+|;
+s|\z|</div>\n</div>\n</div>\n<div id="sidebar">[% INCLUDE account.tt %][% INCLUDE rhs_ads.tt %]<div id="reportproblembox">[% component_html('Inc',undef,'filename=/reportproblembox') %]</div></div><div class="clearing">&nbsp;</div></div>\n|;
+
+print;
+
+sub titlecase {
+  local $_ = shift;
+  s/\b(\w+)\b/titlecase_word($1)/ge;
+  $_;
+}
+
+sub titlecase_word {
+  my $word = shift;
+  my $word_lc = lc($word);
+  return $word_lc if grep { $word_lc eq $_ } qw/and from to for with a an the/;
+  my $word_uc = uc($word);
+  return $word_uc if grep { $word_uc eq $_ } qw/CPAN/;
+  $word =~ /^(\w)(\w*)$/;
+  return uc($1).($2 ? lc($2) : '');
+}

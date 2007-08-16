@@ -1,0 +1,28 @@
+<h1>Remove Bookmark</h1>
+
+[% IF validation_error %]
+  <div class="errormsg">
+    [% validation_error %]
+  </div>
+[% END %]
+
+<form name="remove" action="[% location %]remove" method="post">
+  <table>
+    <tr>
+      <td nowrap="nowrap" valign="top">Bookmark URL:</td>
+      <td nowrap="nowrap" valign="top"><input type="text" name="uri" size="60" class="textctl" id="urlbox" value="[% sticky('uri') %]" />
+        <input type="submit" name="button" value="Update" class="buttonctl" id="updatebutton" /></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><div class="warnremove">You are permanently removing your
+        posting of a bookmark.</div>
+        <div class="aboutremove">Any customized title, description, or
+        comments will be lost. If the bookmark has also been posted by
+        others it will remain in our database; otherwise it will be
+        dropped.</div>
+        <input type="submit" name="button" value="Remove" class="buttonctl" id="removebutton" /></td>
+    </tr>
+  </table>
+  <input type="hidden" name="dest" value="[% referer %]" />
+</form>

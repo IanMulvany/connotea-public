@@ -1,0 +1,66 @@
+[% prepare_component_begin() %]
+[% INCLUDE normalprep.tt %]
+[% prepare_component('ListOfTags','linked','id=sidetags_cabinet,class=tags') %]
+[% prepare_component('ListOfUsers','linked','id=sideusers_cabinet,class=users') %]
+[% prepare_component('ListOfRecent',undef,'main,verbose') %]
+[% prepare_component('Toolbox') %]
+[% prepare_component('Inc',undef,'filename=/reportproblembox') %]
+[% prepare_component('ListOfTags','related','id=sidetags_related,class=tags') %]
+[% prepare_component('ListOfUsers','related','id=sideusers_related,class=users') %]
+[% prepare_component('Footer',undef,'verbose,id=footer,class=footer') %]
+[% prepare_component_end() %]
+[% WRAPPER normal.tt %]
+
+<!-- start area for My bookmarks -->
+<div id="outer-wrapper">
+  <div id="wrapper">
+    <div id="container">
+      <div id="postingcontent">
+	<!-- fixed left column "Users"-->
+	<div id="left">
+	  [% component_html('ListOfTags','linked','id=sidetags_cabinet,class=tags') %]
+	  <br />
+	  [% component_html('ListOfUsers','linked','id=sideusers_cabinet,class=users') %]
+	</div>
+	<!-- flexible centre column "My bookmarks" -->
+	<div id="main" class="main">
+	  [% component_html('ListOfRecent',undef,'main,verbose') %]</div>
+      </div>
+    </div>
+
+    <!-- start fixed right column "Tool Box" + "Related tags" + "Related users" -->	
+    <div id="sidebar">
+
+      <!-- start login -->
+      [% INCLUDE account.tt %]
+      <!-- end login -->
+
+      <!-- start tool box -->
+      <div id="toolbox">[% component_html('Toolbox') %]</div>
+      <!-- end tool box -->
+
+      [% INCLUDE rhs_ads.tt %]
+
+      <!-- start report problem -->
+      <div id="reportproblembox">[% component_html('Inc',undef,'filename=/reportproblembox') %]</div>
+      <br />
+      <!-- end report problem -->
+
+      <!-- start related tags -->
+      [% component_html('ListOfTags','related','id=sidetags_related,class=tags') %]
+      <br />
+      <!-- end related tags -->
+
+      <!-- start related users -->
+      [% component_html('ListOfUsers','related','id=sideusers_related,class=users') %]
+      <br />
+      <!-- end related users -->
+    </div>
+    <!-- end fixed right column "Tool Box" + "Related tags" + "Related users" -->
+		
+    <div class="clearing">&nbsp;</div>
+  </div>
+</div>
+<!-- end area for My bookmark -->
+
+[% END %]

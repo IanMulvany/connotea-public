@@ -1,0 +1,20 @@
+<div id="top"><!-- nothing --></div>
+<div id="searchbar">
+  <p class="searchlink">Search</p>
+  <form method="post" action="[% location %]search" enctype="application/x-www-form-urlencoded" id="search-form">
+    <p> <select name="type" onchange="document.getElementById('searchbox').focus();" class="searchpulldownctl" id="searchtype">
+	[% IF show_option_current %]<option[% IF default_option == "current" %] selected="selected"[% END %] value="current">This collection</option>[% END %]
+	<option[% IF default_option == "library" %] selected="selected"[% END %] value="library">My library</option>
+	<option[% IF default_option == "all" %] selected="selected"[% END %] value="all">All</option>
+	<option value="tag">Find exact tag</option>
+	<option value="user">Find exact user</option>
+	<option value="uri">Find exact URI</option>
+	<option value="google">Via Google</option>
+      </select>
+      <input type="text" name="q" class="searchtextctl" id="searchbox" />
+      <input type="hidden" name="uri" value="[% canonical_location %]" />
+      <input type="hidden" name="form" value="1" />
+      <input type="submit" name="button" id="searchbutton" value="Find results" class="findbutton" />
+    </p>
+  </form>
+</div><!-- end id searchbar -->

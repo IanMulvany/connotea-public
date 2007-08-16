@@ -1,0 +1,274 @@
+#!/usr/bin/perl
+#
+# Copyright 2005-2006 Nature Publishing Group
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This script is a "retro importer"; it recreates authoritative citation data
+# The primary usage is to run this after substantial improvements to citation
+# modules have been made, or new citation modules added
+
+use strict;
+use Bibliotech;
+use Getopt::Long;
+
+my $chosen_source           = '';    # e.g. 'Pubmed'
+my $url_like_pattern        = undef; # e.g. 'http://blah%'; SQL LIKE syntax
+my $wait_for_enter          = 0;     # wait for one line of input on stdin after citation
+my $wait_for_enter_on_error = 0;     # only wait if there was an error
+my $print_count             = 1;     # display on stdout the running count
+my $print_extra_newline     = 1;     # display a newline on stdout before each entry
+my $initial_skip_count      = 0;     # skip the first # entries; useful for recoveries
+my $log_file                = '/tmp/retro.log';
+my $test_run                = 0;
+
+# Generally, you can run retro with no parameters for a reasonable set of options.
+# These are the command-line options if you need to change variables:
+GetOptions ('source|s=s'       => \$chosen_source,
+	    'url|u=s'          => \$url_like_pattern,
+	    'wait|w!'          => \$wait_for_enter,
+	    'wait-error|e!'    => \$wait_for_enter_on_error,
+	    'count|c!'         => \$print_count,
+	    'newline|n!'       => \$print_extra_newline,
+	    'initial-skip|I=i' => \$initial_skip_count,
+	    'log|l=s'          => \$log_file,
+	    'testrun|t!'       => \$test_run,
+	    );
+
+# install CTRL+C handler to avoid abrupt interruptions
+my ($INTMSG, $INTFLAG) = (1, 0);
+sub break {
+  $INTFLAG++;
+  return unless $INTMSG;
+  my $name = shift;
+  warn "SIG${name} received; will end after current operation. Use SIGABRT (usually CTRL+\\) for immediate break.\n";
+}
+$SIG{INT} = \&break;
+# end CTRL+C handler code
+
+$| = 1;  # stdout buffering off
+
+my $bibliotech = Bibliotech->new({cgi => bless {}, 'NonHTMLFakeCGI'});
+
+my $logfh;
+open $logfh, ">>$log_file" or die "cannot open $log_file: $!";
+my $log   = sub { print $logfh @_ };
+my $print = sub { print @_ };
+
+# search_used() only brings back bookmarks linked by user_bookmark (for details see Bibliotech::DBI)
+# the order is descending popularity by number of posts, then descending creation timestamp
+my $iter  = $url_like_pattern ? Bibliotech::Bookmark->search_used_with_url_like($url_like_pattern)
+                              : Bibliotech::Bookmark->search_used;
+my $total = $iter->count;
+my $count = 0;
+my $changed_count = 0;
+
+$iter->next, $count++ while $count < $initial_skip_count;  # skip some if requested
+
+while (my $bookmark = $iter->next) {
+  endprog() if $INTFLAG;
+
+  display_introduction($print_extra_newline, $print_count, ++$count, $total, $bookmark->id, $bookmark->url);
+
+  $changed_count++ if eval {
+    if (ok_to_process_citation($bookmark, $chosen_source, $bibliotech)) {
+      my $old          = get_old_citation($bookmark);              display_citation(OLD => $old, $bibliotech);
+      my ($new, $save) = get_new_citation($bookmark, $bibliotech); display_citation(NEW => $new, $bibliotech);
+      use_new_citation($bookmark->url, $old, $new, $save, $print, $log)
+	  if is_new_citation_better($old, $new) and !$test_run;
+      if (ok_to_process_title($bookmark)) {
+	my $old          = get_old_title($bookmark);              display_title(OLD => $old, $bibliotech);
+	my ($new, $save) = get_new_title($bookmark, $bibliotech); display_title(NEW => $new, $bibliotech);
+	use_new_title($bookmark->url, $old, $new, $save, $print, $log)
+	    if is_new_title_better($old, $new) and !$test_run;
+      }
+    }
+  };
+  my $error = $@;
+  warn $error if $error;
+
+  prompt_for_enter() if $wait_for_enter or ($error and $wait_for_enter_on_error);
+}
+
+close $logfh;
+
+sub ok_to_process_title {
+  1;
+}
+
+sub get_old_title {
+  my $bookmark = shift;
+  return $bookmark->title;
+}
+
+sub get_new_title {
+  my ($bookmark, $bibliotech) = @_;
+  my $title = $bookmark->get_network_title;
+  return ($title, sub { $bookmark->title($title); $bookmark->update; });
+}
+
+sub is_new_title_better {
+  my ($old, $new) = @_;
+  return 0 if $old;
+  return 0 if !$new;
+  return 1;
+}
+
+sub use_new_title {
+  my ($id, $old, $new, $save_sub, $say_sub, $log_sub) = @_;
+  die 'cannot use an undefined new title' if !defined($new);
+  $say_sub->("Using new title\n");
+  log_using_new_title($id, $old, $new, $log_sub);
+  $save_sub->();
+}
+
+sub log_using_new_title {
+  my ($id, $old, $new, $log_sub) = @_;
+  $log_sub->(map { "$_\n" } ('', $id, "Old title: $old", "New title: $new"));
+}
+
+sub ok_to_process_citation {
+  my ($bookmark, $chosen_source, $bibliotech) = @_;
+  return 1 if !$chosen_source;
+  my $source = $bibliotech->scan_for_best_citation_source_module_for_uri($bookmark->url);
+  print ('Citation module: ', ($source ? $source->name || ref $source : 'None'), "\n");
+  return 0 if !defined($source);
+  return 1 if $source->isa('Bibliotech::CitationSource::'.$chosen_source);
+  return 0;
+}
+
+sub get_old_citation {
+  my $bookmark = shift;
+  return $bookmark->citation;
+}
+
+sub get_new_citation {
+  my ($bookmark, $bibliotech) = @_;
+  my ($new_bookmark, $citation) = $bibliotech->pull_citation_calc_return_unwritten_citation_obj($bookmark);
+  return ($citation, sub { $citation->write($new_bookmark) });
+}
+
+sub use_new_citation {
+  my ($id, $old, $new, $save_sub, $say_sub, $log_sub) = @_;
+  die 'cannot use an undefined new citation' if !defined($new);
+  $say_sub->("Using new citation\n");
+  log_using_new_citation($id, $old, $new, $log_sub);
+  $old->delete if defined $old;
+  $save_sub->();
+}
+
+sub log_using_new_citation {
+  my ($id, $old, $new, $log_sub) = @_;
+  my @diff = citation_diff($old, $new);
+  @diff = ('No differences between old and new') unless @diff;
+  $log_sub->(map { "$_\n" } ('', $id, @diff));
+}
+
+sub is_new_citation_better {
+  my ($old, $new) = @_;
+  return 0 if !defined($new);
+  return 1 if !defined($old);
+  foreach my $field (qw/title journal volume issue start_page end_page
+		     	pubmed doi asin ris_type
+		     	raw_date date last_modified_date
+		        expanded_author_list/) {
+    return 0 if $old->$field and !$new->$field;
+  }
+  return 1;
+}
+
+use Data::Dumper;
+sub citation_diff {
+  my ($old, $new) = @_;
+  my @diff;
+  foreach my $field (qw/title volume issue start_page end_page
+		     	pubmed doi asin ris_type
+		     	raw_date date last_modified_date
+		        expanded_author_list/) {
+    my $old_value = (defined $old ? $old->$field.'' || '' : '');
+    my $new_value = (defined $new ? $new->$field.'' || '' : '');
+    next if $old_value eq $new_value;
+    push @diff, "Old $field: $old_value", "New $field: $new_value";
+  }
+  push @diff, journal_diff(defined $old ? $old->journal : undef,
+			   defined $new ? $new->journal : undef);
+  return @diff;
+}
+
+sub journal_diff {
+  my ($old, $new) = @_;
+  my @diff;
+  foreach my $field (qw/name issn coden country medline_code medline_ta nlm_unique_id/) {
+    my $old_value = (defined $old ? $old->$field || '' : '');
+    my $new_value = (defined $new ? $new->$field || '' : '');
+    next if $old_value eq $new_value;
+    push @diff, "Old journal.$field: $old_value", "New journal.$field: $new_value";
+  }
+  return @diff;
+}
+
+sub display_title {
+  my ($label, $title, $bibliotech) = @_;
+  print "Title:\n" if $label eq 'OLD';
+  print sprintf('%-3s: ', $label);
+  if (!$title) {
+    print "no title\n";
+    return;
+  }
+  print $title, "\n";
+}
+
+sub display_citation {
+  my ($label, $citation, $bibliotech) = @_;
+  print "Citation:\n" if $label eq 'OLD';
+  print sprintf('%-3s: ', $label);
+  if (!$citation) {
+    print "no citation\n";
+    return;
+  }
+  print $citation->title, "\n";
+  print '     ', $citation->citation_line($bibliotech), "\n";
+}
+
+sub display_introduction {
+  my ($show_extra_newline, $show_count, $count, $total, $id, $url) = @_;
+  print "\n" if $show_extra_newline;
+  print '#', $count, "/$total\n" if $show_count;
+  print '(', $id, ') ', $url, "\n";
+}
+
+sub prompt_for_enter {
+  print 'Press Enter to continue.';
+  my $temp = <>;
+  return;
+}
+
+sub endprog {
+  warn "Exiting program...\n";
+  exit(1);
+}
+
+package NonHTMLFakeCGI;
+use strict;
+
+# no parameters to set or get
+sub param {
+  undef;
+}
+
+sub DESTROY {
+}
+
+# return everything as text, do not add tags like CGI.pm does
+sub AUTOLOAD {
+  (my $tag = our $AUTOLOAD) =~ s/^.*::(.*)$/lc($1)/e;
+  return "\n" if $tag eq 'br';
+  my $self = shift;
+  my $hash = shift if ref $_[0] eq 'HASH';
+  return join(' ', @_).($tag eq 'div' ? ' ' : '');
+}
+
+1;
+__END__

@@ -1,0 +1,285 @@
+#!/usr/bin/perl
+package Bibliotech::Bibwatch::Item;
+use strict;
+use base 'Class::Accessor';
+__PACKAGE__->mk_accessors(qw(id pid client uri code timer end throttled delaylock calclock));
+use Data::Dumper;  # actually used, not for debugging
+$Data::Dumper::Terse = 1;
+
+sub uri_chars {
+  my $self = shift;
+  my $uri = $self->uri;
+  my $uri_chars = Dumper($uri);
+  chomp $uri_chars;
+  $uri_chars =~ s/^\'(.*)\'$/$1/;
+  return $uri_chars;
+}
+
+sub who {
+  my $self = shift;
+  return 'bot' if $self->throttled;
+  return $self->client;
+}
+
+sub bibwatch_status {
+  my $self = shift;
+  return 'DONE:'.$self->timer if $self->end;
+  return 'RUNNING';
+}
+
+sub bibwatch_calclock_flag {
+  my $self = shift;
+  my $calc = $self->calclock;
+  return '+' if $calc == 1;
+  return '-' if $calc == -1;
+  return '';
+}
+
+sub bibwatch_delaylock_flag {
+  my $self = shift;
+  return ($self->delaylock ? '~' : '');
+}
+
+sub bibwatch_throttled_flag {
+  my $self = shift;
+  return ($self->throttled ? '!' : '');
+}
+
+package Bibliotech::Bibwatch;
+use strict;
+use base 'Class::Accessor';
+__PACKAGE__->mk_accessors(qw(fh load dbtime id stack map times avg avgcount lastage breakloop callbacks delays));
+use IO::File;
+use Fcntl qw/:seek/;
+use Bibliotech::DBI::Set;
+
+sub open {
+  my ($self, $filename) = @_;
+  $filename ||= '/var/log/bibliotech.log';
+  my $log = new IO::File ($filename, '+<') or die $!;
+  seek $log, 0, SEEK_END;
+  $self->fh($log);
+  return $log;
+}
+
+sub close {
+  my $self = shift;
+  $self->fh->close;
+}
+
+sub init {
+  my $self = shift;
+  $self->load(0);
+  $self->dbtime(0);
+  $self->id(0);
+  $self->reset_stack;
+  $self->times(Bibliotech::DBI::Set->new());
+  return $self;
+}
+
+sub reset_stack {
+  my $self = shift;
+  $self->stack(Bibliotech::DBI::Set->new());
+  $self->map({});
+}
+
+sub save_with_id {
+  my ($self, $item) = @_;
+  my $pid = $item->pid;
+  my $id = $self->id + 1;
+  $self->id($id);
+  $item->id($id);
+  my $stack = $self->stack;
+  my $index = $stack->length;
+  $stack->push($item);
+  $self->map->{$pid} = $index;
+  return $id;
+}
+
+sub find_pid {
+  my ($self, $pid) = @_;
+  defined (my $index = $self->map->{$pid}) or return undef;
+  return $self->stack->at($index);
+}
+
+sub loop {
+  my $self = shift;
+
+  my $log = $self->fh;
+  my $get_delay = sub {
+    my $name = shift;
+    my $delays = $self->delays || {};
+    return $delays->{$name};
+  };
+  my $delay_between_reads      = $get_delay->('between_reads') || 1;
+  my $delay_to_keep_done_items = $get_delay->('done_items') || 10;
+  my $breakloop = $self->breakloop;
+  my $check_breakloop = sub {
+    return $$breakloop if ref $breakloop eq 'SCALAR';
+    return &$breakloop if ref $breakloop eq 'CODE';
+    return 0;
+  };
+  my $get_callback = sub {
+    my $name = shift;
+    my $callbacks = $self->callbacks || {};
+    my $ref = $callbacks->{$name} or return undef;
+    no strict 'refs';
+    return \&{'Bibliotech::Bibwatch::'.$ref} unless ref $ref;
+    return $ref;
+  };
+  my $new_item_sub    = $get_callback->('new_item');
+  my $update_item_sub = $get_callback->('update_item');
+  my $change_sub      = $get_callback->('change');
+
+  while (!&$check_breakloop) {
+    do {
+      defined($_ = <$log>) or sleep $delay_between_reads;
+      return if &$check_breakloop;
+    } while (!$_);
+    do {
+      chomp;
+      my $time = time;
+      my $pid;
+
+      if (/^.*? \w+\[(\d+)\] /) {
+	$pid = $1;
+      }
+      if (/ bringing load to (\d+)/) {
+	$self->load($1);
+      }
+      if (/ with db at (\d+)/) {
+	$self->dbtime($1);
+      }
+
+      if (/(visitor|user (\w+) \((\d+)\)) requests (\/.+) bringing load to /) {
+	my ($username, $user_id, $uri) = ($2, $3, $4);
+	my $item = 
+	    Bibliotech::Bibwatch::Item->new({id => undef,
+					     pid => $pid,
+					     client => $username || 'visitor',
+					     uri => $uri,
+					     timer => '',
+					     end => 0,
+					     throttled => 0,
+					     calclock => 0,
+					     delaylock => 0,
+					   });
+	$self->save_with_id($item);
+	$new_item_sub->($self, $item, 'new') if defined $new_item_sub;
+      }
+      elsif (/completed (\/.+) with code (\d+) in ([\d\.]+) secs/) {
+	my ($code, $timer) = ($2, $3);
+	if (my $request = $self->find_pid($pid)) {
+	  $request->code($code);
+	  $request->timer($timer);
+	  $request->end($time);
+	  $request->calclock(0);
+	  $request->delaylock(0);
+	  if ($code == 0) {
+	    my $times = $self->times;
+	    $times->push($timer);
+	    $times->shift if $times->length > 100;
+	  }
+	  $update_item_sub->($self, $request, 'completed') if defined $update_item_sub;
+	}
+      }
+      elsif (/(throttle|load checker) is (delaying|holding)/) {
+	my $type = $2;
+	if (my $request = $self->find_pid($pid)) {
+	  if ($type eq 'holding') {
+	    $request->throttled(1);
+	  }
+	  else {
+	    $request->delaylock(1);
+	  }
+	  $update_item_sub->($self, $request, $type) if defined $update_item_sub;
+	}
+      }
+      elsif (/cache: waiting on (\d+)/) {
+	my $other_pid = $1;
+	if (my $other_request = $self->find_pid($other_pid)) {
+	  $other_request->calclock(1);
+	  $update_item_sub->($self, $other_request, 'providing') if defined $update_item_sub;
+	}
+	if (my $request = $self->find_pid($pid)) {
+	  $request->calclock(-1);
+	  $update_item_sub->($self, $request, 'waiting') if defined $update_item_sub;
+	}
+      }
+
+      # clean up old items
+      {
+	my $open = 0;
+	my $oldtime = $time - $delay_to_keep_done_items;
+	$self->stack->foreach(sub {
+	  return unless defined $_;
+	  $open++;
+	  my $end = $_->end or return;
+	  return unless $end < $oldtime;
+	  $_ = undef;
+	  $open--;
+	});
+	$self->reset_stack if $open == 0;
+      }
+
+    } while (defined($_ = <$log>));
+
+    my $times = $self->times;
+    my $avg = 0;
+    my $avgcount = $times->length;
+    if ($avgcount) {
+      $times->foreach(sub { $avg += $_; });
+      $avg = sprintf('%.04f', $avg/$avgcount);
+    }
+    $self->avg($avg);
+    $self->avgcount($avgcount);
+    $self->lastage(time - $self->dbtime);
+
+    $change_sub->($self) if defined $change_sub;
+  }
+}
+
+sub basic_screen {
+  my $self = shift;
+  my @report;
+  push @report, 'TIME: ', scalar(localtime()), "\n";
+  my $load = $self->load;
+  push @report, "LOAD: $load\n";
+  my $avg = $self->avg;
+  my $avgcount = $self->avgcount;
+  push @report, "MAVG: $avg:$avgcount\n";
+  my $dbtime = $self->dbtime;
+  my $lastage = $self->lastage;
+  push @report, "DBUP: $dbtime:$lastage\n";
+  push @report, "\n";
+  $self->stack->foreach(sub {
+    return unless defined $_;
+    push @report, sprintf('%-12s %12d%1s%1s %-12s %s',
+			  $_->bibwatch_status,
+			  $_->pid,
+			  $_->bibwatch_calclock_flag,
+			  $_->bibwatch_throttled_flag || $_->bibwatch_delaylock_flag,
+			  $_->who,
+			  $_->uri_chars,
+			  ), "\n";
+  });
+  push @report, "\n";
+  print "\033[2J\033[H" . join('', @report);
+}
+
+package main;
+use strict;
+
+my $INTFLAG = 0;
+$SIG{INT} = sub { $INTFLAG++; };
+
+my $b = new Bibliotech::Bibwatch({breakloop => \$INTFLAG,
+				  callbacks => {change => 'basic_screen'},
+				  delays    => {between_reads => 2,
+						done_items => 15},
+				  });
+$b->init;
+$b->open;
+$b->loop;
+$b->close;
+print "\nClosed.\n\n";

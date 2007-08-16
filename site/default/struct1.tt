@@ -1,0 +1,16 @@
+<div id="outer-wrapper">
+  <div id="postingcontent">
+    <div id="fullpage-container">
+      <h1 class="pagetitle">[% IF pagetitle %][% pagetitle %][% ELSIF main_heading %][% main_heading %][% ELSE %][% main_title %][% END %]</h1>
+      <div id="fullpage-content">
+	[% content %]
+      </div><!-- end id fullpage-content -->
+    </div><!-- end id fullpage-container -->
+  </div><!-- end id postingcontent -->
+  <div id="sidebar">
+    [% INCLUDE account.tt %]
+    [% INCLUDE rhs_ads.tt %]
+    <div id="reportproblembox">[% INCLUDE reportproblembox.inc %]</div>					
+  </div><!-- end id sidebar -->
+  <div class="clearing">&nbsp;</div>
+</div><!-- end id outer-wrapper -->

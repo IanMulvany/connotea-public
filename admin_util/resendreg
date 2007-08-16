@@ -1,0 +1,39 @@
+#!/usr/bin/perl
+use strict;
+use Bibliotech;
+
+=pod
+
+This script can resend a registration email to a user, or print it to stdout.
+
+=cut
+
+if (@ARGV < 3) {
+  print STDERR "Please specify a location, document root, and a SQL WHERE clause to specify the users.\n";
+  print STDERR "The location and document root should both have a trailing slash.\n";
+  print STDERR "e.g.: resendreg [-P] http://www.connotea.org/ /var/www/bibliotech/html/ 'username = \"bob\"'\n";
+  print STDERR "The optional -P argument will cause resendreg to print the email to stdout.\n";
+  exit 1;
+}
+
+my $print_only = $ARGV[0] eq '-P' ? shift @ARGV : 0;
+my $location = shift @ARGV;
+my $docroot = shift @ARGV;
+my $where = shift @ARGV;
+my $file = @ARGV ? shift @ARGV : undef;
+
+my $b = new Bibliotech({location => $location, docroot => $docroot}) or die 'cannot make Bibliotech object';
+my $user_iter = Bibliotech::User->retrieve_from_sql($where);
+while (my $user = $user_iter->next) {
+  eval {
+    my $username = $user->username;
+    my $email = $user->email;
+    print (($print_only ? 'Printing' : 'Sending'), " new user email to $username ($email)...\n");
+    my %options;
+    $options{file} = $file if $file;
+    $options{outfh} = *STDOUT if $print_only;
+    $b->new_user_send_email($user, %options);
+  };
+  warn "Error: $@" if $@;
+}
+print "Done.\n";

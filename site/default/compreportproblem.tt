@@ -1,0 +1,25 @@
+[% IF is_main %]
+<h1>Report a Problem</h1>
+<br />
+[% END %]
+
+[% IF validation_error %]
+  <div class="errormsg">
+    [% validation_error %]
+  </div>
+[% END %]
+
+<form name="problem" action="[% location %]reportproblem" method="post">
+  [% IF user %]
+  <input type="hidden" name="email" value="[% user.email %]" />
+  [% ELSE %]
+  <span class="label">Email address (optional):</span><br />
+  <input class="field" name="email" type="text" value="[% sticky('email') %]" /><br />
+  [% END %]
+  <span class="label">Problem:</span><br />
+  <textarea name="problem" rows="10" cols="60">[% sticky('problem') %]</textarea><br />
+  <input class="button" name="button" type="submit" value="Report" />
+  <input type="hidden" name="clicktime" value="[% sticky('clicktime') %]" />
+  <input type="hidden" name="referer"   value="[% sticky('referer') %]" />
+  <input type="hidden" name="exception" value="[% sticky('exception') %]" />
+</form>

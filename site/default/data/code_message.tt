@@ -1,0 +1,8 @@
+    <code>[% answer.code %]</code>
+    <message>[% encode_xml_utf8(answer.message) %]</message>
+    [% IF answer.is_success %]<isSuccess>1</isSuccess>[% END -%]
+    [%- IF answer.is_failure %]<isFailure>1</isFailure>[% END %]
+    <user>[% bibliotech.user.label %]</user>
+    <apiVersion>0.1.0</apiVersion>
+    <bibliotechVersion>[% bibliotech.version %]</bibliotechVersion>
+    [% IF bibliotech.command.page == 'noop' %]<answerToLifeTheUniverseAndEverything>42</answerToLifeTheUniverseAndEverything>[% END %]

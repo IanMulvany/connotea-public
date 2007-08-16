@@ -1,0 +1,18 @@
+User-agent: *
+Disallow: /tmp
+Disallow: /uri/
+Disallow: /ris/
+Disallow: /rss/
+Disallow: /date/
+Disallow: /user/
+Disallow: /tag/
+Disallow: /group/
+Disallow: /recent/
+Disallow: /recent
+Disallow: /popular
+Disallow: /cloud
+
+# per http://help.yahoo.com/help/us/ysearch/slurp/slurp-03.html
+# and http://search.world.msn.com/docs/siteowner.aspx?t=SEARCH_WEBMASTER_REF_RestrictAccessToSite.htm#D
+Crawl-delay: 30
+

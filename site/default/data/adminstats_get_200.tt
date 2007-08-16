@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+<rdf:RDF
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns="http://www.connotea.org/2005/01/schema#"
+>
+  <Stats rdf:about="[% encode_xml_utf8(no_num(object_location)) %]">
+    <entity>
+      <Posts>
+	<total>[% answer.vars.total_user_bookmarks %]</total>
+	<new>[% answer.vars.new_user_bookmarks('24 hour') %]</new>
+	<week>[% answer.vars.new_user_bookmarks('168 hour') %]</week>
+	<public>
+	  <Posts>
+	    <total>[% answer.vars.total_user_bookmarks_public %]</total>
+	    <new>[% answer.vars.new_user_bookmarks_public('24 hour') %]</new>
+	    <week>[% answer.vars.new_user_bookmarks_public('168 hour') %]</week>
+	  </Posts>
+	</public>
+	<private>
+	  <Posts>
+	    <total>[% answer.vars.total_user_bookmarks_private %]</total>
+	    <new>[% answer.vars.new_user_bookmarks_private('24 hour') %]</new>
+	    <week>[% answer.vars.new_user_bookmarks_private('168 hour') %]</week>
+	  </Posts>
+	</private>
+	<author>
+	  <Posts>
+	    <total>[% answer.vars.total_user_bookmarks_mywork %]</total>
+	    <new>[% answer.vars.new_user_bookmarks_mywork('24 hour') %]</new>
+	    <week>[% answer.vars.new_user_bookmarks_mywork('168 hour') %]</week>
+	  </Posts>
+	</author>
+      </Posts>
+    </entity>
+    <entity>
+      <PreAdds>
+	<total>[% answer.vars.total_bookmarks %]</total>
+	<new>[% answer.vars.new_bookmarks('24 hour') %]</new>
+	<week>[% answer.vars.new_bookmarks('168 hour') %]</week>
+      </PreAdds>
+    </entity>
+    <entity>
+      <Users>
+	<total>[% answer.vars.total_users %]</total>
+	<new>[% answer.vars.new_users('24 hour') %]</new>
+	<week>[% answer.vars.new_users('168 hour') %]</week>
+	<posting>
+	  <Users>
+	    <total>[% answer.vars.total_users_1plus %]</total>
+	    <new>[% answer.vars.new_users_1plus('24 hour') %]</new>
+	    <week>[% answer.vars.new_users_1plus('168 hour') %]</week>
+	  </Users>
+	</posting>
+	<active>
+	  <Users>
+	    <total>[% answer.vars.total_users_active %]</total>
+	    <new>[% answer.vars.new_users_active('24 hour') %]</new>
+	    <week>[% answer.vars.new_users_active('168 hour') %]</week>
+	  </Users>
+	</active>
+	<verified>
+	  <Users>
+	    <total>[% answer.vars.total_users_verified %]</total>
+	    <new>[% answer.vars.new_users_verified('24 hour') %]</new>
+	    <week>[% answer.vars.new_users_verified('168 hour') %]</week>
+	  </Users>
+	</verified>
+      </Users>
+    </entity>
+    <entity>
+      <Citations>
+	<total>[% answer.vars.total_citations %]</total>
+	<new>[% answer.vars.new_citations('24 hour') %]</new>
+	<week>[% answer.vars.new_citations('168 hour') %]</week>
+	<authoritative>
+	  <Citations>
+	    <total>[% answer.vars.total_citations_authoritative %]</total>
+	    <new>[% answer.vars.new_citations_authoritative('24 hour') %]</new>
+	    <week>[% answer.vars.new_citations_authoritative('168 hour') %]</week>
+	    <pmid>
+	      <Citations>
+		<total>[% answer.vars.total_citations_authoritative_pubmed %]</total>
+		<new>[% answer.vars.new_citations_authoritative_pubmed('24 hour') %]</new>
+		<week>[% answer.vars.new_citations_authoritative_pubmed('168 hour') %]</week>
+	      </Citations>
+	    </pmid>
+	    <doi>
+	      <Citations>
+		<total>[% answer.vars.total_citations_authoritative_doi %]</total>
+		<new>[% answer.vars.new_citations_authoritative_doi('24 hour') %]</new>
+		<week>[% answer.vars.new_citations_authoritative_doi('168 hour') %]</week>
+	      </Citations>
+	    </doi>
+	    <asin>
+	      <Citations>
+		<total>[% answer.vars.total_citations_authoritative_asin %]</total>
+		<new>[% answer.vars.new_citations_authoritative_asin('24 hour') %]</new>
+		<week>[% answer.vars.new_citations_authoritative_asin('168 hour') %]</week>
+	      </Citations>
+	    </asin>
+	  </Citations>
+	</authoritative>
+	<personal>
+	  <Citations>
+	    <total>[% answer.vars.total_citations_personal %]</total>
+	    <new>[% answer.vars.new_citations_personal('24 hour') %]</new>
+	    <week>[% answer.vars.new_citations_personal('168 hour') %]</week>
+	    <pmid>
+	      <Citations>
+		<total>[% answer.vars.total_citations_personal_pubmed %]</total>
+		<new>[% answer.vars.new_citations_personal_pubmed('24 hour') %]</new>
+		<week>[% answer.vars.new_citations_personal_pubmed('168 hour') %]</week>
+	      </Citations>
+	    </pmid>
+	    <doi>
+	      <Citations>
+		<total>[% answer.vars.total_citations_personal_doi %]</total>
+		<new>[% answer.vars.new_citations_personal_doi('24 hour') %]</new>
+		<week>[% answer.vars.new_citations_personal_doi('168 hour') %]</week>
+	      </Citations>
+	    </doi>
+	    <asin>
+	      <Citations>
+		<total>[% answer.vars.total_citations_personal_asin %]</total>
+		<new>[% answer.vars.new_citations_personal_asin('24 hour') %]</new>
+		<week>[% answer.vars.new_citations_personal_asin('168 hour') %]</week>
+	      </Citations>
+	    </asin>
+	  </Citations>
+	</personal>
+      </Citations>
+    </entity>
+  </Stats>
+</rdf:RDF>

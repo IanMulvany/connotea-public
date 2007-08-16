@@ -1,0 +1,26 @@
+<h1>Rename Tag</h1>
+
+[% IF validation_error %]
+  <div class="errormsg">
+    [% validation_error %]
+  </div>
+[% END %]
+
+<form name="retag" action="[% location %]retag" method="post">
+  <table>
+    <tr>
+      <td valign="top">Old tag:</td>
+      <td valign="top"><input type="text" name="oldtag" size="60" class="textctl" id="oldtagbox" value="[% sticky('oldtag') %]" /><br />
+        (one tag to find, remove, and replace with the new tag or tags)</td>
+    </tr>
+    <tr>
+      <td valign="top">New tag(s):</td>
+      <td valign="top"><input type="text" name="newtag" size="60" class="textctl" id="newtagbox" value="[% sticky('newtag') %]" /><br />
+        (space or comma separated, enclose multiword tag name in "quote marks")</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><input type="submit" name="button" value="Retag" class="buttonctl" id="retagbutton" /></td>
+    </tr>
+  </table>
+</form>

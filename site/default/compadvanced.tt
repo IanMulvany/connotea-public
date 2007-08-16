@@ -1,0 +1,28 @@
+<h1>Advanced Account Settings</h1>
+
+<p>Edit any item and click Update to save the changes.</p>
+
+<div id="advancedform">
+  <form name="advanced" action="[% location %]advanced" method="POST" class="compform">
+    <fieldset[% IF has_validation_error_for('openurl_resolver','openurl_name') %] class="haserrors"[% END %]>
+      <legend>OpenURL Resolver</legend>
+
+      [% IF has_validation_error_for('openurl_resolver','openurl_name') %]
+      <p class="validation">[% validation_error %]</p>
+      [% END %]
+
+      <p>If you have access to an OpenURL resolver service, please enter its location here. [% sitename %] will then generate OpenURL links for the items in your library wherever possible. <a href="[% location %]guide#openurl" target="_blank"><img src="[% location %]help_button2.gif" class="helpicon" title="What is this?" alt="?" /></a></p>
+
+      <p><label for="openurl_resolver"[% IF validation_error_field == "openurl_resolver" %] class="validation"[% END %]>Resolver URL</label>
+	<input id="openurl_resolver" name="openurl_resolver" size="40" type="text" value="[% sticky('openurl_resolver') %]" />
+      </p>
+
+      <p><label for="openurl_name"[% IF validation_error_field == "openurl_name" %] class="validation"[% END %]>Label Links As...</label>
+	<input id="openurl_name" name="openurl_name" size="20" type="text" value="[% sticky('openurl_name') %]" />
+      </p>
+    </fieldset>
+
+    <p><span class="cleardiv"><!-- clear --></span>
+      <input type="submit" class="submitbutton" name="button" value="update" /></p>
+  </form>
+</div>

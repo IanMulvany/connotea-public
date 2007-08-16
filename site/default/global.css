@@ -1,0 +1,793 @@
+BODY,DIV,P,TD,TH { 
+font-size: 11px;
+font-family: Verdana, Arial, Helvetica, sans-serif;
+color: #233155;
+padding: 0;
+margin: 0;
+}
+a { color: #c03 }
+a.link { color: #c03 }
+a:active { color: #c03 }
+a.nav { color: #c03; font-weight: bold; text-decoration: none;}
+a.nav:hover { color: #A4B4C0; text-decoration: none; }
+a.dblink { color: #97A9B7; font-weight: bold; }
+a.search-link { color: #c03; font-weight: bold; text-decoration: none; font-size: 11px; }
+a.search-link:hover { color: #fff; text-decoration: none; font-size: 11px; }
+a.postedby { color: #233155; font-weight: bold;}
+a.postedtag { color: #4A6DCE; font-weight: bold; }
+a.linkicons { color: #4A6DCE; font-weight: bold; margin-right: 10px;}
+a.editlink { color: #4A6DCE;}
+a.listofrecent { font-weight: bold }
+a.listoftags { color: #4A6FCD; font-size: 10px; margin-top: 5px; margin-left: 5px; line-height: 18px; }
+a.listofactivetags { color: #4A6FCD; font-size: 10px; margin-top: 5px; margin-left: 5px; line-height: 18px; }
+a.listofusers { 
+color: #233155; 
+font-size: 10px; 
+margin-top: 5px; 
+margin-left: 5px; 
+line-height: 18px; 
+}
+a.owner { color: #233155; font-size: 10px; }
+a.listofgangpeers { 
+color: #233155; 
+font-size: 10px; 
+margin-top: 5px; 
+margin-left: 5px; 
+line-height: 18px; 
+}
+a.listofgangs {
+color: #516371; 
+font-size: 10px; 
+margin-top: 5px; 
+margin-left: 5px; 
+line-height: 18px; 
+
+}
+
+a.listofactiveusers { 
+color: #233155; 
+font-size: 10px; 
+margin-top: 5px; 
+margin-left: 5px; 
+line-height: 18px; 
+}
+.helpicon { border: 0px; padding: 2px; width: 19px; height: 13px; }
+.journal { font-style: italic }
+.volume { font-weight: bold }
+.etal { font-style: italic }
+.authors { color: gray; }
+.supplemental A { color: #4A6FCD; font-weight: bold; }
+.comment { color: #4A6DCE }
+.comment A { color: #4A6DCE }
+.commentdisplay { margin: 9px; padding: 6px; border: 1px dashed silver }
+.commentbyline { padding-bottom: 3px }
+.identifed { padding-bottom: 8px }
+.rank { color: #97A9B7; font-size: 9px }
+#master { width: 100%; padding: 0px; margin: 0px }
+#master TD { padding: 3px; margin: 0px }
+.component { vertical-align: top }
+H1 { margin: 2px 10px 8px 0px; padding: 4px; font-size: 12px; color: #233155; border: 0; background: #D9E1E8 }
+h1.welcome { margin: 0px; padding: 4px; font-size: 12px; font-weight: bold; color: white; border: 0; background: #c03 }
+h1.loginbox { margin: 0px; padding: 4px 0 4px 4px; font-size: 12px; font-weight: bold; color: white; border: 0; background: #c03 }
+h1.toolbox { margin: 0px; padding: 4px 0 4px 4px; font-size: 12px; font-weight: bold; color: white; border: 0; background: #c03 }
+p.welcome { margin: 5px 0 0 0; padding: 5px 0 0 0; font-size: 12px;}
+h2 { margin: 2px 10px 8px 0px; padding: 4px; font-size: 12px; color: #233155; border: 0; background: #D9E1E8 }
+h2.activeusers-home { margin: 0px; padding: 4px 0 4px 4px; font-size: 12px; font-weight: bold; color: #fff; border: 0; background: #97A9B7 }
+h2.populartags-home { margin: 0px; padding: 4px 0 4px 4px; font-size: 12px; font-weight: bold; color: #fff; border: 0; background: #97A9B7 }
+h2.bookmark-home { margin: 0px; padding: 4px 0 4px 4px; font-size: 12px; font-weight: bold; color: #fff; border: 0; background: #97A9B7 }
+h2.about { margin: 15px 5px 0px 2px; padding: 0px; font-weight: bold; font-size: 13px; background: white;}
+h2.bookmark { margin: 0; padding: 4px; font-size: 12px; color: #233155; border: 0; background: #D9E1E8 }
+p.titlenews { 
+margin: 2px 10px 8px 0px; 
+padding: 4px; 
+font-size: 12px; 
+font-weight: bold; 
+color: #233155; 
+border-bottom: 2px solid #D9E0E8; }
+h2.about{ 
+margin: 2px 10px 8px 0px; 
+padding: 4px; 
+font-size: 12px; 
+font-weight: bold; 
+color: #233155; 
+border-bottom: 2px solid #D9E0E8; } 
+
+.code { font-family: monospace; color: #333399; } 
+p.code { border: 1px dotted #333399; padding:5px; margin: 5px; }
+pre { font-family: monospace; color: #333399; border: 1px dotted #333399; padding:5px; margin: 5px; }
+
+h3 { margin: 15px 5px 0px 2px; padding: 0px; font-weight: normal; font-size: 11px; color: silver }
+
+h3.about { margin: 10px 5px 0px 0px; font-size: 13px; color: #111111 }
+
+h4.latestnews { margin: 0px; padding: 4px; font-size: 12px; color: #fff; border: 0; background: #97A9B7 }
+ul { margin: 5px 0px 5px 3px; padding: 0px 5px 5px 20px }
+ul li { list-style-type: square }
+#list LI { margin-left: 0px; padding-left: 0px; padding-top: 6px }
+form { margin-bottom: 0px }
+.textctl { border: 1px solid #233155; background: #fff; font-size: 10px; height: 18px; }
+.textctlminor { border: 1px solid #233155; background: #fff; font-size: 10px; height: 12px; }
+.textareactl { border: 1px solid #233155; background: #fff; font-size: 10px; }
+.pulldownctl { border: 1px inset; background: #FFF;font-size: 10px; height: 18px; }
+.pulldownctlminor { border: 1px inset; background: #FFF; font-size: 10px; height: 16px; }
+.buttonctl { border: 1px outset; background: #c03; font-size: 10px; height: 18px;  color: #fff; font-weight: bold; }
+.checkboxctl { position: relative; top: 2px }
+
+#footer { border-top: 4px solid #95A5B2; padding: 3px 0 20px 0; margin-bottom: 20px; text-indent: 15px;}
+.footer {  font-style: italic; text-indent: 15px;}
+#add { border-top: 4px solid #97A9B7; padding: 3px }
+#path { font: 14px Courier New, Courier, monospace; padding: 1px 0px 1px 0px }
+.description { color: silver }
+#sidetags { width: 190px }
+#sideusers { width: 190px }
+.note { margin: 8px 0px 8px 0px; padding: 6px; font: bold 13px; width: 90% }
+.errormsg { margin: 8px 0px 8px 0px; padding: 6px; font: bold 13px; color: red; border: 1px solid red; background: #EEEEEE; width: 90% }
+.actionmsg { margin: 8px 0px 8px 0px; padding: 6px; font: bold 13px; color: blue; border: 1px solid blue; background: #EEEEEE; width: 90% }
+.ctlhelp { width: 496px; font-size: 10px; border: 1px dotted silver; margin-top: 2px; padding: 2px }
+.tagexample { font-style: italic }
+.warnremove { color: red; font-weight: bold }
+.aboutremove { margin-bottom: 10px }
+.arrow { padding-bottom: 5px }
+
+
+/* STRUCTURE FOR THE DIVS INSIDE THE WELCOME.INC FILE */
+/*main divisions*/
+#content-welcome-wrap {
+	width: 97%;
+	float: left;
+	margin-right: -220px;
+	margin-left: 10px;
+	margin-top: 0;
+	margin-bottom: 0;
+	}
+	
+#welcome {
+	margin-right: 220px;
+	}
+
+#main_less_right {
+	margin-right: 220px;
+	}
+	
+#right {
+	width: 200px;
+	float: right;
+	}
+
+.clearing {
+	height: 0;
+	clear: both;
+	padding: 0;
+	margin: 0;
+}
+
+/* login box */
+
+#loginbox {
+	width: 200px;
+	border-top: 0;
+	border-left: 2px solid #c03;
+	border-right: 2px solid #c03;
+	border-bottom: 2px solid #c03;
+}
+
+
+/* tool box */
+
+#toolbox {
+	width: 200px;
+	margin-top: 20px;
+	border-top: 0px;
+	border-left: 2px solid #c03;
+	border-right: 2px solid #c03;
+	border-bottom: 2px solid #c03;
+}
+
+
+p.tooltype {
+margin: 5px 0 5px 5px;
+padding: 5px 0 2px 0;
+line-height: 20px;
+}
+
+p.newssnippet {
+margin: 5px 0 5px 5px;
+padding: 5px 0 2px 0;
+line-height: 15px;
+}
+
+/* typography */
+h3.sectiontitle { 
+margin: 0; 
+padding: 4px; 
+font-size: 12px; 
+font-weight: bold;
+color: white; 
+border: 0; 
+background: #c03 }
+
+p.boxtext { 
+padding: 4px; 
+margin-top: 0;
+font-size: 11px; 
+}
+/* form used in the login box*/
+.field {
+background: #fff;
+border: 1px solid #97A9B7;
+width: 183px;
+margin-left: 5px;
+color: #233155;
+font-size:  11px;
+} 
+
+.button {
+background: #c03;
+border: 1px solid #fff;
+color: #fff;
+font-size: 10px;
+font-weight: bold;
+margin: 5px 0 0 5px;
+} 
+
+.label {
+margin-left: 5px;
+margin-top: 5px;
+padding-top: 5px;
+line-height: 20px;
+}
+
+	
+}
+.clearing {
+	height: 10px;
+	clear: both;
+}
+/* end HEADER area with logo and logout area*/
+
+
+
+/* start content for My bookmark area */
+#outer-wrapper {
+margin-top: 5px;
+}
+#wrapper {
+
+}
+
+#container {
+	width: 100%;
+	float: left;
+	margin-right: -170px;
+}
+#content {
+	margin-right: 180px;
+	}
+
+#main {
+	margin-left: 180px;
+}
+#left {
+	width: 170px;
+	float: left;
+	margin-left: 5px;
+	
+}
+#sidebar {
+	width: 170px;
+	float: right;
+	}
+
+#toolbox-mybookmark {
+	width: 160px;
+	margin-top: 0;
+	border-top: 0px;
+	border-left: 2px solid #c03;
+	border-right: 2px solid #c03;
+	border-bottom: 2px solid #c03;
+}
+
+/* was #user-box */
+#sidetags_cabinet {
+	width: 160px;
+	margin-top: 0;
+	border-top: 0px;
+	border-left: 2px solid #c03;
+	border-right: 2px solid #c03;
+	border-bottom: 2px solid #c03;
+}
+#sideusers_cabinet {
+	width: 160px;
+	margin-top: 0;
+	border-top: 0px;
+	border-left: 2px solid #c03;
+	border-right: 2px solid #c03;
+	border-bottom: 2px solid #c03;
+}
+#sideusers_group { 
+	width: 160px;
+	margin-top: 0;
+	border-top: 0px;
+	border-left: 2px solid #c03;
+	border-right: 2px solid #c03;
+	border-bottom: 2px solid #c03;
+}
+
+#sidegroups_user { 
+	width: 160px;
+	margin-top: 0;
+	border-top: 0px;
+	border-left: 2px solid #c03;
+	border-right: 2px solid #c03;
+	border-bottom: 2px solid #c03;
+}
+
+
+.content-side { margin: 1px 3px 1px 3px }
+
+/* was .tag-link */
+.tag { color: #4A6FCD; font-size: 10px; margin-top: 5px; margin-left: 5px; line-height: 18px; }
+
+.content-mybookmark {
+line-height: 15px;
+padding-top: 3px;
+padding-bottom: 20px;
+border-bottom: 20px;  
+}
+
+/* end content for My bookmark area */
+
+/* start horizontal menu  */
+#horizontal-menu {
+	padding: 4px 4px, 4px, 4px;
+	border-top: 1px solid #97A9B7;
+	border-bottom: 1px solid #97A9B7;
+	line-height: 20px;
+	font-size: 11px;
+	font-weight: bold;
+	color: #899DAD;
+	text-indent: 15px;
+}
+/* end horizontal menu  */
+
+/* Start "related tags" box */
+/* was #related-tags */
+#sidetags_related {
+	width: 160px;
+	margin-top: 0;
+	border-top: 0px;
+	border-left: 2px solid #D8E1E8;
+	border-right: 2px solid #D8E1E8;
+	border-bottom: 2px solid #D8E1E8;
+	color: #97A9B7;
+	font-size: 9px;
+}
+
+/* was h2.relatedtags */
+#sidetags_related h3 { 
+margin: 0; 
+padding: 4px; 
+font-size: 12px; 
+color: #233155; 
+border: 0; 
+background: #D9E1E8 
+}
+/* End "related tags" box */
+
+/* Start "related users" box */
+/* was #related-users */
+#sideusers_related {
+	width: 160px;
+	margin-top: 0;
+	border-top: 0px;
+	border-left: 2px solid #D8E1E8;
+	border-right: 2px solid #D8E1E8;
+	border-bottom: 2px solid #D8E1E8;
+	color: #97A9B7;
+	font-size: 9px;
+}
+
+/* was h2.relatedusers */
+#sideusers_related h3 {
+margin: 0; 
+padding: 4px; 
+font-size: 12px; 
+color: #233155; 
+border: 0; 
+background: #D9E1E8; 
+}
+
+/* was .users-link */
+.user { 
+color: #233155; 
+font-size: 10px; 
+margin-top: 5px; 
+margin-left: 5px; 
+line-height: 18px; 
+}
+/* End "related users" box */
+
+
+/* start search bar */
+
+   #account { float: right;
+              line-height: 28px;
+              min-height: 28px;
+              height: 28px;  
+              background: #C2D2DE; 
+              
+            }
+  
+   #search-new {
+               height: 28px;  
+               background: #97A9B7;
+               margin-left: 80px;
+              }
+   #search-form { height: 28px;
+                  line-height: 28px;
+                  color: #C2D2DE;
+                  font-size: 14px;
+                  font-weight: bold;
+                  display: inline;
+                  margin-right: 170px; 
+                }
+   #loginoutbutton { vertical-align: middle; border: 0;
+              }
+
+   #logininfo { float: right; height: 33px; margin-right: 20px; padding-top: 8px;}
+
+   #reglinks { margin-right: 20px; margin-left: 20px; }
+
+   .searchtextctl { border: 1px solid #233155; background: #fff; min-height: 14px; font-size: 10px;  margin-bottom: 2px; }
+.searchpulldownctl { border: 1px solid #233155; background: #fff; font-size: 10px; height: 14px; margin-bottom: 2px; margin-top: 4px; }
+ #searchtype { height: 1.8em; }
+
+.search-link { color: #c03; font-size: 10px; }
+
+/* end search bar */
+
+/* div with icons: edit + copy + delete */
+
+.icons { 
+background-color:  #D9E0E8;
+margin: 3px 0 2px 0; 
+padding: 3px 0 2px 3px;  
+}
+
+.entries { color: #96A9B7; font-size: 10px; }
+
+#status { text-align: center; border-top: 3px solid #D9E0E8; }
+#status_left { margin-right: 100px }
+#status_right { margin-left: 100px }
+
+
+/* 3 BOXES FOR HOMEPAGE: BOOKMARK + TAGS +  USER*/
+#content-bkmk-wrap {
+	width: 97%;
+	float: left;
+	margin-right: -395px;
+	margin-left: 10px;
+	margin-top: 0;
+	margin-bottom: 0;
+	}
+	
+#bkmk {
+	margin-right: 395px;
+	}
+	
+#bkmk-right {
+	width: 375px;
+	float: right;
+	}
+
+.clearing-bkmk {
+	height: 0;
+	clear: both;
+}
+
+/* popular tags box*/
+
+#populartags-home {
+	width: 150px;
+	float: left;
+	border-top: 0;
+	border-left: 2px solid #97A9B7;
+	border-right: 2px solid #97A9B7;
+	border-bottom: 2px solid #97A9B7;
+}
+
+
+/* active users box */
+
+#activeusers-home {
+	width: 196px;
+	float: right;
+	margin-top: 0px;
+	border-top: 0px;
+	border-left: 2px solid #97A9B7;
+	border-right: 2px solid #97A9B7;
+	border-bottom: 2px solid #97A9B7;
+}
+
+
+p.tagsuserstype {
+margin: 5px 0 5px 5px;
+padding: 5px 0 2px 0;
+line-height: 20px;
+}
+
+
+#mybookmark-title {
+background: #c03;
+padding: 3px;
+}
+
+#mybookmarkrss {
+float: right;
+width: 230px;
+color: white;
+text-align: right;
+
+}
+
+#mybookmarktitle {
+margin-right: 150px;
+font-size: 12px;
+color: white;
+font-weight: bold;
+}
+
+.rssicon { border: 0px; padding: 2px; }
+
+.addformlabelcell { vertical-align: top; nowrap; padding-top: 3px }
+#descriptiondatacell { vertical-align: top }
+.optional { float: left; color: #999999 }
+#taghelpbox { width: 380px }
+#urlbox { width: 312px }
+#urlboxupdated { width: 380px }
+#titlebox { width: 380px }
+#descriptionbox { width: 380px }
+#tagsbox { width: 250px }
+#commentbox { width: 380px }
+
+.addgroupformlabelcell { vertical-align: top; nowrap; padding-top: 3px }
+
+#code-link { float: right; }
+.title { font-weight: bold; font-style: italic; }
+
+
+.private { color: #4A6FCD; font-weight: bold; }
+
+.uploadcount { margin-bottom: 10px; }
+.uploadentry { font-weight: bold;}
+.buttonrow { margin-bottom: 10px }
+.iconscheckbox { font-weight: bold; float: right; width: 90px; position: relative; top: -6px }
+
+.privacyrelease { margin-top: 5px }
+
+img.newsimage { border: 1px solid #000; } 
+blockquote.newsquote { font-style: italic; }
+
+.annotation { background: white; padding: 8px }
+.annotation .comment { margin: 8px 8px 3px 8px; padding: 12px; border: 1px dashed silver }
+.annotation .title { font-size: 10px; font-weight: normal; color: dark-gray; margin-bottom: 3px; text-align: right; margin-right: 10px }
+
+#geoinfo { background: white; padding-top: 3px; padding-bottom: 3px; padding-left: 3px; padding-right: 3px;  border-bottom: 1px solid #c03 }
+.geoinfo_text { color: dark-gray; }
+.geoinfo_link {text-align: right; float: right; font-style: italic; }
+
+.toggles { text-align: center; }
+.togglewrap { padding: 4px; }
+.alphatoggleborder {  border-left: 1px solid #c03;  border-bottom: 2px solid #c03; }
+.usagetoggleborder {  border-right: 1px solid #c03;  border-bottom: 2px solid #c03; }
+#alphatoggle { width: 50%; float: right; padding: 0px;  background-color:  #D9E0E8; border: none }
+#usagetoggle { width: 50%; float: left; padding: 0px;  background-color:  #D9E0E8; border: none; }
+
+
+.actionlink { color: #4A6DCE; font-weight: bold; }
+
+#sort-and-number-bar { border-bottom: 1px solid #c03; padding: 3px; text-align: right; }
+.sort-label, .number-label { font-style: italic;  padding: 3px; line-height: 80%; }
+#sort, #number, #sortby-buttons, #number-buttons { display: inline; }
+#sort { float: left; }
+.possible_num { color: #4A6DCE; padding 3px; }
+.current_num { font-weight: bold; color: #4A6DCE; padding 3px; }
+.higher_num { color: silver; padding 3px; }
+
+#freematch {  background: white; padding-top: 3px; padding-bottom: 3px; padding-left: 3px; padding-right: 3px;  border-bottom: 1px solid #c03; font-style: italic; }
+
+#freematch_user, #freematch_tag, #freematch_gang { font-size: 12px; }
+
+a.freematch_tag { color: #4A6DCE; font-weight: bold; }
+a.freematch_user { color: #233155; font-weight: bold; }
+a.freematch_gang { color: #233155; font-weight: bold; }
+
+
+#beginners-screencast {
+		width: 380px;
+ 		text-align: right;
+		padding: 10px;
+		float: left;
+
+              }
+
+#building-and-managing  {
+			  float: left;
+			  margin-left: 30px;
+			}
+
+#building-screencast {
+		text-align: right;
+		width: 220px;
+		padding: 10px;
+		margin-bottom: 10px;
+              }
+
+#managing-screencast {
+		text-align: right;
+		width: 220px;
+		padding: 10px;
+
+              }
+
+.film-screenshot {
+		  border: 1px solid black;
+		  float: left;
+                 }
+
+.film-caption-heading {
+			font-size: 20px;
+			color: #c03;
+			font-weight: bold;
+
+			}
+.film-caption-title {
+			font-size: 16px;
+			color: #97A9B7;
+			}
+
+.film-duration		{
+			  font-style: italic;
+			  color: gray;
+			  padding: 5px;
+			}
+
+.film-formats-large	{
+			  font-size: 14px;
+			  padding: 5px;
+			  text-align: left;
+			}
+
+.film-formats		{
+			  padding: 5px;
+			  text-align: left;
+			}
+
+
+.debug { background: green; color: white; padding: 2px }
+
+div.tag_cloud_container { border: 1px solid #97a9b7; padding: 15px; text-align: justify }
+a.tag_cloud { font-weight: bold; text-decoration: none; line-height: 30px; margin: 0 3px 0 3px }
+a.tag_cloud:hover { text-decoration: underline; color: black }
+a.tag_cloud_frequency_0 { font-size: 8px }
+a.tag_cloud_frequency_1 { font-size: 9px }
+a.tag_cloud_frequency_2 { font-size: 10px }
+a.tag_cloud_frequency_3 { font-size: 11px }
+a.tag_cloud_frequency_4 { font-size: 12px }
+a.tag_cloud_frequency_5 { font-size: 13px }
+a.tag_cloud_frequency_6 { font-size: 16px }
+a.tag_cloud_frequency_7 { font-size: 19px }
+a.tag_cloud_frequency_8 { font-size: 21px }
+a.tag_cloud_frequency_9 { font-size: 26px }
+a.tag_cloud_frequency_10 { font-size: 30px }
+a.tag_cloud_recency_0 { color: #97A9B7 }
+a.tag_cloud_recency_1 { color: #9C99AA }
+a.tag_cloud_recency_2 { color: #A1889D }
+a.tag_cloud_recency_3 { color: #A67790 }
+a.tag_cloud_recency_4 { color: #AC6683 }
+a.tag_cloud_recency_5 { color: #B15575 }
+a.tag_cloud_recency_6 { color: #B64468 }
+a.tag_cloud_recency_7 { color: #BC335B }
+a.tag_cloud_recency_8 { color: #C1224E }
+a.tag_cloud_recency_9 { color: #C61141 }
+a.tag_cloud_recency_10 { color: #CC0033 }
+
+
+
+.forgot-pw {
+  padding: 5px;
+}
+
+.wikifooter { margin: 20px 10px 8px 0px; padding: 4px; border: 0; background: #EEEEEE }
+.wikipreviewclose { margin: 10px 0px 15px 0px }
+.wikipreview { background: #FFF8DC; margin: 0px 10px 10px 0px; padding: 10px; border: 1px solid #D9E1E8 }
+.wikisystem { margin: 0px 10px 8px 0px; padding: 4px; border: 0; background: #EEEEEE }
+.wikidunno { color: silver; border: 1px solid silver; margin: 2px; padding: 1px }
+.wikiedithelppre { font-size: 12px }
+#wikicontentbox { width: 720px; padding: 4px; font-size: 12px }
+.wikidifftable { width: 100% }
+.wikidifftable .diffhead { background: #EEEEEE }
+.wikidifftable .diffcell { width: 50%; vertical-align: top }
+.wikidifftable .diff1 { background: #FFDDDD; }
+.wikidifftable .diff2 { background: #DDFFDD; }
+.wikireferent { font-size: 13px; margin: 0 10px 4px 0; padding: 4px; background: #EEEEEE }
+.wikicontrols { font-size: 13px; margin-bottom: 4px }
+.wikiwrapper { position: relative }
+.wikibody { position: relative; z-index: 0; }
+.wikibody p { font-size: 12px; line-height: 16px;}
+.wikibody h1 { margin: 2px 10px 8px 0px; padding: 4px; font-size: 12px; color: #233155; border: 0; background: #D9E1E8 }
+.wikibody h2 { margin: 2px 10px 8px 0px; padding: 4px; font-size: 12px; font-weight: bold; color: #233155; border-bottom: 2px solid #D9E0E8;  background: white;}
+.wikibody h3 { margin: 2px 10px 8px 0px; padding: 4px; font-size: 12px; font-weight: bold;  color: #233155; border: none;  background: white;}
+.wikibody li { font-size: 12px; line-height: 16px;}
+.wikibody p { margin-top: 12px; margin-bottom: 12px }
+.wikibody table { margin-top: 12px; margin-bottom: 12px }
+.wikiparsefail { background: #ffaaaa }
+
+/* the underscore on _right below makes only IE pick it up
+   the problem is that with a 200px div floated right over a 100% width main div, FF thinks the right side of the
+   main div is where it buts up against the float but IE thinks its at the right edge of the screen
+ */
+.wikibigedit { position: absolute; right: 25px; _right: 250px; top: 4px; z-index: 1 }
+.wikibigedit a { color: green }
+#wikiinfo { background: white; padding-top: 3px; padding-bottom: 3px; padding-left: 3px; padding-right: 3px;  border-bottom: 1px solid #c03 }
+.wikiinfo_text { color: dark-gray; }
+.wikiinfo_link { text-align: right; font-style: italic; }
+.wikispoterror { margin: 2px; padding: 2px; border: 1px solid red; color: red }
+.wikitablecell       { padding: 3px }
+.wikitableoddrow  td { background: #DDDDDD }
+.wikitableoddrow  th { background: #D9E1E8; color: #233155 }
+.wikitableevenrow td { background: #EEEEEE }
+.wikitableevenrow th { background: #D9E1E8; color: #233155 }
+.wikisidebar p { font-size: 12px; margin-bottom: 5px }
+.wikisidebar form { margin-bottom: 5px }
+.wikihighlight { background: #FFFF99 }
+.rsslinkright { float: right; margin: 5px 10px 5px 10px }
+.wikitoc { background: #EEEEEE; padding: 5px 10px 10px 10px; width: 550px }
+.wikitoc p { font-weight: bold; border-bottom: 1px solid black }
+
+#reportproblembox-mybookmark {
+	width: 160px;
+	margin-top: 0;
+	border-top: 2px solid #c03;
+	border-left: 2px solid #c03;
+	border-right: 2px solid #c03;
+	border-bottom: 2px solid #c03;
+}
+
+#reportproblembox-right {
+	width: 200px;
+	margin-top: 0;
+	border-top: 2px solid #c03;
+	border-left: 2px solid #c03;
+	border-right: 2px solid #c03;
+	border-bottom: 2px solid #c03;
+}
+
+#tagsuggestdatacell { vertical-align: top }
+
+.auto-complete {
+  border: 1px dotted silver;
+  padding: 0 5px 5px 5px;
+}
+
+.add-form-tag-suggestion {
+  display: -moz-inline-box;
+  display: inline-block;
+  background-color: #D9E0E8;
+  margin: 6px 3px 0 3px;
+  padding: 0 6px 0 6px;
+  text-weight: bold;
+  text-decoration: none;
+}
+
+#slink-alpha {
+  text-align: right;
+}
+
+#slink-usage {
+  text-align: right;
+}
+
+.add-form-ac-results {
+  width: 350px;
+}

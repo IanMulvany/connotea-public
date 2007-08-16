@@ -1,0 +1,57 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+print "Checking directory\n";
+if (! -e 't') {
+  if (-e 'test_config') {
+    chdir('..');
+  }
+  else {
+    die "Please run this script from your bibliotech directory (contains Bibliotech.pm)\n";
+  }
+}
+
+if (@ARGV && $ARGV[0] eq '-C') {
+  shift @ARGV;
+  print "Using regular config.\n";
+}
+else {
+  print "Setting CONFIG=t/test_config\n";
+  # remember this works via Bibliotech::TestUtils, not Bibliotech::Config directly
+  $ENV{CONFIG} = 't/test_config';
+}
+
+my $perl_flags;
+if (@ARGV && $ARGV[0] eq '-d') {
+  shift @ARGV;
+  print "Using perl debugger.\n";
+  $perl_flags = '-d';
+}
+
+my @glob;
+if (@ARGV) {
+  foreach (@ARGV) {
+    push @glob, 't/'.sprintf('%02d',$_).'*.t';
+  }
+}
+else {
+  push @glob, 't/*.t';
+}
+
+my @files;
+foreach (@glob) {
+  push @files, glob $_;
+}
+
+my $perl = 'perl';
+$perl .= ' '.$perl_flags if $perl_flags;
+foreach (@files) {
+  run($perl.' '.$_);
+}
+
+sub run {
+  my $cmd = shift;
+  print "Running $cmd\n";
+  system $cmd;
+}
