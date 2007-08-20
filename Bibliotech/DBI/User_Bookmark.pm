@@ -529,10 +529,18 @@ sub _proxit_link {
   my ($url, $cgi) = @_;
   local $_ = $cgi->a({id      => '__ID__',
 		      onclick => 'return false;',
-		      title   => 'Related Results',
+		      title   => 'Results powered by Proximic',
 		     },
 		     'Prox It');
-  s/__ID__/proximic_proxit:style=lightblue\&query_url=$url/;  # avoid CGI escaping of ampersand and actual URL
+  # avoid CGI.pm escaping of ampersand and actual URL by replacement after the fact:
+  my $special_id = join('',
+			'proximic_proxit:',                                                        # intro
+			join('&',
+			     'aid=npg',                                                            # aid
+			     'headerURL=http://query.proximic.com/flash/images/logo_connotea.png', # headerURL
+			     'channel_expand=BUECHER',                                             # channel_expand
+			     'query_url='.$url));                                                  # the URL
+  s/__ID__/$special_id/;
   return $_;
 }
 
