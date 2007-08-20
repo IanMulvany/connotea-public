@@ -508,7 +508,9 @@ sub postedby {
   if ($in_html) {
     push @posted, ('|',
 		   $self->privacy_status_html($bibliotech),
-		   $cgi->a({href => $bookmark->href_search_global($bibliotech)}, 'info'));
+		   $cgi->a({href => $bookmark->href_search_global($bibliotech)}, 'info'),
+		   '|',
+		   _proxit_link($self->bookmark->url, $cgi));
   }
 
   if (@posted) {
@@ -521,6 +523,17 @@ sub postedby {
   }
 
   return wantarray ? @output : join($in_html ? '' : ' ', @output);
+}
+
+sub _proxit_link {
+  my ($url, $cgi) = @_;
+  local $_ = $cgi->a({id      => '__ID__',
+		      onclick => 'return false;',
+		      title   => 'Related Results',
+		     },
+		     'Prox It');
+  s/__ID__/proximic_proxit:style=lightblue\&query_url=$url/;  # avoid CGI escaping of ampersand and actual URL
+  return $_;
 }
 
 sub rss_content {
