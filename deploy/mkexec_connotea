@@ -2,10 +2,7 @@
 # correct permissions etc post-checkout
 . /root/bin/connotea_vars
 [ "$1" == "-d" ] || cd $BASE/bibliotech
-chmod a+x memcached_wrapper
-chown apache html/antispam_captcha.csv 
-chown apache html/antispam_score.csv
-chown apache html/captcha
+chmod a+x admin_util/memcached_wrapper
 chmod a+x bibutils/bib2xml
 chmod a+x bibutils/copac2xml
 chmod a+x bibutils/end2xml
@@ -16,4 +13,9 @@ chmod a+x bibutils/ris2xml
 chmod a+x bibutils/xml2bib
 chmod a+x bibutils/xml2end
 chmod a+x bibutils/xml2ris
+[ "$1" != "-d" ] && cd $HTML
+[ "$1" == "-d" ] && cd site/default
+chown apache antispam_captcha.csv
+chown apache antispam_score.csv
+chown apache captcha
 echo "Make-Executable completed OK."
