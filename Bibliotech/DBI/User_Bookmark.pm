@@ -531,7 +531,7 @@ sub _proxit_link {
 		      onclick => 'return false;',
 		      title   => 'Results powered by Proximic',
 		     },
-		     'Prox It');
+		     'related');
   # avoid CGI.pm escaping of ampersand and actual URL by replacement after the fact:
   my $special_id = join('',
 			'proximic_proxit:',                                                        # intro
