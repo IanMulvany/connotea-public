@@ -14,7 +14,7 @@ chmod a+x bibutils/xml2bib
 chmod a+x bibutils/xml2end
 chmod a+x bibutils/xml2ris
 [ "$1" != "-d" ] && cd $HTML
-[ "$1" == "-d" ] && cd site/default
+[ "$1" == "-d" ] && cd $SITE
 chown apache antispam_captcha.csv
 chown apache antispam_score.csv
 chown apache captcha
