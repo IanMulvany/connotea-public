@@ -23,44 +23,37 @@ use base 'Bibliotech::CitationSource';
 
 use Bibliotech::CitationSource::Simple;
 
-use Data::Dumper;
 use XML::LibXML;
 use HTML::Entities;
 use URI::Escape;
 use constant CR_URL => 'http://doi.crossref.org/servlet/query';
 
-sub api_version
-{
+sub api_version {
   1;
 }
 
-sub name
-{
+sub name {
   'DOI';
 }
 
-sub version
-{
+sub version {
   '1.9.2.4';
 }
 
-sub understands
-{
-    my ($self, $uri) = @_;
+sub understands {
+  my ($self, $uri) = @_;
 
-    #reset query result cache
-    $self->{'query_result'} = undef;
+  $self->{'query_result'} = undef;  #  reset query result cache
 
-    return 0 unless $self->crossref_account;
+  return 0 unless $self->crossref_account;
 
-    my $scheme = $uri->scheme;
-    return 1 if $scheme eq 'doi';
-    return 1 if $scheme eq 'http' and $uri->host eq 'dx.doi.org' && $uri->path =~ m!^/10\.\d{4}/.+!;
-    return 0;
+  my $scheme = $uri->scheme;
+  return 1 if $scheme eq 'doi';
+  return 1 if $scheme eq 'http' and $uri->host eq 'dx.doi.org' && $uri->path =~ m!^/10\.\d{4}/.+!;
+  return 0;
 }
 
-sub filter
-{
+sub filter {
   my ($self, $uri) = @_;
   my $doi = $self->get_doi($uri) or return undef;
   # Do the CrossRef query now so we can fail and return a nice error message if the DOI is not registered
@@ -74,193 +67,168 @@ sub filter
   return $canonical;
 }
 
-sub citations
-{
-     my ($self, $uri) = @_;
-     return undef unless($self->understands($uri));
-     
-     my $doi = $self->get_doi($uri);
-     return undef unless $doi;
+sub citations {
+  my ($self, $uri) = @_;
+  return undef unless $self->understands($uri);
 
-     my $query_result = $self->query_result($doi);
-     return undef unless $query_result;
+  my $doi = $self->get_doi($uri);
+  return undef unless $doi;
 
-     #check it's worth returning
-     unless($query_result->{'journal'} && $query_result->{'pubdate'})
-     {
-	$self->errstr('Insufficient metadata extracted for doi:' . $doi);
-	return undef;
-     }
+  my $query_result = $self->query_result($doi);
+  return undef unless $query_result;
 
-     return new Bibliotech::CitationSource::ResultList(Bibliotech::CitationSource::Result::Simple->new($query_result));
+  #check it's worth returning
+  unless($query_result->{'journal'} && $query_result->{'pubdate'}) {
+    $self->errstr('Insufficient metadata extracted for doi:'.$doi);
+    return undef;
+  }
+
+  return Bibliotech::CitationSource::ResultList->new(Bibliotech::CitationSource::Result::Simple->new($query_result));
 }
 
-
-sub resolved
-{
-    my ($self, $doi) = @_;
-    my $query_result = $self->query_result($doi);
-
-    return 1 if $query_result->{'status'} && $query_result->{'status'} eq 'resolved';
-    return 0;
-}
-sub query_result
-{
-    my ($self, $doi) = @_;
-    return $self->{'query_result'}->{$doi} if $self->{'query_result'}->{$doi};
-    my $xml = $self->crossref_query_uri($doi); 
-    my $query_result = $self->parse_crossref_xml($xml, $doi);
-    return undef unless $query_result;
-    $self->{'query_result'}->{$doi} = $query_result;
-    return $query_result;
+sub resolved {
+  my ($self, $doi) = @_;
+  my $query_result = $self->query_result($doi);
+  return 1 if $query_result->{'status'} && $query_result->{'status'} eq 'resolved';
+  return 0;
 }
 
-sub parse_crossref_xml
-{
-    my ($self, $xml, $doi) = @_;
-    return undef unless $xml;
-    $xml =~ s/<crossref_result.*?>/<crossref_result>/;
+sub query_result {
+  my ($self, $doi) = @_;
+  return $self->{'query_result'}->{$doi} if $self->{'query_result'}->{$doi};
+  my $xml = $self->crossref_query($doi);
+  my $query_result = $self->parse_crossref_xml($xml, $doi);
+  return undef unless $query_result;
+  $self->{'query_result'}->{$doi} = $query_result;
+  return $query_result;
+}
 
-    my $parser = XML::LibXML->new();
-    my $tree = $parser->parse_string($xml);
-    unless ($tree) {
-		$self->errstr('XML parse failed');
-		return undef;
-    }
+sub parse_crossref_xml {
+  my ($self, $xml, $doi) = @_;
+  return undef unless $xml;
+  $xml =~ s/<crossref_result.*?>/<crossref_result>/;
 
-    my $root = $tree->getDocumentElement;
-    unless ($root) {
-		$self->errstr("no root");
-    }
+  my $parser = XML::LibXML->new();
+  my $tree = $parser->parse_string($xml);
+  unless ($tree) {
+    $self->errstr('XML parse failed');
+    return undef;
+  }
 
+  my $root = $tree->getDocumentElement;
+  unless ($root) {
+    $self->errstr('no root');
+  }
 
-    #sanity check
-    unless(lc($root->findvalue('query_result/body/query/doi')) eq lc($doi)) {
-		$self->errstr("DOI mismatch\n");
-		return undef;
-    }
-    return { status => 'unresolved' } if $root->findvalue('query_result/body/query/@status') eq 'unresolved';	
+  #sanity check
+  unless(lc($root->findvalue('query_result/body/query/doi')) eq lc($doi)) {
+    $self->errstr("DOI mismatch\n");
+    return undef;
+  }
 
-    #CrossRef XML has double-encoded entities, hence the decode_entities below
+  return { status => 'unresolved' } if $root->findvalue('query_result/body/query/@status') eq 'unresolved';	
 
-    return {
-             status => 'resolved',
-	     pubdate => $self->get_QueryValue($root, 'year'),
-             journal => { name => decode_entities($self->get_QueryValue($root, 'journal_title')), 
-                          issn => $self->get_QueryValue($root, 'issn[@type="print"]') 
-			}, 
-	     page => $self->get_QueryValue($root, 'first_page'), 
-             volume => $self->get_QueryValue($root, 'volume'),
-             issue => $self->get_QueryValue($root, 'issue'),
-             pubdate => $self->get_QueryValue($root, 'year'),
-             title => decode_entities($self->get_QueryValue($root, 'article_title')), 
-             doi => $doi
-        }; 
+  #CrossRef XML has double-encoded entities, hence the decode_entities below
+  return {status  => 'resolved',
+	  pubdate => $self->get_QueryValue($root, 'year') || undef,
+	  journal => { name => decode_entities($self->get_QueryValue($root, 'journal_title')) || undef,
+		       issn => $self->get_QueryValue($root, 'issn[@type="print"]') || undef,
+	             },
+	  page    => $self->get_QueryValue($root, 'first_page') || undef,
+	  volume  => $self->get_QueryValue($root, 'volume') || undef,
+	  issue   => $self->get_QueryValue($root, 'issue') || undef,
+	  pubdate => $self->get_QueryValue($root, 'year') || undef,
+	  title   => decode_entities($self->get_QueryValue($root, 'article_title')) || undef,
+	  doi     => $doi,
+         }; 
 }
 
 sub get_QueryValue {
   my ($self, $root, $key) = @_;
-    
-	
-  my $value;
-  $value = $root->findvalue('query_result/body/query/' . $key); 
-  unless ($value) {
-    #$self->errstr("No value for key: $key\n");
-    return undef;
-  }
-  return $value;
+  return $root->findvalue('query_result/body/query/'.$key);
 }
 
 sub get_doi {
-    my ($self, $uri) = @_;
-    my $doi;
-    if($uri->scheme eq 'doi') {
-	$doi = $uri;
-	$doi =~ s!^doi:!!;
-    }
-    elsif ( $uri->scheme eq 'http' && $uri->host eq 'dx.doi.org' && $uri->path =~ m!^/10\.\d{4}/.+! ) {
-        #DOI may contain a hash, so just manipulate raw string
-        $doi = $uri->as_string;
-        $doi =~ s!^http://dx\.doi\.org/!!i;
-	#$doi = $uri->path;
-	#$doi =~ s!^/!!;
-    }
-    #URI module escapes unsafe characters 
-    return lc(uri_unescape($doi));
+  my ($self, $uri) = @_;
+  my $doi;
+  if ($uri->scheme eq 'doi') {
+    ($doi = $uri->as_string) =~ s!^doi:!!;
+  }
+  elsif ($uri->scheme eq 'http' && $uri->host eq 'dx.doi.org' && $uri->path =~ m!^/10\.\d{4}/.+!) {
+    ($doi = $uri->as_string) =~ s!^http://dx\.doi\.org/!!i;
+  }
+  return $doi ? lc(uri_unescape($doi)) : undef;  # URI module escapes unsafe characters 
 }
 
+sub crossref_query {
+  my ($self, $doi) = @_;
 
-sub crossref_query_uri {
-    my ($self, $doi) = @_;
+  my ($user, $passwd) = $self->crossref_account;
+  my $ua  = $self->ua;
+  my $req = HTTP::Request->new(POST => CR_URL);
 
-    my ($user, $passwd) = $self->crossref_account;
-	my $ua = $self->ua;
-	my $req = new HTTP::Request(POST => CR_URL);
-	my $db = 'db=mddb';
+  $req->content_type('application/x-www-form-urlencoded');
+  $req->content(join('&',
+		     'usr='.$user,
+		     'pwd='.$passwd,
+		     'db=mddb',
+		     'report=Brief',
+		     'format=XSD_XML',
+		     'qdata='.uri_escape($self->build_query($doi))));
 
-	my $content = "usr=" . $user . "&pwd=" . $passwd . "&$db&report=Brief&format=XSD_XML&qdata=";
-	$content .= uri_escape($self->build_query($doi));
+  $ua->timeout(900);
 
-	$req->content_type('application/x-www-form-urlencoded');
-	$req->content($content);
+  my $response = $ua->request($req);
 
-	#set timeout 
-	$ua->{timeout} = 900;
+  unless ($response->is_success) {
+    $self->errstr($response->status_line);
+    return undef;
+  }
 
-	my $response = $ua->request($req);
-	my($headers) = $response->headers;
+  my $headers = $response->headers;
+  # trap error message from crossref where there are data errors dump to browser
+  if ($headers->title) {
+    $self->errstr($response->content);
+    return undef;
+  }
 
+  return $response->content;
+}
 
-	if($response->is_success) {
-			my($results) = $response->content;
-
-			#
-			# trap error message from crossref
-			#       where there are data errors
-			#       dump to browser
-			#
-			if($headers->title) {
-					$self->errstr($headers->title . "\n");
-					$self->errstr ($results);
-					return undef;
-			}
-
-			return($results);
-	}
-
-	$self->errstr("WARNING: " . $response->status_line . "\n");
-	return undef;
+sub query_xml_template {
+'<?xml version="1.0" encoding="UTF-8"?>
+<query_batch version="2.0"
+             xmlns="http://www.crossref.org/qschema/2.0"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <head>
+    <email_address>__EMAIL__</email_address>
+    <doi_batch_id>DOI-B1</doi_batch_id>
+  </head>
+  <body>
+    <query key="MyKey1" enable-multiple-hits="false" expanded-results="true">
+      <doi>__DOI__</doi>
+    </query>      
+  </body>
+</query_batch>
+';
 }
 
 sub build_query {
-
-    my ($self, $doi) = @_;
-    $doi = encode_entities($doi);
-    my $q = q{<?xml version = "1.0" encoding="UTF-8"?>
-<query_batch version="2.0" xmlns = "http://www.crossref.org/qschema/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-   <head>
-      <email_address>};
-    $q .= $self->bibliotech->siteemail;
-    $q .= q{</email_address>
-      <doi_batch_id>DOI-B1</doi_batch_id>                  
-   </head>
-   <body>
-      <query key="MyKey1" enable-multiple-hits="false" expanded-results="true">         
-  };
-  $q .= "<doi>\n    $doi\n    </doi>\n";
-  $q .= q{</query>      
-   </body>
-</query_batch>  };
-  return $q;
+  my ($self, $doi) = @_;
+  my $xml         = $self->query_xml_template;
+  my $email       = $self->bibliotech->siteemail;
+  my $escaped_doi = encode_entities($doi);
+  $xml =~ s/__EMAIL__/$email/;
+  $xml =~ s/__DOI__/$escaped_doi/;
+  return $xml;
 }
 
 sub crossref_account {
-    my ($self) = shift;
-    my $user = $self->cfg('CR_USER');
-    my $password = $self->cfg('CR_PASSWORD');
-
-    ($user && $password) ? return ($user, $password) : return undef;
+  my $self     = shift;
+  my $user     = $self->cfg('CR_USER')     or return;
+  my $password = $self->cfg('CR_PASSWORD') or return;
+  return ($user, $password);
 }
 
-#true!
 1;
+__END__
