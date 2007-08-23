@@ -25,7 +25,6 @@ use Bibliotech::CitationSource::Simple;
 
 use Data::Dumper;
 use XML::LibXML;
-use LWP::UserAgent;
 use HTML::Entities;
 use URI::Escape;
 use constant CR_URL => 'http://doi.crossref.org/servlet/query';
@@ -195,7 +194,7 @@ sub crossref_query_uri {
     my ($self, $doi) = @_;
 
     my ($user, $passwd) = $self->crossref_account;
-	my $ua = new LWP::UserAgent;
+	my $ua = $self->ua;
 	my $req = new HTTP::Request(POST => CR_URL);
 	my $db = 'db=mddb';
 

@@ -137,7 +137,8 @@ sub citations_id {
     my $query_uri = _url_from_pmid('fetch', $id_hashref->{db}, $id_hashref->{pubmed});
     my $xml = $self->get($query_uri) or die "XML retrieval failed\n";
     die "Error message from Pubmed server: $1\n" if $xml =~ m|<Error[^>]*>(.*)</Error>|si;
-    return Bio::Biblio::IO->new(-data => $xml, -format => 'pubmedxml') or die "IO object false\n";
+    my $obj = Bio::Biblio::IO->new(-data => $xml, -format => 'pubmedxml') or die "IO object false\n";
+    return $obj;
   };
   die $@ if $@ =~ /at .* line \d+/;
   $self->errstr($@), return undef if $@;
