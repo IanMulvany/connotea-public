@@ -1,7 +1,7 @@
 RDIR=bibliotech_staging
 REPO=http://65.199.186.64/repo/$RDIR/
 BASE=/var/www/perl/connotea
-SITE=site/default
+SITE=site/npg
 HTML=/var/www/html/connotea
 CONF=/etc/bibliotech.conf
 APCONF=/etc/httpd/conf.d/virtualhost-connotea.org.conf
