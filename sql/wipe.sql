@@ -1,4 +1,5 @@
 -- Use this to wipe a bibliotech database.
+-- This is not used for normal daily operation.
 
 -- The advantage of this script over a DROP DATABASE; SOURCE schema.sql
 -- is that this set of commands can be run on the main InnoDB database and allowed
