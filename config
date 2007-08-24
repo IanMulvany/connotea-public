@@ -1,4 +1,5 @@
-# Configuration
+# Example Configuration For A Connotea Code Instance
+#
 # Should be installed to /etc/bibliotech.conf
 # Commented lines represent default values
 
