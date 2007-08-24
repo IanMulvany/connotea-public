@@ -10,6 +10,9 @@
 #(http://www.gnu.org/licenses/gpl.html).
 #########################################################################
 
+# Note this is intended to be installed one directory up; same place as Bibliotech.pm.
+# Not supported anymore. Included in the distribution in case someone wants to revive.
+
 use strict;
 
 # Apache::Emulator 0.04 uses mod_perl 1.0 stuff so load in mod_perl 2 compatiblity modules..
