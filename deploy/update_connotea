@@ -17,6 +17,19 @@ if [ "$1" == "+c" ]; then
   cd bibliotech_co
   darcs get $* $REPO || exit 2
   mv $RDIR ../bibliotech_new
+  # REPO2 allows files in a separate repo to be overlaid
+  # (currently used for large movie files which are awkward in darcs)
+  if [ -n "$REPO2" -a -n "$RDIR2" ]; then
+    # darcs is just used as a convenient delivery mechanism here
+    darcs get $* $REPO2 || exit 2
+    cd $RDIR2
+    rm -rf _darcs
+    cp -ar * ../../bibliotech_new/
+    # bibliotech_new now has some "whatsnew" changes but that's ok
+    # as long as future pull's from $REPO don't conflict with $REPO2
+    cd ..
+    rmdir $RDIR2
+  fi
   cd ..
   rmdir bibliotech_co
   cd bibliotech_new
