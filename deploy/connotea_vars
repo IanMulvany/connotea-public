@@ -1,5 +1,7 @@
 RDIR=bibliotech_staging
 REPO=http://65.199.186.64/repo/$RDIR/
+RDIR2=bibliotech_staging_movies
+REPO2=http://65.199.186.64/repo/$RDIR2/
 BASE=/var/www/perl/connotea
 SITE=site/npg
 HTML=/var/www/html/connotea
