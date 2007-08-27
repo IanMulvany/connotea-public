@@ -25,6 +25,7 @@ if [ "$1" == "+c" ]; then
     cd $RDIR2
     rm -rf _darcs
     cp -ar * ../../bibliotech_new/
+    rm -rf *
     # bibliotech_new now has some "whatsnew" changes but that's ok
     # as long as future pull's from $REPO don't conflict with $REPO2
     cd ..
