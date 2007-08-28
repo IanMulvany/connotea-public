@@ -1,0 +1,9 @@
+<div id="outer-wrapper">
+    <div id="fullpage-container">
+      <h1 class="pagetitle">[% IF pagetitle %][% pagetitle %][% ELSIF main_heading %][% main_heading %][% ELSE %][% main_title %][% END %]</h1>
+      <div id="fullpage-content">
+	[% content %]
+      </div><!-- end id fullpage-content -->
+    </div><!-- end id fullpage-container -->
+  <div class="clearing">&nbsp;</div>
+</div><!-- end id outer-wrapper -->

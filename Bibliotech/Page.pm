@@ -129,10 +129,15 @@ sub find_template_calc {
 		   return $b;
 		 } @match)->[1] if @match;
 
-  # drop back to default template file - either popup or normal
+  # drop back to default template file - either popup, admin, or normal
   if ($page =~ /popup$/) {
     if (-e (my $defaultpopup = $localroot.'defaultpopup'.$extension)) {
       return $defaultpopup;
+    }
+  }
+  if ($page =~ /^admin/) {
+    if (-e (my $defaultadmin = $localroot.'defaultadmin'.$extension)) {
+      return $defaultadmin;
     }
   }
   if (-e (my $default = $localroot.'default'.$extension)) {
