@@ -1,0 +1,6 @@
+[% prepare_component_begin() %]
+[% prepare_component('main',undef,'main,verbose') %]
+[% prepare_component_end() %]
+[% WRAPPER normalpopup.tt %]
+[% component_html('main',undef,'main,verbose') %]
+[% END %]
