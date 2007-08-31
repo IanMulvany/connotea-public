@@ -616,7 +616,7 @@ sub new_user {
       $redirect_email) = @_;
   my @data = ($username, $password, $firstname, $lastname, $email, $openurl_resolver, $openurl_name);
   $self->validate_user_fields_for_new_user(@data);
-  my $user = $self->new_user_create(@data);
+  my $user = $self->new_user_create_with_dup_key_error(@data);
   $self->new_user_possibly_send_email($user, $redirect_email);
   return $user;
 }
@@ -624,15 +624,39 @@ sub new_user {
 sub new_user_create {
   my ($self, $username, $password, $firstname, $lastname, $email, $openurl_resolver, $openurl_name) = @_;
   Bibliotech::User->create({username         => $username,
-			    password  	     => $password,
-			    firstname 	     => $firstname,
-			    lastname  	     => $lastname,
-			    email     	     => $email,
+			    password         => $password,
+			    firstname        => $firstname,
+			    lastname         => $lastname,
+			    email            => $email,
 			    openurl_resolver => $openurl_resolver || undef,
 			    openurl_name     => $openurl_name     || undef,
 			    verifycode       => _generate_verifycode($username, $password, $email),
 			    active           => 0,
 			   }) or die "cannot create user $username\n";
+}
+
+sub new_user_create_with_dup_key_error {
+  my ($self, $username, $password, $firstname, $lastname, $email, $openurl_resolver, $openurl_name) = @_;
+  my $user = eval {
+    $self->new_user_create($username, $password, $firstname, $lastname, $email, $openurl_resolver, $openurl_name);
+  };
+  if (my $e = $@) {
+    # These errors occur when two processes are asked to insert the
+    # same user simultaneously. This can happen for example when the
+    # user clicks the submit button twice quickly. The best thing to
+    # do is handle them the same as a slightly slower race condition
+    # that failed in validate_user_fields_for_new_user().
+    if ($e =~ /\bDuplicate entry '.*' for key 2\b/) {
+      die "Sorry, the username $username is already taken; please choose another.\n";
+    }
+    elsif ($e =~ /\bDuplicate entry '.*' for key 3\b/) {
+      die "Sorry, the email address $email is already registered. Perhaps you already have an account?\n";
+    }
+    else {
+      die $e;
+    }
+  }
+  return $user;
 }
 
 # $redirect email should be undef normally, set to filename for
