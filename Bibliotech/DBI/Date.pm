@@ -120,7 +120,7 @@ sub new {
       ($self, $complete) = _long_parse($class, $str, $create);
     }
   }
-  bless $self, ref $class || $class if $complete;
+  bless $self, (ref $class || $class).($complete ? '' : '::Incomplete');
   $self->convert_time_zone_to_desired;
   return $self;
 }
