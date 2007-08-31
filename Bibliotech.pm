@@ -19,7 +19,7 @@ use strict;
 use base 'Class::Accessor::Fast';
 use URI::Heuristic;
 use Digest::MD5 qw/md5_hex/;
-use Encode;
+use Encode qw/encode_utf8/;
 use Bio::Biblio::IO;
 use Set::Array;
 use Data::Dumper;
@@ -603,11 +603,11 @@ sub validate_user_fields_for_new_user {
 
 sub _generate_verifycode {
   my ($username, $password, $email) = @_;
-  return substr(md5_hex(join('/',
-			     $username,
-			     $password,
-			     $email,
-			     $USER_VERIFYCODE_SECRET)),
+  return substr(md5_hex(encode_utf8(join('/',
+					 $username,
+					 $password,
+					 $email,
+					 $USER_VERIFYCODE_SECRET))),
 		0, 16);
 }
 
