@@ -1,0 +1,21 @@
+<h1>Administrative User Rename</h1>
+
+<div id="adminform">
+  [% IF validation_error %]
+  <p class="errormsg">[% validation_error %]</p>
+  [% END %]
+  [% IF actionmsg %]
+  <p class="actionmsg">[% actionmsg %]</p>
+  [% END %]
+  <form method="post"
+	action="[% location %]adminrenameuser"
+	enctype="application/x-www-form-urlencoded">
+    <p><label for="old">Old username:</label>
+      <input type="text" name="old" value="[% sticky('old') %]" size="20" class="searchtextctl" id="oldbox" />
+    </p>
+    <p><label for="new">New username:</label>
+      <input type="text" name="new" value="[% sticky('new') %]" size="20" class="searchtextctl" id="newbox" />
+    </p>
+    <input type="submit" name="button" value="Submit" class="buttonctl" id="submitbutton" />
+  </form>
+</div>
