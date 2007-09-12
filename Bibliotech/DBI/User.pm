@@ -595,7 +595,7 @@ sub rename {
   Bibliotech::User->new($new_username) and die "A user named \"$new_username\" already exists.\n";
   # make sure the new name is legal:
   eval { _validate_username($new_username); };
-  die "Cannot accept new username: $@" if $@;
+  die "Cannot accept new username \"$new_username\": $@" if $@;
   # perform the rename:
   $self->username($new_username);
   $self->mark_updated;

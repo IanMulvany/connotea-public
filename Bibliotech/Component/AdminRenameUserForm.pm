@@ -17,8 +17,14 @@ sub last_updated_basis {
 
 sub rename {
   my ($self, $old_username, $new_username) = @_;
-  my $renaming_user = Bibliotech::User->new($old_username) or die "Cannot find user \"$old_username\".\n";
-  $renaming_user->rename($new_username);
+  eval {
+    my $renaming_user = Bibliotech::User->new($old_username) or die "Cannot find user \"$old_username\".\n";
+    $renaming_user->rename($new_username);
+  };
+  if (my $e = $@) {
+    $e =~ s/Your username/Username/;
+    die $e;
+  }
 }
 
 sub html_content {
