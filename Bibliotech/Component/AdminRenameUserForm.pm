@@ -47,22 +47,9 @@ sub html_content {
     $validationmsg = $@ if $@;
   }
 
-  my $o = '';
-
-  $o .= $cgi->div({class => 'errormsg'}, $validationmsg) if $validationmsg;
-  $o .= $cgi->div({class => 'actionmsg'}, map { $_.$cgi->br } @report) if @report;
-
-  $o .= $cgi->div($cgi->h1('Rename User'),
-		  $cgi->start_form(-method => 'POST', -action => $bibliotech->location.'adminrenameuser'),
-		  'Old username:', $cgi->br,
-		  $cgi->textfield(-id => 'oldbox', -class => 'searchtextctl', -name => 'old', -size => 20),
-		  $cgi->br,
-		  'New username:', $cgi->br,
-		  $cgi->textfield(-id => 'newbox', -class => 'searchtextctl', -name => 'new', -size => 20),
-		  $cgi->br,
-		  $cgi->submit(-id => 'submitbutton', -class => 'buttonctl', -name => 'button', -value => 'Submit'),
-		  $cgi->end_form,
-		  );
+  my $o = $self->tt('compadminrenameuser',
+		    {actionmsg => join('', map { $_.$cgi->br } @report) || undef},
+		    $self->validation_exception('', $validationmsg));
 
   return Bibliotech::Page::HTML_Content->simple($o);
 }
