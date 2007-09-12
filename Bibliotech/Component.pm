@@ -385,9 +385,9 @@ sub _scan_for_title {
   return;
 }
 
-# a macro in the lisp sense - call with a sub ref to do some tests
-# that die in the case of an error and this sub will just wrap them in
-# an object with a guaranteed field name for you
+# call with a sub ref to do some tests that die in the case of an
+# error and this sub will just wrap them in an object with a
+# guaranteed field name for you
 sub validate_tests {
   my ($self, $default_field, $tests_sub) = @_;
   eval { $tests_sub->(); };

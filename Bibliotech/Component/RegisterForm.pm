@@ -9,6 +9,7 @@
 package Bibliotech::Component::RegisterForm;
 use strict;
 use base 'Bibliotech::Component';
+use Bibliotech::DBI;
 use Bibliotech::Component::VerifyForm;
 
 sub last_updated_basis {
@@ -96,52 +97,37 @@ sub html_content {
 					      javascript_onload => ($main ? $javascript_first_empty : undef)});
 }
 
+sub validate_firstname {
+  my ($self, $firstname) = @_;
+  $self->validate_tests('firstname', sub { Bibliotech::User::_validate_firstname($firstname); });
+}
+
+sub validate_lastname {
+  my ($self, $lastname) = @_;
+  $self->validate_tests('lastname', sub { Bibliotech::User::_validate_lastname($lastname); });
+}
+
 sub validate_username {
   my ($self, $username) = @_;
-  return $self->validate_tests('username', sub {
-    $username                or die "You must select a username.\n";
-    length $username >= 3    or die "Your username must be at least 3 characters long.\n";
-    length $username <= 40   or die "Your username must be no more than 40 characters long.\n";
-    $username =~ /^[A-Za-z0-9]+$/ or die "Your username must be composed of alphanumeric characters only (a-z,0-9).\n";
-    $username !~ /^\d/       or die "Your username may not start with a digit.\n";
-  });
+  $self->validate_tests('username', sub { Bibliotech::User::_validate_username($username); });
 }
 
 sub validate_password {
   my ($self, $password, $password2) = @_;
-  return $self->validate_tests('password', sub {
-    $password                or die "You must select a password.\n";
-    length $password >= 4    or die "Your password must be at least 4 characters long.\n";
-    length $password <= 40   or die "Your password must be no more than 40 characters long.\n";
+  $self->validate_tests('password', sub {
+    Bibliotech::User::_validate_password($password);
     $password2               or die [password2 => "Please re-enter your password for verification.\n"];
     $password eq $password2  or die [password2 => "The passwords do not match.\n"];
   });
 }
 
-sub validate_firstname {
-  my ($self, $firstname) = @_;
-  return $self->validate_tests('firstname', sub {
-    $firstname               or die "You must provide your first name.\n";
-    length $firstname <= 40  or die "Your first name must be no more than 40 characters long.\n";
-  });
-}
-
-sub validate_lastname {
-  my ($self, $lastname) = @_;
-  return $self->validate_tests('lastname', sub {
-    $lastname                or die "You must provide your last name.\n";
-    length $lastname <= 40   or die "Your last name must be no more than 40 characters long.\n";
-  });
-}
-
 sub validate_email {
   my ($self, $email, $email2) = @_;
-  return $self->validate_tests('email', sub {
-    $email                   or die "You must provide a working email address.\n";
-    length $email <= 50      or die "Your email address must be no more than 50 characters long.\n";
-    $email =~ /^.+\@.+$/     or die "Invalid email address format.\n";
+  $self->validate_tests('email', sub {
+    Bibliotech::User::_validate_email($email);
+    $email2                  or die [email2 => "Please re-enter your email address for verification.\n"];
     $email eq $email2        or die [email2 => "The email addresses do not match.\n"];
-  })
+  });
 }
 
 1;

@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 use strict;
 use Bibliotech;
-use Bibliotech::Component::RegisterForm;
 
 my $old_username = shift @ARGV or die "Please specify old and new usernames.\n";
 my $new_username = shift @ARGV or die "Must specify new username.\n";
@@ -29,7 +28,7 @@ sub get_user {
 }
 
 sub validate_username {
-  Bibliotech::Component::RegisterForm->validate_username(shift);
+  Bibliotech::User::_validate_username(shift);
 }
 
 # try a range of things but don't stop if one fails, just report all errors at the end

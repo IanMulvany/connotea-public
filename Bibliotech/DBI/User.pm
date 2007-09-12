@@ -591,9 +591,49 @@ sub deactivate {
 
 sub rename {
   my ($self, $new_username) = @_;
+  # make sure we won't clobber someone:
   Bibliotech::User->new($new_username) and die "A user named \"$new_username\" already exists.\n";
+  # make sure the new name is legal:
+  eval { _validate_username($new_username); };
+  die "Cannot accept new username: $@" if $@;
+  # perform the rename:
   $self->username($new_username);
   $self->mark_updated;
+}
+
+sub _validate_username {
+  my $username = shift;
+  $username                or die "You must select a username.\n";
+  length $username >= 3    or die "Your username must be at least 3 characters long.\n";
+  length $username <= 40   or die "Your username must be no more than 40 characters long.\n";
+  $username =~ /^[A-Za-z0-9]+$/ or die "Your username must be composed of alphanumeric characters only (a-z,0-9).\n";
+  $username !~ /^\d/       or die "Your username may not start with a digit.\n";
+}
+
+sub _validate_password {
+  my $password = shift;
+  $password                or die "You must select a password.\n";
+  length $password >= 4    or die "Your password must be at least 4 characters long.\n";
+  length $password <= 40   or die "Your password must be no more than 40 characters long.\n";
+}
+
+sub _validate_firstname {
+  my $firstname = shift;
+  $firstname               or die "You must provide your first name.\n";
+  length $firstname <= 40  or die "Your first name must be no more than 40 characters long.\n";
+}
+
+sub _validate_lastname {
+  my $lastname = shift;
+  $lastname                or die "You must provide your last name.\n";
+  length $lastname <= 40   or die "Your last name must be no more than 40 characters long.\n";
+}
+
+sub _validate_email {
+  my $email = shift;
+  $email                   or die "You must provide a working email address.\n";
+  length $email <= 50      or die "Your email address must be no more than 50 characters long.\n";
+  $email =~ /^.+\@.+$/     or die "Invalid email address format.\n";
 }
 
 1;
