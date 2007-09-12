@@ -9,17 +9,29 @@
 package Bibliotech::Component::LogoutForm;
 use strict;
 use base 'Bibliotech::Component';
-use Bibliotech::AuthCookie;
+use Bibliotech::Component::LoginForm;
+use Bibliotech::Cookie;
 
 sub last_updated_basis {
   ('LOGIN');
 }
 
+# analogous to LoginForm set_cookie()
+sub set_cookie {
+  my ($self, $bibliotech) = @_;
+  my $add = Bibliotech::Component::LoginForm::_cookie_setter($bibliotech->request);
+  $add->(Bibliotech::Cookie->logout_cookie($bibliotech));
+}
+
+sub do_logout_and_return_location {
+  my ($self, $bibliotech) = @_;
+  $self->set_cookie($bibliotech);
+  return $bibliotech->location;
+}
+
 sub html_content {
   my ($self, $class, $verbose) = @_;
-  my $cookie = Bibliotech::AuthCookie->logout_cookie($self->bibliotech);
-  $self->bibliotech->request->err_headers_out->add('Set-Cookie' => $cookie);
-  die 'Location: '.$self->bibliotech->location."\n";
+  die 'Location: '.$self->do_logout_and_return_location($self->bibliotech)."\n";
 }
 
 1;

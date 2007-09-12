@@ -1,12 +1,17 @@
 #!/usr/bin/perl
-
 use strict;
 use Bibliotech;
+use Bibliotech::Component::RegisterForm;
 
 my $old_username = shift @ARGV or die "Please specify old and new usernames.\n";
 my $new_username = shift @ARGV or die "Must specify new username.\n";
-my $user = Bibliotech::User->new($old_username) or die "Cannot find user \"$old_username\".\n";
+
+eval { Bibliotech::Component::RegisterForm->validate_username($new_username); };
+die "Cannot accept new username: $@" if $@;
+
 Bibliotech::User->new($new_username) and die "A user named \"$new_username\" already exists.\n";
+
+my $user = Bibliotech::User->new($old_username) or die "Cannot find user \"$old_username\".\n";
 $user->username($new_username);
 $user->mark_updated;
 print "\"$old_username\" renamed to \"$new_username\".\n";

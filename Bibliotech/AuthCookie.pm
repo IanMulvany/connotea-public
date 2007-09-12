@@ -66,11 +66,6 @@ sub handler {
   return OK;
 }
 
-# legacy
-sub authen_handler {
-  handler(@_);
-}
-
 sub mark_apache_request_for_user {
   my ($r, $user_id, $username, $logintime) = @_;
   my $notes = $r->notes;
@@ -82,41 +77,7 @@ sub mark_apache_request_for_user {
   return OK;
 }
 
-sub get_login_redirect_cookie {
-  my ($self, $r) = @_;
-  if (my $cookie_header = $r->headers_in->get('Cookie')) {
-    if (my %cookies = CGI::Cookie->parse($cookie_header)) {
-      if (my $cookie = $cookies{'bibliotech_redirect'}) {
-	return $cookie->value;
-      }
-    }
-  }
-  return undef;
-}
-
-# legacy
-sub make_login_cookie {
-  my $self = shift;
-  return Bibliotech::Cookie->make_login_cookie(@_);
-}
-
-# legacy
-sub login_cookie {
-  my $self = shift;
-  return Bibliotech::Cookie->login_cookie(@_);
-}
-
-# legacy
-sub logout_cookie {
-  my $self = shift;
-  return Bibliotech::Cookie->logout_cookie(@_);
-}
-
-# legacy
-sub login_redirect_cookie {
-  my $self = shift;
-  return Bibliotech::Cookie->login_redirect_cookie(@_);
-}
+*authen_handler = \*handler;  # described in docs as authen_handler
 
 1;
 __END__

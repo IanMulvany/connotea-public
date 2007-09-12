@@ -75,6 +75,18 @@ sub login_redirect_cookie {
 			 -path    => $bibliotech->request->location);
 }
 
+sub get_login_redirect_cookie {
+  my ($self, $r) = @_;
+  if (my $cookie_header = $r->headers_in->get('Cookie')) {
+    if (my %cookies = CGI::Cookie->parse($cookie_header)) {
+      if (my $cookie = $cookies{'bibliotech_redirect'}) {
+	return $cookie->value;
+      }
+    }
+  }
+  return undef;
+}
+
 sub virgin_cookie {
   my ($self, $r) = @_;
   return new CGI::Cookie(-name    => 'bibliotech_virgin',
