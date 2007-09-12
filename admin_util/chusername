@@ -6,12 +6,40 @@ use Bibliotech::Component::RegisterForm;
 my $old_username = shift @ARGV or die "Please specify old and new usernames.\n";
 my $new_username = shift @ARGV or die "Must specify new username.\n";
 
-eval { Bibliotech::Component::RegisterForm->validate_username($new_username); };
-die "Cannot accept new username: $@" if $@;
+update_user(get_user_and_check_names($old_username => $new_username));
 
-Bibliotech::User->new($new_username) and die "A user named \"$new_username\" already exists.\n";
+sub update_user {
+  my ($user, $old, $new) = @_;
+  $user->username($new);
+  $user->mark_updated;
+  print "\"$old\" renamed to \"$new\".\n";
+}
 
-my $user = Bibliotech::User->new($old_username) or die "Cannot find user \"$old_username\".\n";
-$user->username($new_username);
-$user->mark_updated;
-print "\"$old_username\" renamed to \"$new_username\".\n";
+sub get_user_and_check_names {
+  my ($old, $new) = @_;
+  my $user;
+  know_all(sub { $user = get_user($old)              or die "Cannot find user \"$old\".\n"; },
+	   sub { eval { validate_username($new); };     die "Cannot accept new username \"$new\": $@" if $@; },
+	   sub { get_user($new)                     and die "A user named \"$new\" already exists.\n"; });
+  return ($user, $old, $new);
+}
+
+sub get_user {
+  Bibliotech::User->new(shift);
+}
+
+sub validate_username {
+  Bibliotech::Component::RegisterForm->validate_username(shift);
+}
+
+# try a range of things but don't stop if one fails, just report all errors at the end
+sub know_all {
+  my (@values, @errors);
+  foreach my $action (@_) {
+    my $value = eval { $action->(); };
+    push @errors, $@ if $@;
+    push @values, $value;
+  }
+  die join('', @errors) if @errors;
+  return @values;
+}
