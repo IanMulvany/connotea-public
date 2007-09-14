@@ -390,6 +390,17 @@ sub test_node_for_retrieval {
   return Bibliotech::Component::Wiki::NodeName->new($node_authoritative);
 }
 
+sub list_only_edited_by_username {
+  my ($self, $wiki, $username) = @_;
+  my $sth = Bibliotech::Component::Wiki::DBI->sql_list_only_edited_by_username;
+  $sth->execute($username, $username) or die $sth->error;
+  my @nodes;
+  while (my ($node_id, $node, $version, $max_version, $others) = $sth->fetchrow_array) {
+    push @nodes, Bibliotech::Component::Wiki::NodeName->new($node);
+  }
+  return @nodes;
+}
+
 # in:
 #   $self
 #   $node - node name object
@@ -1423,6 +1434,16 @@ SELECT 	 name
 FROM     node
 WHERE  	 name = ?
 LIMIT    1
+
+__PACKAGE__->set_sql(list_only_edited_by_username => <<'');
+SELECT   m.node_id, n2.name, m.version, (SELECT MAX(n.version) FROM node n WHERE n.id=m.node_id) AS max_version,
+         (SELECT COUNT(*) FROM metadata m2 WHERE m2.node_id = m.node_id AND metadata_type = 'username' and metadata_value != ?) as others
+FROM     metadata m
+         LEFT JOIN node n2 ON (m.node_id=n2.id)
+WHERE    m.metadata_type = 'username'
+AND      m.metadata_value = ?
+HAVING   version = max_version
+AND      others = 0
 
 package Bibliotech::Component::Wiki::Change;
 # wrapper for hash sent by Wiki::Toolkit::list_recent_changes() for each change

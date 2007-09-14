@@ -516,12 +516,15 @@ sub unquarantine_all_user_bookmarks {
 }
 
 sub delete_wiki_node {
-  my ($self, $bibliotech) = @_;
+  my ($self, $bibliotech, $all_nodes) = @_;
   eval "use Bibliotech::Component::Wiki;";
   my $component = Bibliotech::Component::Wiki->new({bibliotech => $bibliotech});
   my $wiki = $component->wiki_obj;
-  my $node = 'User:'.$self->username;
-  $wiki->delete_node($node) if $wiki->node_exists($node);
+  my $username = $self->username;
+  my @nodes = $all_nodes ? map { "$_" } $component->list_only_edited_by_username($wiki, $username) : ('User:'.$username);
+  foreach my $node ($component->list_only_edited_by_username($wiki, $username)) {
+    $wiki->delete_node($node) if $wiki->node_exists($node);
+  }
 }
 
 sub deactivate_handle_user_bookmarks {
@@ -542,7 +545,7 @@ sub deactivate_notify_user {
 sub deactivate_delete_wiki_node {
   my ($self, $reason_code, $bibliotech) = @_;
   return unless $reason_code eq 'spammer';
-  eval { $self->delete_wiki_node($bibliotech); };
+  eval { $self->delete_wiki_node($bibliotech, 1); };
   warn $@ if $@;
 }
 
