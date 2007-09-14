@@ -69,24 +69,21 @@ sub exists_wiki_page_for_object {
 
 sub rss_content {
   my ($self, $verbose) = @_;
-  my $wiki        = $self->wiki_obj;
-  my @raw_changes = $wiki->list_recent_changes(last_n_changes => 15);
-  my @changes     = map { Bibliotech::Component::Wiki::Change->new({change    => $_,
-								    component => $self,
-								    wiki      => $wiki,
-								   })
-			} @raw_changes;
-  my $bibliotech  = $self->bibliotech;
-  my $location    = $bibliotech->location;
-  my $interwiki   = do { local $_ = $bibliotech->sitename;
-			 s/ (\w)/uc($1)/ge;  # WikiWord it by removing spaces before words and capitalizing
-			 s/\s+//g;           # then mercilessly remove all remaining spaces
-			 $_ };
+  my $wiki       = $self->wiki_obj;
+  my $bibliotech = $self->bibliotech;
+  my $location   = $bibliotech->location;
   return $self->tt('compwikirss',
-		   {changes   => \@changes,
+		   {changes   => [map { Bibliotech::Component::Wiki::Change->new({change    => $_,
+										  component => $self,
+										  wiki      => $wiki,
+										 })
+				      } $wiki->list_recent_changes(last_n_changes => 15)],
 		    prefix    => $location.'wiki/',
 		    rssurl    => $location.'rss/wiki/',
-		    interwiki => $interwiki,
+		    interwiki => do { local $_ = $bibliotech->sitename;
+				      s/ (\w)/uc($1)/ge;  # WikiWord it by removing spaces before words and capitalizing
+				      s/\s+//g;           # then mercilessly remove all remaining spaces
+				      $_ },
 		   });
 }
 
