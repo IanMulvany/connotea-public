@@ -9,10 +9,10 @@
 package Bibliotech::Component::Wiki;
 use strict;
 use base 'Bibliotech::Component';
-use CGI::Wiki;
-use CGI::Wiki::Store::MySQL;
-use CGI::Wiki::Formatter::Default;
-use CGI::Wiki::Plugin::Diff;
+use Wiki::Toolkit;
+use Wiki::Toolkit::Store::MySQL;
+use Wiki::Toolkit::Formatter::Default;
+use Wiki::Toolkit::Plugin::Diff;
 use Encode qw/decode_utf8 encode_utf8 is_utf8/;
 use Bibliotech::DBI;
 use Bibliotech::Util;
@@ -34,7 +34,7 @@ sub wiki_obj {
   my $location   = $bibliotech->location;
   my $prefix     = $location.'wiki/';
   my $dbh        = Bibliotech::Component::Wiki::DBI->db_Main;
-  my $store      = CGI::Wiki::Store::MySQL->new(dbh => $dbh);
+  my $store      = Wiki::Toolkit::Store::MySQL->new(dbh => $dbh);
   $store->{_charset} ||= 'utf8'; # 'iso-8859-1';  # fix bug where this would not be set but be expected
   my $formatter  = Bibliotech::Wiki::CGI::Formatter->new(extended_links => 1,
 							 implicit_links => 1,
@@ -42,10 +42,10 @@ sub wiki_obj {
 							 node_prefix    => $prefix,
 							 # never add allowed_tags or it will break WebAPI page
 							 );
-  my $wiki       = CGI::Wiki->new(store     => $store,
-				  #search    => $search,
-				  formatter => $formatter,
-				  );
+  my $wiki       = Wiki::Toolkit->new(store     => $store,
+				      #search    => $search,
+				      formatter => $formatter,
+				     );
 
   $formatter->prefix($prefix);
   $formatter->bibliotech($bibliotech);
@@ -163,7 +163,7 @@ sub html_content {
     $cgi->param(prefix => $node->prefix);
   }
 
-  my $lock_plugin = CGI::Wiki::Plugin::Lock->new;
+  my $lock_plugin = Wiki::Toolkit::Plugin::Lock->new;
   $wiki->register_plugin(plugin => $lock_plugin);
 
   # multiplex buttons on edit form
@@ -822,7 +822,7 @@ sub print_diff {
   my $left_version  = $options->{left_version};
   my $right_version = $options->{right_version};
 
-  my $plugin = CGI::Wiki::Plugin::Diff->new;
+  my $plugin = Wiki::Toolkit::Plugin::Diff->new;
   $wiki->register_plugin(plugin => $plugin);   # called before any node reads
   my %diff = $plugin->differences(node          => "$node",
 				  left_version  => $left_version,
@@ -926,7 +926,7 @@ sub is_referent_group {
 }
 
 package Bibliotech::Wiki::CGI::Formatter;
-use base ('CGI::Wiki::Formatter::Default', 'Class::Accessor::Fast');
+use base ('Wiki::Toolkit::Formatter::Default', 'Class::Accessor::Fast');
 use Parse::RecDescent;
 use Bibliotech::DBI;
 use HTML::Entities;
@@ -1428,7 +1428,7 @@ WHERE  	 name = ?
 LIMIT    1
 
 package Bibliotech::Component::Wiki::Change;
-# wrapper for hash sent by CGI::Wiki::list_recent_changes() for each change
+# wrapper for hash sent by Wiki::Toolkit::list_recent_changes() for each change
 use base 'Class::Accessor::Fast';
 
 __PACKAGE__->mk_accessors(qw/change component wiki/);
@@ -1460,10 +1460,10 @@ sub diff_html {
   return $diff->content;
 }
 
-package CGI::Wiki::Plugin::Lock;
+package Wiki::Toolkit::Plugin::Lock;
 use strict;
 use warnings;
-use base 'CGI::Wiki::Plugin';
+use base 'Wiki::Toolkit::Plugin';
 
 our $plugin_key = 'lock';
 our $table = 'p_'.$plugin_key.'_node';  # per docs for read/write tables

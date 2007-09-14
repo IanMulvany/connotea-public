@@ -439,10 +439,6 @@ MINIMUM REQUIREMENTS
 
     *   CGI
 
-    *   CGI::Wiki
-
-    *   CGI::Wiki::Plugin::Diff
-
     *   Class::DBI
 
     *   Config::Scoped
@@ -523,6 +519,10 @@ MINIMUM REQUIREMENTS
     *   URI::QueryParam
 
     *   Want
+
+    *   Wiki::Toolkit
+
+    *   Wiki::Toolkit::Plugin::Diff
 
     *   XML::Element
 
@@ -619,19 +619,19 @@ SETUP
       GRANT SELECT, INSERT, UPDATE, DELETE ON bibliotech_search.* TO
       user@localhost IDENTIFIED BY 'secret';
 
-  CGI::WIKI
-    You also need to setup CGI::Wiki so that a wiki is available. This is
-    required. You should create a blank database, grant a user rights to it,
-    and run the provided setup script.
+  WIKI::TOOLKIT
+    You also need to setup Wiki::Toolkit so that a wiki is available. This
+    is required. You should create a blank database, grant a user rights to
+    it, and run the provided setup script.
 
       CREATE DATABASE conwiki;
       GRANT ALL ON conwiki.* TO conwiki@localhost IDENTIFIED BY 'secret';
 
-      $ /usr/bin/cgi-wiki-setupdb --type mysql \
-                                  --name conwiki \
-                                  --user conwiki \
-                                  --pass secret \
-                                  --host localhost
+      $ /usr/bin/wiki-toolkit-setupdb --type mysql \
+                                      --name conwiki \
+                                      --user conwiki \
+                                      --pass secret \
+                                      --host localhost
 
     Remember to populate the "COMPONENT WIKI" block of your configuration
     file with the wiki database details.
@@ -1109,7 +1109,7 @@ SETUP
     A WebCite instance requires the full codebase to be present, as well as
     the CPAN module dependencies, and a compatible version of Apache, just
     as you might setup for Connotea Code proper. However, MySQL, Memcache,
-    and CGI::Wiki are not required.
+    and Wiki::Toolkit are not required.
 
     You should create a configuration file as directed for Connotea Code,
     but only the WEBCITE section and sections for your active citation
