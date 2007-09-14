@@ -5,7 +5,7 @@
 [% prepare_component('ListOfPopular',undef,'main,verbose,noheading') %]
 [% prepare_component_end() %]
 [% WRAPPER normal.tt %]
-
+[% WRAPPER showposts.tt %]
 <!-- start Bookmarks area -->
 <div id="content-bkmk-wrap" >
   <!-- this is the sidebar on the right with 2 next boxes -->
@@ -36,5 +36,5 @@
   <div class="clearing-bkmk">&nbsp;</div>
 </div>
 <!-- end Bookmarks area at the bottom of the page -->
-
+[% END %]
 [% END %]

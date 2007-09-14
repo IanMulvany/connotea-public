@@ -8,7 +8,7 @@
 [% prepare_component('ListOfUsers','related','id=sideusers_related,class=users') %]
 [% prepare_component_end() %]
 [% WRAPPER normal.tt %]
-
+[% WRAPPER showposts.tt %]
 <!-- start area for My bookmarks -->
 <div id="outer-wrapper">
   <div id="wrapper">
@@ -58,5 +58,5 @@
   </div>
 </div>
 <!-- end area for My bookmark -->
-
+[% END %]
 [% END %]

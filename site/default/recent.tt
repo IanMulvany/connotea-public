@@ -10,7 +10,7 @@
 [% prepare_component('Footer',undef,'verbose,id=footer,class=footer') %]
 [% prepare_component_end() %]
 [% WRAPPER normal.tt %]
-
+[% WRAPPER showposts.tt %]
 <!-- start area for My bookmarks -->
 <div id="outer-wrapper">
   <div id="wrapper">
@@ -68,5 +68,5 @@
   </div>
 </div>
 <!-- end area for My bookmark -->
-
+[% END %]
 [% END %]
