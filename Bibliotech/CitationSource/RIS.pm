@@ -293,19 +293,38 @@ sub journal {
 }
 
 sub ris_type 	{ shift->justone('ris_type'); }
-sub pubmed   	{ undef; }
-sub asin        { undef; }
 sub title    	{ shift->justone('title'); }
 sub description { shift->justone('notes'); }
 sub volume   	{ shift->justone('volume'); }
 sub issue    	{ shift->justone('issue'); }
 sub page     	{ shift->page_range; }
 
+sub possibly_in_misc3 {
+  my ($self, @keywords) = @_;
+  foreach my $m3 ($self->misc3) {
+    foreach my $kw (@keywords) {
+      return $1 if $m3 =~ /^$kw:(\S+)/i;
+    }
+  }
+  return;
+}
+
+sub pubmed {
+  shift->possibly_in_misc3('pmid', 'pubmed');
+}
+
+sub asin {
+  shift->possibly_in_misc3('asin', 'isbn');
+}
+
 sub doi {
-  my $doi = shift->justone('misc3') or return;
-  $doi = lc $doi;
-  $doi =~ s/^doi://;
-  return $doi;
+  my $self = shift;
+  foreach my $m3 ($self->misc3) {
+    return $1 if $m3 =~ s/^doi:(.*)$//i;
+    next if $m3 =~ /^\w+:/;
+    return lc($m3);
+  }
+  return;
 }
 
 sub url {
