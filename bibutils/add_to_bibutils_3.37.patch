@@ -1,0 +1,175 @@
+diff -ur bibutils_3.37/lib/bibtypes.c bibutils_3.37-patched/lib/bibtypes.c
+--- bibutils_3.37/lib/bibtypes.c	2007-08-20 13:25:57.000000000 -0400
++++ bibutils_3.37-patched/lib/bibtypes.c	2007-09-19 15:40:02.000000000 -0400
+@@ -40,6 +40,8 @@
+ 	{ "url",          "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "howpublished", "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "doi",          "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",       "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",         "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "key",          "BIBKEY",       SIMPLE, LEVEL_MAIN },
+ 	{ "refnum",       "REFNUM",    SIMPLE, LEVEL_MAIN },
+ 	{ "crossref",     "CROSSREF",  SIMPLE, LEVEL_MAIN },
+@@ -81,6 +83,8 @@
+ 	{ "url",          "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "howpublished", "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "doi",          "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",       "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",         "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "refnum",       "REFNUM",    SIMPLE, LEVEL_MAIN },
+ 	{ "crossref",     "CROSSREF",  SIMPLE, LEVEL_MAIN },
+ 	{ "keywords",     "KEYWORD",   SIMPLE, LEVEL_MAIN },
+@@ -114,6 +118,8 @@
+ 	{ "note",         "NOTES",        SIMPLE, LEVEL_MAIN },
+ 	{ "key",          "BIBKEY",          SIMPLE, LEVEL_MAIN },
+ 	{ "doi",          "DOI",          SIMPLE, LEVEL_MAIN },
++	{ "pubmed",       "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",         "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",          "URL",          BIBTEX_URL, LEVEL_MAIN },
+ 	{ "url",          "URL",          BIBTEX_URL, LEVEL_MAIN },
+ 	{ "howpublished", "URL",          BIBTEX_URL, LEVEL_MAIN },
+@@ -147,6 +153,8 @@
+ 	{ "note",         "NOTES",        SIMPLE, LEVEL_MAIN },
+ 	{ "key",          "BIBKEY",          SIMPLE, LEVEL_MAIN },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "howpublished", "URL",    BIBTEX_URL, LEVEL_MAIN },
+@@ -185,6 +193,8 @@
+ 	{ "language",     "LANGUAGE",     SIMPLE, LEVEL_MAIN },
+ 	{ "location",     "LOCATION",     SIMPLE, LEVEL_HOST },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "howpublished", "URL",    BIBTEX_URL, LEVEL_MAIN },
+@@ -226,6 +236,8 @@
+ 	{ "paper",     "PAPER",     SIMPLE, LEVEL_MAIN },
+ 	{ "location",     "LOCATION",     SIMPLE, LEVEL_HOST },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "type",      "TYPE",      SIMPLE, LEVEL_MAIN },
+@@ -268,6 +280,8 @@
+ 	{ "note",         "NOTES",        SIMPLE, LEVEL_MAIN },
+ 	{ "key",          "BIBKEY",          SIMPLE, LEVEL_MAIN },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "location",     "LOCATION",     SIMPLE, LEVEL_HOST },
+@@ -304,6 +318,8 @@
+ 	{ "abstract",  "ABSTRACT",  SIMPLE, LEVEL_MAIN },
+ 	{ "contents",  "CONTENTS",  SIMPLE, LEVEL_MAIN },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "language",     "LANGUAGE",     SIMPLE, LEVEL_MAIN },
+@@ -331,6 +347,8 @@
+ 	{ "abstract",  "ABSTRACT",  SIMPLE, LEVEL_MAIN },
+ 	{ "contents",  "CONTENTS",  SIMPLE, LEVEL_MAIN },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "howpublished", "URL" ,   BIBTEX_URL, LEVEL_MAIN },
+@@ -360,6 +378,8 @@
+ 	{ "abstract",  "ABSTRACT",  SIMPLE, LEVEL_MAIN },
+ 	{ "contents",  "CONTENTS",  SIMPLE, LEVEL_MAIN },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "language",     "LANGUAGE",     SIMPLE, LEVEL_MAIN },
+@@ -393,6 +413,8 @@
+ 	{ "abstract",  "ABSTRACT",  SIMPLE, LEVEL_MAIN },
+ 	{ "contents",  "CONTENTS",  SIMPLE, LEVEL_MAIN },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "language",     "LANGUAGE",     SIMPLE, LEVEL_MAIN },
+@@ -430,6 +452,8 @@
+ 	{ "contents",  "CONTENTS",  SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "howpublished", "URL",    BIBTEX_URL, LEVEL_MAIN },
+ 	{ "language",     "LANGUAGE",     SIMPLE, LEVEL_MAIN },
+@@ -466,6 +490,8 @@
+ 	{ "contents",     "CONTENTS",    SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",          "URL",         BIBTEX_URL, LEVEL_MAIN },
+ 	{ "doi",          "DOI",         SIMPLE, LEVEL_MAIN },
++	{ "pubmed",       "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",         "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "url",          "URL",         BIBTEX_URL, LEVEL_MAIN },
+ 	{ "howpublished", "URL",         BIBTEX_URL, LEVEL_MAIN },
+ 	{ "refnum",       "REFNUM",      SIMPLE, LEVEL_MAIN },
+@@ -504,6 +530,8 @@
+ 	{ "key",       "BIBKEY",       SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "howpublished", "URL",    BIBTEX_URL, LEVEL_MAIN },
+ 	{ "type",       "TYPE",     SIMPLE, LEVEL_MAIN },
+@@ -534,6 +562,8 @@
+ 	{ "contents",  "CONTENTS",  SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "howpublished", "URL",    BIBTEX_URL, LEVEL_MAIN },
+ 	{ "refnum",    "REFNUM",    SIMPLE, LEVEL_MAIN },
+@@ -564,6 +594,8 @@
+ 	{ "contents",  "CONTENTS",  SIMPLE, LEVEL_MAIN },
+ 	{ "ftp",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "doi",       "DOI",       SIMPLE, LEVEL_MAIN },
++	{ "pubmed",    "PUBMED",    SIMPLE, LEVEL_MAIN },
++	{ "pmid",      "PUBMED",    SIMPLE, LEVEL_MAIN },
+ 	{ "url",       "URL",       BIBTEX_URL, LEVEL_MAIN },
+ 	{ "howpublished", "URL",    BIBTEX_URL, LEVEL_MAIN },
+ 	{ "refnum",    "REFNUM",    SIMPLE, LEVEL_MAIN },
+diff -ur bibutils_3.37/lib/risout.c bibutils_3.37-patched/lib/risout.c
+--- bibutils_3.37/lib/risout.c	2007-08-20 13:25:57.000000000 -0400
++++ bibutils_3.37-patched/lib/risout.c	2007-09-19 15:45:29.000000000 -0400
+@@ -313,6 +313,16 @@
+ }
+ 
+ static void
++output_doi( FILE *fp, fields *info )
++{
++	int i;
++	for ( i=0; i<info->nfields; ++i ) {
++		if ( !strcmp( info->tag[i].data, "DOI" ) )
++			fprintf( fp, "M3  - doi:%s\n", info->data[i].data );
++	}
++}
++
++static void
+ output_thesishint( FILE *fp, int type )
+ {
+ 	if ( type==TYPE_MASTERSTHESIS )
+@@ -395,6 +405,7 @@
+ 	output_easy( fp, info, refnum, "ISBN", "SN", -1 );
+ 	output_easyall( fp, info, refnum, "URL", "UR", -1 );
+ 	output_pubmed( fp, info );
++	output_doi( fp, info );
+ 	output_easy( fp, info, refnum, "NOTES", "N1", -1 );
+ 	output_easy( fp, info, refnum, "REFNUM", "ID", -1 );
+ 	output_thesishint( fp, type );
