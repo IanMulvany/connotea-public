@@ -3,16 +3,23 @@
 . /root/bin/connotea_vars
 [ "$1" == "-d" ] || cd $BASE/bibliotech
 chmod a+x admin_util/memcached_wrapper
-chmod a+x bibutils/bib2xml
-chmod a+x bibutils/copac2xml
-chmod a+x bibutils/end2xml
-chmod a+x bibutils/isi2xml
-chmod a+x bibutils/med2xml
-chmod a+x bibutils/modsclean
-chmod a+x bibutils/ris2xml
-chmod a+x bibutils/xml2bib
-chmod a+x bibutils/xml2end
-chmod a+x bibutils/xml2ris
+if [ -e bibutils -a -e bibutils/xml2ris ]; then
+  cd bibutils
+  chmod a+x bib2xml
+  chmod a+x copac2xml
+  chmod a+x end2xml
+  chmod a+x endx2xml
+  chmod a+x isi2xml
+  chmod a+x med2xml
+  chmod a+x modsclean
+  chmod a+x ris2xml
+  chmod a+x xml2bib
+  chmod a+x xml2end
+  chmod a+x xml2isi
+  chmod a+x xml2ris
+  chmod a+x xml2word
+  cd ..
+fi
 [ "$1" != "-d" ] && cd $HTML
 [ "$1" == "-d" ] && cd $SITE
 chown apache antispam_captcha.csv
