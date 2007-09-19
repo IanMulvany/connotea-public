@@ -79,20 +79,9 @@ sub parse {
 
 sub fix_incoming_bibtex {
   local $_ = shift;
-
   $_ = _rewrite_keywords($_);
-
   s/adsurl(\s*=\s*{)/url$1/g;
   s/adsnote(\s*=\s*{)/description$1/g;
-
-  # cheat with pmid and asin keywords - force them into doi with
-  # markers which will get put in M3 in the RIS and then picked up in
-  # the RIS citation source module; although right now bib2ris only
-  # handles the first doi line it sees, so only one will get through,
-  # but that doesn't seem too bad since they should be all valid
-  s/\b(pmid|pubmed)(\s*=\s*{)/doi${2}PMID:/gi;
-  s/\b(asin|isbn)(\s*=\s*{)/doi${2}ASIN:/gi;
-
   return $_;
 }
 

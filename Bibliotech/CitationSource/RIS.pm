@@ -299,30 +299,34 @@ sub volume   	{ shift->justone('volume'); }
 sub issue    	{ shift->justone('issue'); }
 sub page     	{ shift->page_range; }
 
-sub possibly_in_misc3 {
-  my ($self, @keywords) = @_;
-  foreach my $m3 ($self->misc3) {
-    foreach my $kw (@keywords) {
-      return $1 if $m3 =~ /^$kw:(\S+)/i;
+sub possibly_in {
+  my ($self, $field_spec, @keywords) = @_;
+  my @fields = (ref $field_spec ? @{$field_spec} : ($field_spec));
+  foreach my $field (@fields) {
+    foreach my $value ($self->$field) {
+      foreach my $kw (@keywords) {
+	return $1 if $value =~ /^$kw:(\S+)/i;
+      }
     }
   }
   return;
 }
 
 sub pubmed {
-  shift->possibly_in_misc3('pmid', 'pubmed');
+  shift->possibly_in(['url', 'misc3'], 'pm', 'pmid', 'pubmed');
 }
 
 sub asin {
-  shift->possibly_in_misc3('asin', 'isbn');
+  my $self = shift;
+  return $self->justone('issn_or_isbn') || $self->possibly_in('misc3', 'asin', 'isbn');
 }
 
 sub doi {
-  my $self = shift;
-  foreach my $m3 ($self->misc3) {
-    return $1 if $m3 =~ s/^doi:(.*)$//i;
-    next if $m3 =~ /^\w+:/;
-    return lc($m3);
+  foreach my $m3 (shift->misc3) {
+    return $1 if $m3 =~ m|^doi:(.+)$|i;
+    return $1 if $m3 =~ m|^info:doi/(.+)$|i;
+    next if $m3 =~ m|^\w+:|;
+    return lc($m3) if $m3 =~ m|/|;
   }
   return;
 }
