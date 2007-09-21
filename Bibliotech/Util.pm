@@ -16,9 +16,14 @@ use HTML::Entities;
 use DateTime;
 use IO::File;
 use Time::HR;
-use Bibliotech::Config;
-use Bibliotech::DBI;
 use Bibliotech::UserAgent;
+# NOTE although we don't load Bibliotech::DBI or Bibliotech::Config:
+# if Bibliotech::DBI *is* loaded:
+#   time() and now() return database times not OS times
+# if Bibliotech::Config *is* loaded:
+#   notify() uses the configured SENDMAIL instead of a default
+# we don't load them in order to keep Bibliotech::Util lightweight
+# when used in testing
 
 our @EXPORT_OK = qw(&clean_whitespace
 		    &text_encode_wide_characters
@@ -433,7 +438,7 @@ sub time {
 sub _sendmail_open {
   our $SENDMAIL_OPEN;
   return $SENDMAIL_OPEN if defined $SENDMAIL_OPEN;
-  my $sendmail = Bibliotech::Config->get('SENDMAIL') || '/usr/lib/sendmail';
+  my $sendmail = ($INC{'Bibliotech/Config.pm'} ? Bibliotech::Config->get('SENDMAIL') : undef) || '/usr/lib/sendmail';
   return $SENDMAIL_OPEN = "|$sendmail -t";
 }
 
@@ -545,40 +550,6 @@ sub notify {
   close $fh unless defined $options{outfh};  # don't close a passed-in filehandle
 
   return 1;
-}
-
-# For Bibliotech::CitationSource and Bibliotech::Component base
-# classes: any configuration variable you need can be retrieved by
-# cfg('KEYWORD') and this method will translate the call to the
-# Bibliotech::Config module under a CITATION (or COMPONENT) block with
-# the name of your module in caps (it uses cfgname(), name(), or the
-# ending class name).
-sub _cfg {
-  my $obj = shift;
-  my $method = shift;
-  die "bad method: $method" unless $method =~ /^get/;
-  my $name = sub { return $obj->cfgname if $obj->can('cfgname');
-		   return $obj->name    if $obj->can('name');
-		   (my $name = ref $obj || $obj) =~ s/^.*:://;
-		   return $name;
-		 };
-  my $type = sub { return $obj->cfgtype if $obj->can('cfgtype');
-		   (ref $obj || $obj) =~ /::(CitationSource|Component)::/;
-		   return $1 eq 'CitationSource' ? 'Citation' : 'Component';
-		 };
-  return Bibliotech::Config->$method(uc($type->()), uc($name->()), @_);
-}
-
-# the callable version of _cfg()
-sub cfg {
-  my $self = shift;
-  return _cfg($self, 'get', @_);
-}
-
-# same as cfg() but die with an error instead of returning undef
-sub cfg_required {
-  my $self = shift;
-  return _cfg($self, 'get_required', @_);
 }
 
 # call as plural($seconds, 'second', 'seconds') to get "6 seconds" but "1 second"

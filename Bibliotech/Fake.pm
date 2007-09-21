@@ -10,39 +10,81 @@
 package Bibliotech::Fake;
 use strict;
 use base 'Class::Accessor::Fast';
-use Bibliotech::Config;
-use Bibliotech::Parser;
-use Bibliotech::Command;
 use URI;
 
-our $SITE_NAME = Bibliotech::Config->get('SITE_NAME');
-our $SITE_EMAIL = Bibliotech::Config->get('SITE_EMAIL');
+our ($SITE_NAME, $SITE_EMAIL);
 
 __PACKAGE__->mk_accessors(qw/path canonical_path canonical_path_for_cache_key
-			     parser command query request cgi location
+			     x_parser x_command query request cgi location
 			     title heading link description user
 			     no_cache has_rss docroot error memcache log/);
 
 sub sitename {
-  $SITE_NAME;
+  return $SITE_NAME if defined $SITE_NAME;
+  eval "use Bibliotech::Config";
+  die $@ if $@;
+  return $SITE_NAME = Bibliotech::Config->get('SITE_NAME');
 }
 
 sub siteemail {
-  $SITE_EMAIL;
+  return $SITE_EMAIL if defined $SITE_EMAIL;
+  eval "use Bibliotech::Config";
+  die $@ if $@;
+  return $SITE_EMAIL = Bibliotech::Config->get('SITE_EMAIL');
 }
 
 sub new {
-  return shift->SUPER::new({cgi      => new CGI::Fake,
-			    parser   => new Bibliotech::Parser,
-			    command  => new Bibliotech::Command,
-			    log      => new Bibliotech::Fake::Log,
+  return shift->SUPER::new({cgi      => CGI::Fake->new,
+			    log      => Bibliotech::Fake::Log->new,
 			    location => URI->new('http://localhost/'),
 			   });
 }
 
+sub parser {
+  my $self = shift;
+  my $parser = $self->x_parser;
+  return $parser if defined $parser;
+  eval "use Bibliotech::Parser";
+  die $@ if $@;
+  $parser = Bibliotech::Parser->new;
+  $self->x_parser($parser);
+  return $parser;
+}
+
+sub command {
+  my $self = shift;
+  my $command = $self->x_command;
+  return $command if defined $command;
+  eval "use Bibliotech::Command";
+  die $@ if $@;
+  $command = Bibliotech::Command->new;
+  $self->x_command($command);
+  return $command;
+}
+
 sub real {
   my $fake = shift;
-  return bless $fake, 'Bibliotech';
+  return bless {path                         => $fake->path || undef,
+		canonical_path               => $fake->canonical_path || undef,
+		canonical_path_for_cache_key => $fake->canonical_path_for_cache_key || undef,
+		parser  		     => $fake->parser || undef,
+		command 		     => $fake->command || undef,
+		query                        => $fake->query || undef,
+		request                      => $fake->request || undef,
+		cgi                          => $fake->cgi || undef,
+		location                     => $fake->location || undef,
+		title                        => $fake->title || undef,
+		heading                      => $fake->heading || undef,
+		link                         => $fake->link || undef,
+		description                  => $fake->description || undef,
+		user                         => $fake->user || undef,
+		no_cache                     => $fake->no_cache || undef,
+		has_rss                      => $fake->has_rss || undef,
+		docroot                      => $fake->docroot || undef,
+		error                        => $fake->error || undef,
+		memcache                     => $fake->memcache || undef,
+		log                          => $fake->log || undef
+  }, 'Bibliotech';
 }
 
 

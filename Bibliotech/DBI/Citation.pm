@@ -55,40 +55,62 @@ sub clean_whitespace_all {
   $self->clean_whitespace($_) foreach (qw/title journal volume issue start_page end_page pubmed doi asin ris_type/);
 }
 
+# if you prefer distinctly separate start/end pages call start_page() and end_page()
 sub page {
   my $self = shift;
   return $self->set_start_and_end_pages_joined(shift) if @_;
   return $self->get_start_and_end_pages_joined;
 }
 
-sub set_start_and_end_pages_joined {
-  my ($self, $value) = @_;
-  $value =~ s|^\s+||;
-  $value =~ s|\s+$||;
-  $value =~ s|^pp?\.? ?||;
-  my ($start, $end, $extra) = split(/\W+/, $value);
-  if ($extra) {
-    $self->start_page($value);
-  }
-  else {
-    $end = substr($start, 0, length($start) - length($end)) . $end
-	if length($end) < length($start) and $start =~ /^\d+$/ and $end =~ /^\d+$/;
-    $self->start_page($start);
-    $self->end_page($end);
-  }
+# for '1-10' return (1, 10)
+# supports roman numerals and other page markers that aren't integers
+sub _split_page_numbers {
+  local $_ = shift;
+  m/^\s*(?:pp?a?g?e?s?\.? ?)?(\w+)\W+(\w+)\s*$/ or return ($_, undef);
+  return ($1, $2);
+}
+
+# for '100-1' return (100, 101) because the "-1" part is an abbreviated notation
+# supports roman numerals and other page markers that aren't integers
+sub _split_page_numbers_correct_abbrev {
+  my ($start, $end) = _split_page_numbers(shift);
+  $end = substr($start, 0, length($start) - length($end)) . $end
+      if $start and $start =~ /^\d+$/ and
+         $end   and   $end =~ /^\d+$/ and
+         length($end) < length($start);
+  return ($start, $end);
+}
+
+sub set_start_and_end_pages {
+  my ($self, $start, $end) = @_;
+  $self->start_page($start);
+  $self->end_page($end);
   return $self->start_page;
 }
 
-sub get_start_and_end_pages_joined {
-  my $self  = shift;
-  my $start = $self->start_page or return undef;
-  my $end   = $self->end_page   or return $start;
+sub set_start_and_end_pages_joined {
+  my ($self, $value) = @_;
+  return $self->set_start_and_end_pages(_split_page_numbers_correct_abbrev($value));
+}
+
+sub get_start_and_end_pages {
+  my $self = shift;
+  return ($self->start_page, $self->end_page);
+}
+
+# for (1960,1969) return '1960-9'
+sub _join_page_numbers {
+  my $start = shift or return;
+  my $end   = shift or return $start;
   return $start if $start eq $end;
-  my $start_copy = $start;
-  my $end_copy = $end;
-  while ($start_copy =~ s/^(.)// and $end_copy =~ s/^$1//) {}  # change 1960-1969 to 1960-9
-  $end = $end_copy if length($end_copy) <= 2;
-  return join('-', $start, $end);
+  my ($start_copy, $end_copy) = ($start, $end);
+  while ($start_copy =~ s/^(.)(.)/$2/ and $end_copy =~ s/^$1//) {}  # change 1960-1969 to 1960-9
+  my $possibly_shorter_end = length($end_copy) <= 2 ? $end_copy : $end;
+  return join('-', $start, $possibly_shorter_end);
+}
+
+sub get_start_and_end_pages_joined {
+  _join_page_numbers(shift->get_start_and_end_pages);
 }
 
 sub inferred_ris_type {

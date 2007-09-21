@@ -4,6 +4,7 @@ use base 'Class::DBI';
 use List::MoreUtils qw/any/;
 use Data::Dumper;
 use Encode qw/encode_utf8 decode_utf8 decode is_utf8/;
+use Bibliotech::Config;
 use Bibliotech::Util;
 use Bibliotech::FilterNames;
 

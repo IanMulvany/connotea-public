@@ -106,14 +106,16 @@ sub test_split_page_range {
 
 test_split_page_range('1 to 2',  [1,2]);
 test_split_page_range('1-2',     [1,2]);
+test_split_page_range('1-11',    [1,11]);
+test_split_page_range('1-13',    [1,13]);
+test_split_page_range('1-130',   [1,130]);
 test_split_page_range('12-3',    [12,13]);
+test_split_page_range('13-130',  [13,130]);
 test_split_page_range('102-3',   [102,103]);
 test_split_page_range('102-13',  [102,113]);
 test_split_page_range('102-30',  [102,130]);
 test_split_page_range('120-30',  [120,130]);
 test_split_page_range('120-130', [120,130]);
-test_split_page_range('1-130',   [1,130]);
-test_split_page_range('13-130',  [13,130]);
 
 sub test_split_names {
   my ($raw, $expected) = @_;

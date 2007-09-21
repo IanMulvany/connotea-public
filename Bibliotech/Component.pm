@@ -61,12 +61,12 @@ BEGIN {
 
 # configuration key retrieval helper
 sub cfg {
-  Bibliotech::Util::cfg(@_);
+  Bibliotech::Config::Util::cfg(@_);
 }
 
 # same but required
 sub cfg_required {
-  Bibliotech::Util::cfg_required(@_);
+  Bibliotech::Config::Util::cfg_required(@_);
 }
 
 sub content {

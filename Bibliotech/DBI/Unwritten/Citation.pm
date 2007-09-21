@@ -43,16 +43,14 @@ sub write {
   return $citation;
 }
 
-# effectively, this will convert a Bibliotech::CitationSource::Result object to a Bibliotech::Unwritten::Citation object
+# convert a Bibliotech::CitationSource::Result object to a Bibliotech::Unwritten::Citation object
 # $citation_model is a Bibliotech::CitationSource::Result object
 # $user_supplied is 1/0 for whether the user supplied the citation data (0 means the date is authoritative)
 # $original_module_str is a string naming the CitationSource or Import module that provided this data
 # returns a Bibliotech::Unwritten::Citation object with author objects packed inside
-
 sub from_citationsource_result {
   my ($self, $citation_model, $user_supplied, $original_module_str, $original_module_score) = @_;
   $citation_model or die 'no citation model provided';
-  $user_supplied = 0 unless defined $user_supplied;
 
   my $raw_date = $citation_model->date;
   my $journal;
@@ -69,7 +67,7 @@ sub from_citationsource_result {
 						 journal       => $journal,
 						 raw_date      => $raw_date,
 						 date          => ($raw_date ? Bibliotech::Date->new($raw_date) : undef),
-						 user_supplied => $user_supplied,
+						 user_supplied => ($user_supplied ? 1 : 0),
 						 cs_module     => $original_module_str,
 						 cs_type       => $citation_model->type,
 						 cs_source     => $citation_model->source,
@@ -101,20 +99,23 @@ sub from_citationsource_result {
   return $citation;
 }
 
-# will convert the first entry on a Bibliotech::CitationSource::ResultList object to a Bibliotech::Unwritten::Citation object
+# convert the first entry on a Bibliotech::CitationSource::ResultList object to a Bibliotech::Unwritten::Citation object
 # $citations is a Bibliotech::CitationSource::ResultList object
 # $user_supplied is 1/0 for whether the user supplied the citation data (0 means the date is authoritative)
 # $original_module_str is a string naming the CitationSource or Import module that provided this data
 # returns a Bibliotech::Unwritten::Citation object with author objects packed inside
 sub from_citationsource_result_list {
-  my ($self, $citations, $user_supplied, $original_module_str) = @_;
+  my ($self, $citations, $user_supplied, $original_module_str, $original_module_score) = @_;
   defined $citations or die 'no citations provided';
   $citations->can('fetch') or die 'citations object has no fetch method';
   $user_supplied = 0 unless defined $user_supplied;
 
   my @citations;
   while (my $citation_model = $citations->fetch) {
-    my $citation = $self->from_citationsource_result($citation_model) or next;
+    my $citation = $self->from_citationsource_result($citation_model,
+						     ($user_supplied ? 1 : 0),
+						     $original_module_str,
+						     $original_module_score) or next;
     push @citations, $citation;
   }
   die 'more than one citation line not yet supported' if @citations > 1;

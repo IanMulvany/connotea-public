@@ -21,6 +21,7 @@
 package Bibliotech::CitationSource;
 use strict;
 use base 'Class::Accessor::Fast';
+use Bibliotech::Config;
 use Bibliotech::Util;
 use Bibliotech::UserAgent;
 
@@ -41,12 +42,12 @@ sub new {
 
 # configuration key retrieval helper
 sub cfg {
-  Bibliotech::Util::cfg(@_);
+  Bibliotech::Config::Util::cfg(@_);
 }
 
 # same but required
 sub cfg_required {
-  Bibliotech::Util::cfg_required(@_);
+  Bibliotech::Config::Util::cfg_required(@_);
 }
 
 # should return 1 in an overridden module

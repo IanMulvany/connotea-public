@@ -9,10 +9,15 @@
 package Bibliotech::UserAgent;
 use strict;
 use base 'LWP::UserAgent';
-use Bibliotech::Config;
 use Bibliotech::Util;
 
-our $SITE_NAME = Bibliotech::Config->get('SITE_NAME');
+our $SITE_NAME;
+sub config_site_name {
+  return $SITE_NAME if defined $SITE_NAME;
+  eval "use Bibliotech::Config";
+  die $@ if $@;
+  return $SITE_NAME = Bibliotech::Config->get('SITE_NAME');
+}
 
 # create normal object but override sitename
 sub new {
@@ -20,7 +25,7 @@ sub new {
   my $bibliotech = $options{bibliotech};
   delete $options{bibliotech};
   my $self = $class->SUPER::new(%options);
-  my $sitename = defined $bibliotech ? $bibliotech->sitename : $SITE_NAME;
+  my $sitename = defined $bibliotech ? $bibliotech->sitename : config_site_name();
   $self->agent($sitename.' ');  # trailing space ensures LWP will add version info
   return $self;
 }

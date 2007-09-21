@@ -84,5 +84,42 @@ sub permissions_validate {
   1;
 }
 
+
+package Bibliotech::Config::Util;
+
+# For Bibliotech::CitationSource and Bibliotech::Component base
+# classes: any configuration variable you need can be retrieved by
+# cfg('KEYWORD') and this method will translate the call to the
+# Bibliotech::Config module under a CITATION (or COMPONENT) block with
+# the name of your module in caps (it uses cfgname(), name(), or the
+# ending class name).
+sub _cfg {
+  my $obj = shift;
+  my $method = shift;
+  die "bad method: $method" unless $method =~ /^get/;
+  my $name = sub { return $obj->cfgname if $obj->can('cfgname');
+		   return $obj->name    if $obj->can('name');
+		   (my $name = ref $obj || $obj) =~ s/^.*:://;
+		   return $name;
+		 };
+  my $type = sub { return $obj->cfgtype if $obj->can('cfgtype');
+		   (ref $obj || $obj) =~ /::(CitationSource|Component)::/;
+		   return $1 eq 'CitationSource' ? 'Citation' : 'Component';
+		 };
+  return Bibliotech::Config->$method(uc($type->()), uc($name->()), @_);
+}
+
+# the callable version of _cfg()
+sub cfg {
+  my $self = shift;
+  return _cfg($self, 'get', @_);
+}
+
+# same as cfg() but die with an error instead of returning undef
+sub cfg_required {
+  my $self = shift;
+  return _cfg($self, 'get_required', @_);
+}
+
 1;
 __END__
