@@ -52,6 +52,16 @@ This collection contains <b>[% count_str %]</b>.
   </fieldset>
 </form>
 
+<form name="export-word" action="[% output_uri('word') %]" method="get">
+  <fieldset>
+    <legend>Word 2007 Bibliography</legend>
+    <input type="hidden" name="download" value="[% download_value %]" />
+    <p>XML bibliography file for use with Word 2007.</p>
+    <p>
+    <input type="submit" class="download-button" name="button" value="Download for Word" /><a href="[% output_uri_view('word') %]">View in Browser</a></p>
+  </fieldset>
+</form>
+
 [% IF has_geo %]
 <form name="export-geo" action="[% output_uri('geo') %]" method="get">
   <fieldset>

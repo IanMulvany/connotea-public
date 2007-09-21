@@ -280,7 +280,7 @@ if ($RESERVED_PREFIXES and @{$RESERVED_PREFIXES}) {
   $PARSER_CACHE->Replace($_.'_part_banned_prefix : '.$prd_alternatives) foreach ('user', 'gang');
 }
 
-our @OUTPUTS = qw/html rss ris plain txt data geo tt bib end mods/;
+our @OUTPUTS = qw/html rss ris plain txt data geo tt bib end mods word/;
 if (@OUTPUTS) {
   my $prd_alternatives = join(' | ', map("\'$_\'", @OUTPUTS));
   $PARSER_CACHE->Replace('output : '.$prd_alternatives);

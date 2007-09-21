@@ -27,12 +27,14 @@ our @EXPORT_OK = qw(can_all
 		    can_xml2bib   xml2bib
 		    can_xml2end   xml2end
 		    can_xml2ris   xml2ris
+		    can_xml2word  xml2word
 		    can_bib2end   bib2end
 		    can_bib2ris   bib2ris
 		    can_end2bib   end2bib
 		    can_end2ris   end2ris
 		    can_ris2bib   ris2bib
 		    can_ris2end   ris2end
+		    can_ris2word  ris2word
 		    can_copac2bib copac2bib
 		    can_copac2end copac2end
 		    can_copac2ris copac2ris
@@ -85,6 +87,8 @@ sub can_xml2end   { bibutils_can('xml2end')          }
 sub xml2end       { bibutils_run('xml2end'   => pop) }
 sub can_xml2ris   { bibutils_can('xml2ris')          }
 sub xml2ris       { bibutils_run('xml2ris'   => pop) }
+sub can_xml2word  { bibutils_can('xml2word')         }
+sub xml2word      { bibutils_run('xml2word'  => pop) }
 
 sub can_all { all { $_ } (can_bib2xml(),
 			  can_copac2xml(),
@@ -96,6 +100,7 @@ sub can_all { all { $_ } (can_bib2xml(),
 			  can_xml2bib(),
 			  can_xml2end(),
 			  can_xml2ris(),
+			  can_xml2word(),
 			  );
 	    }
 
@@ -112,6 +117,8 @@ sub can_ris2bib   { can_ris2xml() && can_xml2bib() }
 sub ris2bib       { xml2bib(ris2xml(pop)) }
 sub can_ris2end   { can_ris2xml() && can_xml2end() }
 sub ris2end       { xml2end(ris2xml(pop)) }
+sub can_ris2word  { can_ris2xml() && can_xml2word() }
+sub ris2word      { xml2word(ris2xml(pop)) }
 sub can_copac2bib { can_copac2xml() && can_xml2bib() }
 sub copac2bib     { xml2bib(copac2xml(pop)) }
 sub can_copac2end { can_copac2xml() && can_xml2end() }

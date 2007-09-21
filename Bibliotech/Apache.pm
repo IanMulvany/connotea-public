@@ -524,6 +524,7 @@ sub get_extension_and_type {
   return ($result, OK, '.xml',  MODS_MIME_TYPE)    if $fmt eq 'mods';
   return ($result, OK, '.txt',  TEXT_MIME_TYPE)    if $fmt eq 'txt';
   return ($result, OK, '.txt',  TEXT_MIME_TYPE)    if $fmt eq 'plain';
+  return ($result, OK, '.xml',  XML_MIME_TYPE)     if $fmt eq 'word';
   if ($fmt eq 'data') {
     my $rc = $result->code;
     my $page = Bibliotech::Page->new({bibliotech => $self});

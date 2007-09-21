@@ -26,7 +26,7 @@ use Bibliotech::Util;
 use Bibliotech::Profile;
 use Bibliotech::Cookie;
 use Bibliotech::Bookmarklets;
-use Bibliotech::BibUtils qw(ris2bib ris2end ris2xml);
+use Bibliotech::BibUtils qw(ris2bib ris2end ris2xml ris2word);
 
 our $TEMPLATE_ROOT    = Bibliotech::Config->get('TEMPLATE_ROOT');
 our $EXPORT_MAX_COUNT = Bibliotech::Config->get('EXPORT_MAX_COUNT') || 1000;
@@ -591,6 +591,13 @@ sub end_content {
 sub mods_content {
   Bibliotech::Util::text_decode_wide_characters_to_xml_entities
    (ris2xml
+     (Bibliotech::Util::text_encode_wide_characters
+       (shift->ris_content)));
+}
+
+sub word_content {
+  Bibliotech::Util::text_decode_wide_characters
+   (ris2word
      (Bibliotech::Util::text_encode_wide_characters
        (shift->ris_content)));
 }
