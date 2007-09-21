@@ -80,7 +80,7 @@ This collection contains <b>[% count_str %]</b>.
     <input type="hidden" name="download" value="[% download_value %]" />
     <p>For simple copy-and-paste into your word processor.</p>
     <p>
-    <input type="submit" class="download-button" name="button" value="Download for TXT" /><a href="[% output_uri_view('txt') %]">View in Browser</a></p>
+    <input type="submit" class="download-button" name="button" value="Download TXT" /><a href="[% output_uri_view('txt') %]">View in Browser</a></p>
   </fieldset>
 </form>
 
