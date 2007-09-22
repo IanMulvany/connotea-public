@@ -26,7 +26,7 @@ use Bibliotech::Util;
 use Bibliotech::Profile;
 use Bibliotech::Cookie;
 use Bibliotech::Bookmarklets;
-use Bibliotech::BibUtils qw(ris2bib ris2end ris2xml ris2word);
+use Bibliotech::BibUtils qw(ris2bib xml2bib ris2end ris2xml ris2word);
 
 our $TEMPLATE_ROOT    = Bibliotech::Config->get('TEMPLATE_ROOT');
 our $EXPORT_MAX_COUNT = Bibliotech::Config->get('EXPORT_MAX_COUNT') || 1000;
@@ -574,11 +574,32 @@ sub geo_content {
   return $xml_pi->as_XML.$root->as_XML;
 }
 
+sub text_decode_wide_characters_to_bibhacks {
+  local $_ = shift;
+  s/-\[c(\d+)c\]-/sprintf('(bibhack(&#x%X;q%d))', $1, $1)/ge;
+  return $_;
+}
+
+sub fix_bibhack {
+  my ($possibly_latex_entity, $original_char_code) = @_;
+  return $possibly_latex_entity if $possibly_latex_entity =~ m|[\\\{]|;
+  return chr($original_char_code);
+}
+
+sub cleanup_bibhacks {
+  local $_ = shift;
+  s/\(bibhack\(([^q]+)q(\d+)\)\)/fix_bibhack($1,$2)/ge;
+  return $_;
+}
+
+# also consider prefixing with \usepackage[utf8]{inputenc}
 sub bib_content {
-  Bibliotech::Util::text_decode_wide_characters
-   (ris2bib
-     (Bibliotech::Util::text_encode_wide_characters
-       (shift->ris_content)));
+  cleanup_bibhacks
+    (xml2bib
+      (text_decode_wide_characters_to_bibhacks
+        (ris2xml
+	  (Bibliotech::Util::text_encode_wide_characters
+	    (shift->ris_content)))));
 }
 
 sub end_content {
