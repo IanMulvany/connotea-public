@@ -17,6 +17,7 @@ use YAML;
 use Template;
 use List::Util qw/first reduce/;
 use List::MoreUtils qw/any/;
+use Encode qw/decode_utf8/;
 use Bibliotech;
 use Bibliotech::Const;
 use Bibliotech::FilterNames;
@@ -592,14 +593,28 @@ sub cleanup_bibhacks {
   return $_;
 }
 
+sub bib_fix_key {
+  local $_ = shift;
+  s/[^\x00-\xFF]/_/g;
+  return $_;
+}
+
+sub bib_fix_utf8_in_keys {
+  local $_ = shift;
+  s/^(\@[^{]+{)([^,]+)(,)/$1.bib_fix_key($2).$3/mge;
+  return $_;
+}
+
 # also consider prefixing with \usepackage[utf8]{inputenc}
 sub bib_content {
-  cleanup_bibhacks
-    (xml2bib
-      (text_decode_wide_characters_to_bibhacks
-        (ris2xml
-	  (Bibliotech::Util::text_encode_wide_characters
-	    (shift->ris_content)))));
+  bib_fix_utf8_in_keys
+    (cleanup_bibhacks
+      (decode_utf8
+        (xml2bib
+	  (text_decode_wide_characters_to_bibhacks
+	    (ris2xml
+	      (Bibliotech::Util::text_encode_wide_characters
+	        (shift->ris_content)))))));
 }
 
 sub end_content {
