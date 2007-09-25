@@ -65,10 +65,8 @@ while (<STDIN>) {
   }
   my $result = $citations->fetch;
   show_citation($result);
-  #my $unwritten = Bibliotech::Unwritten::Citation->from_citationsource_result($result);
-  #warn $unwritten->citation_line($b);
-  #warn $unwritten->start_page;
-  #warn $unwritten->end_page;
+  #my $unwritten = Bibliotech::Unwritten::Citation->from_citationsource_result($result, 0, $plugin, $understands_code);
+  #warn Dumper($unwritten);
   #my $citation = $unwritten->write;
   #warn Dumper($citation);
 }
