@@ -103,12 +103,15 @@ our $I_AM_SPAM_SCORE              = Bibliotech::Config->get('ANTISPAM', 'I_AM_SP
     $I_AM_SPAM_SCORE              = 10 unless defined $I_AM_SPAM_SCORE;
 our $SCORE_MAX                    = Bibliotech::Config->get('ANTISPAM', 'SCORE_MAX');
     $SCORE_MAX                    = 4 unless defined $SCORE_MAX;
+our $SCORE_SUPER_MAX              = Bibliotech::Config->get('ANTISPAM', 'SCORE_SUPER_MAX');
+    $SCORE_SUPER_MAX              = 10 unless defined $SCORE_SUPER_MAX;
 our $TRUSTED_USER_LIST            = Bibliotech::Config->get('ANTISPAM', 'TRUSTED_USER_LIST') || [];
 
 sub is_not_spam_or_die_with_special {
-  my ($check, $check_captcha, $check_score, $scorelist) = check(@_);
-  return unless $check;
-  die "SPAM (known host)\n" if $check_score && defined $scorelist && $scorelist->get('uri_bad_host');
+  my ($is_spam, $check_captcha, $over_max, $over_super_max, $scorelist) = check(@_);
+  return unless $is_spam;
+  die "SPAM (super)\n" if $over_super_max;
+  die "SPAM (known host)\n" if $over_max && defined $scorelist && $scorelist->get('uri_bad_host');
   die "SPAM\n";
 }
 
@@ -135,10 +138,12 @@ sub check_raw {
   my ($id, $user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled, $logfilename) = @_;
   my $scorelist = score($user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled);
   write_score_log($logfilename, $id, $user->username, $bookmark->url, $tags_ref, $description, $title, $comment, $scorelist);
-  my $check = $scorelist->total > $SCORE_MAX;
+  my $score = $scorelist->total;
+  my $check = $score > $SCORE_MAX;
   return $check unless wantarray;
+  my $super = $score > $SCORE_SUPER_MAX;
   my $check_captcha = 0;
-  return ($check, $check_captcha, $check, $scorelist);
+  return ($check, $check_captcha, $check, $super, $scorelist);
 }
 
 sub check_captcha {
@@ -147,8 +152,10 @@ sub check_captcha {
   my $check = $captcha != 1;
   return $check unless wantarray;
   my $scorelist = score($user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled);
-  my $check_score = $scorelist->total > $SCORE_MAX;
-  return ($check, $check, $check_score, $scorelist);
+  my $score = $scorelist->total;
+  my $check_score = $score > $SCORE_MAX;
+  my $super = $score > $SCORE_SUPER_MAX;
+  return ($check, $check, $check_score, $super, $scorelist);
 }
 
 sub score_log_entry {

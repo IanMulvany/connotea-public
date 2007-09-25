@@ -141,13 +141,14 @@ sub answer {
   my $addform       = Bibliotech::Component::AddForm->new({bibliotech => $bibliotech});
   my $user_bookmark
       = eval { $addform->call_action_with_cgi_params($action, $bibliotech->user, $bibliotech->cgi); };
-  if ($@) {
+  if (my $e = $@) {
     my $code = 500;
-    $code = 404 if $@ =~ /\bnot found\b/;
-    $code = 400 if $@ =~ /\bmalformed tags\b/;
+    $code = 404 if $e =~ /\bnot found\b/;
+    $code = 400 if $e =~ /\bmalformed tags\b/;
+    $e = "SPAM\n" if $e =~ /^SPAM /;  # suppress additional information
     return Bibliotech::WebAPI::Answer->new
 	({code    => $code,
-	  message => $@,
+	  message => $e,
 	  list    => [],
 	});
   }

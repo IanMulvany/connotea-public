@@ -86,13 +86,14 @@ sub html_content {
        ($button ne LOOK_UP_LABEL and $cgi->param('uri') and $cgi->param('tags'))
       ) and $cgi->request_method eq 'POST') {
     my $uri = eval { $self->call_action_with_cgi_params($action, $user, $cgi)->bookmark->url; };
-    if ($@) {
-      die $@ if $@ =~ / at .* line /;
-      if ($@ eq "SPAM\n") {
+    if (my $e = $@) {
+      die $e if $e =~ / at .* line /;
+      if ($e =~ /^SPAM\b/) {
+	if ($e eq "SPAM (super)\n" or
+	    $e eq "SPAM (known host)\n") {
+	  return Bibliotech::Page::HTML_Content->simple($self->tt('compspamblock'));
+	}
 	$need_captcha = 1;
-      }
-      elsif ($@ eq "SPAM (known host)\n") {
-	return Bibliotech::Page::HTML_Content->simple($self->tt('compspamblock'));
       }
       else {
 	$validationmsg = $@;
