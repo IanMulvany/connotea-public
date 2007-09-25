@@ -107,6 +107,7 @@ CREATE TABLE `citation` (
   `cs_module` varchar(40) default NULL,
   `cs_type` varchar(255) default NULL,
   `cs_source` varchar(255) default NULL,
+  `cs_score` int(7) default NULL,
   `created` datetime NOT NULL default '0000-00-00 00:00:00',
   PRIMARY KEY  (`citation_id`),
   KEY `title_idx` (`title`),

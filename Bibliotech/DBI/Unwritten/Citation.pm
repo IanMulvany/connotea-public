@@ -2,7 +2,7 @@ package Bibliotech::Unwritten::Citation;
 use strict;
 use base ('Bibliotech::Unwritten', 'Bibliotech::Citation');
 
-__PACKAGE__->columns(TEMP => qw/x_authors understands_score/);
+__PACKAGE__->columns(TEMP => qw/x_authors/);
 
 sub authors {
   my ($self, $value) = @_;
@@ -71,10 +71,10 @@ sub from_citationsource_result {
 						 cs_module     => $original_module_str,
 						 cs_type       => $citation_model->type,
 						 cs_source     => $citation_model->source,
+						 cs_score      => $original_module_score,
 					       },
 						undef, 'construct');
   die 'no citation object' unless defined $citation;
-  $citation->understands_score($original_module_score);
   if (!$citation->start_page) {
     if ($citation_model->can('page')) {
       $citation->page($citation_model->page);
@@ -167,6 +167,7 @@ sub from_hash_of_text_values {
 	cs_module     => 'User Edit',
 	cs_type       => undef,
 	cs_source     => undef,
+	cd_score      => undef,
       },
        undef, 'construct');
   $citation->authors([Bibliotech::Util::split_author_names($text_ref->{authors})]);

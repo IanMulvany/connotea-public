@@ -9,7 +9,7 @@ use Bibliotech::Util;
 __PACKAGE__->table('citation');
 #__PACKAGE__->columns(All => qw/citation_id title journal volume issue start_page end_page pubmed doi asin ris_type raw_date date last_modified_date user_supplied cs_module cs_type cs_source created/);
 __PACKAGE__->columns(Primary => qw/citation_id/);
-__PACKAGE__->columns(Essential => qw/title journal volume issue start_page end_page pubmed doi asin ris_type raw_date date last_modified_date user_supplied cs_module cs_type cs_source created/);
+__PACKAGE__->columns(Essential => qw/title journal volume issue start_page end_page pubmed doi asin ris_type raw_date date last_modified_date user_supplied cs_module cs_type cs_source cs_score created/);
 __PACKAGE__->columns(TEMP => qw/authors_packed/);
 __PACKAGE__->force_utf8_columns(qw/title volume issue start_page end_page raw_date cs_module cs_type cs_source/);
 __PACKAGE__->datetime_column('created', 'before_create');
@@ -441,6 +441,7 @@ sub is_only_title_eq {
   delete $columns{cs_module};
   delete $columns{cs_type};
   delete $columns{cs_source};
+  delete $columns{cs_score};
   delete $columns{user_supplied};
   return 0 if grep($self->$_, keys %columns);
   return 1;

@@ -159,4 +159,6 @@ alter table user_bookmark add column def_public int(1) unsigned not null default
 alter table user_bookmark add key def_public_idx (def_public);
 update user_bookmark set def_public = 0 where private = 1 or private_gang is not null or private_until is not null or quarantined is not null;
 
+alter table citation add column cs_score int(7) after cs_source;
+
 set FOREIGN_KEY_CHECKS = 1;

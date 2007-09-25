@@ -246,7 +246,7 @@ sub change {
       ($user, $bookmark,
        $tags_ref, $description, $title, $comment,
        do { my $citation = $bookmark->citation;
-	    defined $citation ? (1, $citation->can('understands_score') ? $citation->understands_score : undef)
+	    defined $citation ? (1, $citation->cs_score || undef)
                               : (0, undef); },
        $options{prefilled} || 0,
        $options{captcha} || 0,

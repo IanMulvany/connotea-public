@@ -575,7 +575,6 @@ sub prefilled_add_form {
 sub _authoritative_citation {
   my ($has_citation, $citation_understands_score, $score) = @_;
   return 0 if !$score;
-  #return $has_citation && defined $citation_understands_score && $citation_understands_score == 1 ? $score : 0;
   return 0 if defined $citation_understands_score && $citation_understands_score != 1;
   return $has_citation ? $score : 0;
 }
