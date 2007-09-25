@@ -453,6 +453,7 @@ sub _sendmail_open {
 #   to: who the email is to, defaults to user's email address
 #   from: who the email is from, defaults to standard site email address
 #   reply-to: who to reply to
+#   envelope_sender: who to list as the return path, defaults to from
 #   subject: the email subject line
 sub notify {
   my ($options_ref) = @_;
@@ -506,6 +507,10 @@ sub notify {
   }
   else {
     my $prog = $options{prog} || _sendmail_open();
+    my $sender_raw = $options{envelope_sender} || $headers{From};
+    $sender_raw =~ /^([\w\.]+\@[\w\.]+)$/;  # security
+    my $sender = $1;
+    $prog .= ' -r '.$sender if $sender;
     (my $target = $prog) =~ s/^([^|])/|$1/;
     open $fh, $target or die "cannot open $target: $!";
   }
