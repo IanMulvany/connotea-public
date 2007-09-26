@@ -36,13 +36,13 @@
           [% identified %]
         </div>
         <div style="clear: both" class="editcitation">
-          <input id="editcitationbutton" type="button" name="button" value="[% citation_button_label %]" onclick="var s = document.getElementById(&#39;caddarea&#39;).style; var el = document.getElementById(&#39;editcitationbutton&#39;); if (s.display) { s.display = &#39;&#39;; el.value = &#39;Hide Form&#39;; } else { s.display = &#39;none&#39;; el.value = &#39;[% citation_button_label %]&#39;; } " class="buttonctl" />
+          <input id="editcitationbutton" type="button" name="button" value="[% IF collapse_citation %][% citation_button_label %][% ELSE %]Hide Form[% END %]" onclick="var s = document.getElementById(&#39;caddarea&#39;).style; var el = document.getElementById(&#39;editcitationbutton&#39;); if (s.display) { s.display = &#39;&#39;; el.value = &#39;Hide Form&#39;; } else { s.display = &#39;none&#39;; el.value = &#39;[% citation_button_label %]&#39;; } " class="buttonctl" />
         </div>
       </td>
     </tr>
   </table>
   <input type="hidden" name="uri" value="[% sticky('uri') %]" />
-  <div id="caddarea">
+  <div id="caddarea"[% IF collapse_citation %] style="display:none"[% END %]>
     <table id="cadd">
       <tr>
         <td class="addformlabelcell" id="ctitlelabelcell">Title Proper:</td>
