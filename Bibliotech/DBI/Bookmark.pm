@@ -416,21 +416,13 @@ GROUP BY c4.bookmark_id
 ORDER BY c4.url
 
 __PACKAGE__->set_sql(used => <<'');
-SELECT 	 __ESSENTIAL(c2)__, COUNT(c1.user_bookmark_id) as cnt
-FROM     __TABLE(Bibliotech::User_Bookmark=c1)__,
-   	 __TABLE(Bibliotech::Bookmark=c2)__
-WHERE  	 __JOIN(c1 c2)__
-GROUP BY c2.bookmark_id
-ORDER BY cnt DESC, c2.created DESC
-
-__PACKAGE__->set_sql(used_with_url_like => <<'');
-SELECT 	 __ESSENTIAL(c2)__, COUNT(c1.user_bookmark_id) as cnt
-FROM     __TABLE(Bibliotech::User_Bookmark=c1)__,
-   	 __TABLE(Bibliotech::Bookmark=c2)__
-WHERE  	 __JOIN(c1 c2)__
-AND      c2.url LIKE ?
-GROUP BY c2.bookmark_id
-ORDER BY cnt DESC, c2.created DESC
+SELECT 	 __ESSENTIAL(b)__, COUNT(ub.user_bookmark_id) as cnt
+FROM     __TABLE(Bibliotech::User_Bookmark=ub)__,
+   	 __TABLE(Bibliotech::Bookmark=b)__
+WHERE  	 __JOIN(ub b)__
+%s
+GROUP BY b.bookmark_id
+ORDER BY cnt DESC, b.created DESC
 
 __PACKAGE__->set_sql(where => <<'');
 SELECT 	 __ESSENTIAL(b)__

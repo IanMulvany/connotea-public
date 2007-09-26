@@ -59,10 +59,7 @@ open $logfh, ">>$log_file" or die "cannot open $log_file: $!";
 my $log   = sub { print $logfh @_ };
 my $print = sub { print @_ };
 
-# search_used() only brings back bookmarks linked by user_bookmark (for details see Bibliotech::DBI)
-# the order is descending popularity by number of posts, then descending creation timestamp
-my $iter  = $url_like_pattern ? Bibliotech::Bookmark->search_used_with_url_like($url_like_pattern)
-                              : Bibliotech::Bookmark->search_used;
+my $iter  = make_iter($url_like_pattern, $only_fill_in_missing);
 my $total = $iter->count;
 my $count = 0;
 my $changed_count = 0;
@@ -96,6 +93,24 @@ while (my $bookmark = $iter->next) {
 }
 
 close $logfh;
+
+sub make_iter {
+  my ($url_like_pattern, $only_fill_in_missing) = @_;
+  # The 'used' SQL statement only brings back bookmarks linked by user_bookmark
+  # in descending popularity by number of posts, then descending creation timestamp
+  my (@where, @where_params);
+  if ($url_like_pattern) {
+    push @where, 'b.url LIKE ?';
+    push @where_params, $url_like_pattern;
+  }
+  if ($only_fill_in_missing) {
+    push @where, 'b.citation IS NULL';
+  }
+  my $sth  = Bibliotech::Bookmark->sql_used(@where ? join(' ', map { 'AND '.$_ } @where) : '');
+  my $iter = Bibliotech::Bookmark->sth_to_objects($sth, \@where_params);
+  die 'incorrect iterator: '.$iter unless defined $iter and UNIVERSAL::isa($iter, 'Class::DBI::Iterator');
+  return $iter;
+}
 
 sub ok_to_process_title {
   1;
