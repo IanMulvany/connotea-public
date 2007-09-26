@@ -125,10 +125,6 @@ sub from_citationsource_result_list {
 sub from_hash_of_text_values {
   my ($self, $text_ref) = @_;
 
-  my ($start_page, $end_page) = Bibliotech::Util::split_page_range($text_ref->{pages} ||
-								   $text_ref->{page} ||
-								   $text_ref->{page_range});
-
   my $fix_doi = sub {
     local $_ = shift or return;
     s/^doi:\s*//i;
@@ -160,8 +156,19 @@ sub from_hash_of_text_values {
 			                       : undef),
 	raw_date      => $text_ref->{date},
 	date          => ($text_ref->{date} ? $date_or_die->($text_ref->{date}) : undef),
-	start_page    => $text_ref->{start_page} || $start_page,
-	end_page      => $text_ref->{end_page} || $end_page,
+	do {
+	  my $start_page = $text_ref->{start_page};
+	  my $end_page   = $text_ref->{end_page};
+	  if (!$start_page or !$end_page) {
+	    my ($split_start_page, $split_end_page) = 
+		Bibliotech::Util::split_page_range($text_ref->{pages} ||
+						   $text_ref->{page} ||
+						   $text_ref->{page_range});
+	    $start_page ||= $split_start_page;
+	    $end_page   ||= $split_end_page;
+	  }
+	  ($start_page, $end_page);
+        },
 	ris_type      => $text_ref->{ris_type} || $text_ref->{ristype},
 	user_supplied => 1,
 	cs_module     => 'User Edit',

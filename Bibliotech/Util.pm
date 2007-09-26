@@ -600,7 +600,7 @@ sub hrtime {
 # '1-2'    => (1,2)
 # '12-3'   => (12,13)
 sub split_page_range {
-  my $pages = shift;
+  my $pages = shift or return ();
   my ($start, $end) = $pages =~ /(\d+)\D+(\d+)/;
   if (!defined $start) {
     ($start) = $pages =~ /(\d+)/;

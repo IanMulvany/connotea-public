@@ -65,7 +65,7 @@ sub page {
 # for '1-10' return (1, 10)
 # supports roman numerals and other page markers that aren't integers
 sub _split_page_numbers {
-  local $_ = shift;
+  local $_ = shift or return ();
   m/^\s*(?:pp?a?g?e?s?\.? ?)?(\w+)\W+(\w+)\s*$/ or return ($_, undef);
   return ($1, $2);
 }
