@@ -16,6 +16,7 @@ use Getopt::Long;
 
 my $chosen_source           = '';    # e.g. 'Pubmed'
 my $url_like_pattern        = undef; # e.g. 'http://blah%'; SQL LIKE syntax
+my $only_fill_in_missing    = 0;     # only try to help bookmarks with no existing citation
 my $wait_for_enter          = 0;     # wait for one line of input on stdin after citation
 my $wait_for_enter_on_error = 0;     # only wait if there was an error
 my $print_count             = 1;     # display on stdout the running count
@@ -28,6 +29,7 @@ my $test_run                = 0;
 # These are the command-line options if you need to change variables:
 GetOptions ('source|s=s'       => \$chosen_source,
 	    'url|u=s'          => \$url_like_pattern,
+	    'missing|m!'       => \$only_fill_in_missing,
 	    'wait|w!'          => \$wait_for_enter,
 	    'wait-error|e!'    => \$wait_for_enter_on_error,
 	    'count|c!'         => \$print_count,
@@ -73,7 +75,8 @@ while (my $bookmark = $iter->next) {
   display_introduction($print_extra_newline, $print_count, ++$count, $total, $bookmark->id, $bookmark->url);
 
   $changed_count++ if eval {
-    if (ok_to_process_citation($bookmark, $chosen_source, $bibliotech)) {
+    if (ok_to_change_bookmark($bookmark, $only_fill_in_missing) and
+	ok_to_process_citation($bookmark, $chosen_source, $bibliotech)) {
       my $old          = get_old_citation($bookmark);              display_citation(OLD => $old, $bibliotech);
       my ($new, $save) = get_new_citation($bookmark, $bibliotech); display_citation(NEW => $new, $bibliotech);
       use_new_citation($bookmark->url, $old, $new, $save, $print, $log)
@@ -127,6 +130,14 @@ sub use_new_title {
 sub log_using_new_title {
   my ($id, $old, $new, $log_sub) = @_;
   $log_sub->(map { "$_\n" } ('', $id, "Old title: $old", "New title: $new"));
+}
+
+sub ok_to_change_bookmark {
+  my ($bookmark, $only_fill_in_missing) = @_;
+  my $citation = $bookmark->citation;
+  return 1 if not defined $citation;
+  return 0 if $only_fill_in_missing;
+  return 1;
 }
 
 sub ok_to_process_citation {
