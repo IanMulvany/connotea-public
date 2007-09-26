@@ -10,6 +10,7 @@
 package Bibliotech::Component::AddForm;
 use strict;
 use base 'Bibliotech::Component';
+use List::MoreUtils qw/any/;
 use Bibliotech::Const;
 use Bibliotech::Component::List;
 use Bibliotech::Captcha;
@@ -767,14 +768,31 @@ sub call_action_with_cgi_params {
     }
   }
 
+  $fields{user_citation} = $self->hashref_for_user_citation($cgi) if _check_if_citation_edited($cgi);
+
   $fields{prefilled} = 1 if $cgi->param('prefilled');
 
-  my @user_citation = qw/ctitle cjournal cvolume cissue cpages cdate cauthors cristype cdoi cpubmed casin/;
-  if (grep { ($cgi->param($_) || '') ne ($cgi->param($_.'2') || '') } @user_citation) {  # citation edited in browser
-    $fields{user_citation}->{$_} = $self->cleanparam($cgi->param('c'.$_)) foreach (map { s/^c//; $_ } @user_citation);
-  }
-
   return $bibliotech->$action(%fields);  # Bibliotech::add() or Bibliotech::edit()
+}
+
+our @citation_field_names = qw/ctitle cjournal cvolume cissue cpages cdate cauthors cristype cdoi cpubmed casin/;
+
+sub _check_if_citation_edited {
+  my $cgi = shift;
+  my $new = sub { $cgi->param(shift)||''; };
+  my $old = sub { $cgi->param(shift.'2')||''; };
+  return any { $new->($_) ne $old->($_) } @citation_field_names;
+}
+
+sub hashref_for_user_citation {
+  my ($self, $cgi) = @_;
+  my %citation;
+  foreach my $c_field (@citation_field_names) {
+    (my $field = $c_field) =~ s/^c//;
+    my $value = $self->cleanparam($cgi->param($c_field)) or next;
+    $citation{$field} = $value;
+  }
+  return \%citation;
 }
 
 1;
