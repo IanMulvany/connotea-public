@@ -157,7 +157,8 @@ sub html_content {
 	    $memcache->set($captcha_cache_key => 1, 86400);
 	  }
 	}
-       
+
+	$o .= $cgi->h1('File Upload');
 	$o .= $cgi->start_form(-method => 'POST', -action => $bibliotech->location.'upload', -name => 'upload');
 
 	if ($need_captcha) {
@@ -226,6 +227,7 @@ sub html_content {
     }
     else {
       die 'Location: '.$bibliotech->location."library\n" if $button eq 'Confirm';
+      $self->discover_main_title($o);
       return Bibliotech::Page::HTML_Content->simple($o);
     }
   }
@@ -272,6 +274,8 @@ sub html_content {
 		   $cgi->submit(-id => 'uploadbutton', -class => 'buttonctl', -name => 'button', -value => 'Upload')])
 	 ]));
   $o .= $cgi->end_form;
+
+  $self->discover_main_title($o);
 
   my $javascript_first_empty = $self->firstempty($cgi, 'upload', qw/file tag/);
 
