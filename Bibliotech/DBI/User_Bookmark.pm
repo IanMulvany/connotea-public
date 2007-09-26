@@ -509,8 +509,7 @@ sub postedby {
     push @posted, ('|',
 		   $self->privacy_status_html($bibliotech),
 		   $cgi->a({href => $bookmark->href_search_global($bibliotech)}, 'info'),
-		   '|',
-		   _proxit_link($self->bookmark->url, $cgi));
+		   ($adding ? () : ('|', _proxit_link($self->bookmark->url, $cgi))));
   }
 
   if (@posted) {
