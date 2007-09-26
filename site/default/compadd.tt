@@ -50,7 +50,7 @@
       </tr>
       <tr>
         <td class="addformlabelcell" id="cjournallabelcell">Publication name:</td>
-        <td class="addformdatacell" id="cjournaldatacell"><input type="text" name="cjournal" value="[% sticky('cjournal') %]" size="70" class="textctl" id="cjournalbox" /><input type="hidden" name="ctitle2" value="[% sticky('cjournalbox2') %]" /></td>
+        <td class="addformdatacell" id="cjournaldatacell"><input type="text" name="cjournal" value="[% sticky('cjournal') %]" size="70" class="textctl" id="cjournalbox" /><input type="hidden" name="cjournal2" value="[% sticky('cjournal2') %]" /></td>
       </tr>
       <tr>
         <td class="addformlabelcell" id="cvolumelabelcell">Volume No.:</td>
@@ -62,7 +62,7 @@
       </tr>
       <tr>
         <td class="addformlabelcell" id="cpageslabelcell">Pages:</td>
-        <td class="addformdatacell" id="cpagesdatacell"><input type="text" name="cpages" value="[% sticky('cpages') %]" size="10" class="textctl" id="cpagesbox" /><span class="formhelp">e.g. 365-9 or 28-42</span></td>
+        <td class="addformdatacell" id="cpagesdatacell"><input type="text" name="cpages" value="[% sticky('cpages') %]" size="10" class="textctl" id="cpagesbox" /><span class="formhelp">e.g. 365-9 or 28-42</span><input type="hidden" name="cpages2" value="[% sticky('cpages2') %]" /></td>
       </tr>
       <tr>
         <td class="addformlabelcell" id="cdatelabelcell">Publication Date:</td>
