@@ -266,6 +266,7 @@ sub html_content {
        is_popup => $popup,
        bookmark => $bookmark,
        show_citation => $show_citation,
+       collapse_citation => $collapse_citation,
        has_groups => @gangnames > 0,
        group_control => $group_control,
        identified => (defined $bookmark ? scalar($bookmark->html_content($bibliotech, 'preadd', 1, 1)) : undef),
