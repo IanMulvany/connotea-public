@@ -1,4 +1,4 @@
-<h1>Add a bookmark</h1>
+[% IF NOT is_popup %]<h1>[% IF is_add %]Add[% ELSIF is_edit %]Edit[% END %] a bookmark</h1>[% END %]
 
 <form method="POST"
       action="[% location %][% action_with_popup %]"
