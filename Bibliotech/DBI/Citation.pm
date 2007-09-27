@@ -7,7 +7,6 @@ use URI::Escape;
 use Bibliotech::Util;
 
 __PACKAGE__->table('citation');
-#__PACKAGE__->columns(All => qw/citation_id title journal volume issue start_page end_page pubmed doi asin ris_type raw_date date last_modified_date user_supplied cs_module cs_type cs_source created/);
 __PACKAGE__->columns(Primary => qw/citation_id/);
 __PACKAGE__->columns(Essential => qw/title journal volume issue start_page end_page pubmed doi asin ris_type raw_date date last_modified_date user_supplied cs_module cs_type cs_source cs_score created/);
 __PACKAGE__->columns(TEMP => qw/authors_packed/);

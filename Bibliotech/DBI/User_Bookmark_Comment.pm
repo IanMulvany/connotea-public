@@ -4,7 +4,6 @@ use base 'Bibliotech::DBI';
 use Bibliotech::Query;
 
 __PACKAGE__->table('user_bookmark_comment');
-#__PACKAGE__->columns(All => qw/user_bookmark_comment_id user_bookmark comment created/);
 __PACKAGE__->columns(Primary => qw/user_bookmark_comment_id/);
 __PACKAGE__->columns(Essential => qw/user_bookmark comment created/);
 __PACKAGE__->datetime_column('created', 'before_create');

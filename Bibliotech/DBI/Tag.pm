@@ -4,7 +4,6 @@ use base 'Bibliotech::DBI';
 use Bibliotech::Query;
 
 __PACKAGE__->table('tag');
-#__PACKAGE__->columns(All => qw/tag_id name created/);
 __PACKAGE__->columns(Primary => qw/tag_id/);
 __PACKAGE__->columns(Essential => qw/name/);
 __PACKAGE__->columns(Others => qw/created updated/);

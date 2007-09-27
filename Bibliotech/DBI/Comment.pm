@@ -5,7 +5,6 @@ use Bibliotech::Query;
 use Bibliotech::Util;
 
 __PACKAGE__->table('comment');
-#__PACKAGE__->columns(All => qw/comment_id entry created updated/);
 __PACKAGE__->columns(Primary => qw/comment_id/);
 __PACKAGE__->columns(Essential => qw/entry created/);
 __PACKAGE__->columns(Others => qw/updated/);

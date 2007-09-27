@@ -5,7 +5,6 @@ use List::Util qw/min max/;
 use Bibliotech::Query;
 
 __PACKAGE__->table('user');
-#__PACKAGE__->columns(All => qw/user_id username password active firstname lastname email verifycode author last_deletion created updated/);
 __PACKAGE__->columns(Primary => qw/user_id/);
 __PACKAGE__->columns(Essential => qw/username openurl_resolver openurl_name updated/);
 __PACKAGE__->columns(Others => qw/password active firstname lastname email verifycode author captcha_karma library_comment reminder_email last_deletion quarantined created/);

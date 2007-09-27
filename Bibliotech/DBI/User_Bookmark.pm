@@ -4,11 +4,8 @@ use base 'Bibliotech::DBI';
 use Storable qw(dclone);
 
 __PACKAGE__->table('user_bookmark');
-#__PACKAGE__->columns(All => qw/user_bookmark_id user bookmark citation user_is_author
-#		               private private_gang private_until created updated/);
 __PACKAGE__->columns(Primary => qw/user_bookmark_id/);
 __PACKAGE__->columns(Essential => qw/user bookmark updated citation user_is_author def_public private private_gang private_until quarantined created/);
-#__PACKAGE__->columns(Others => qw/citation user_is_author private private_gang private_until created/);
 __PACKAGE__->columns(TEMP => qw/user_bookmarks_count comments_count bookmark_is_linked_by_current_user tags_packed is_geotagged/);
 # user_is_author a.k.a. mywork
 __PACKAGE__->datetime_column('created', 'before_create');

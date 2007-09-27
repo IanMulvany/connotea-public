@@ -3,7 +3,6 @@ use strict;
 use base 'Bibliotech::DBI';
 
 __PACKAGE__->table('author');
-#__PACKAGE__->columns(All => qw/author_id firstname forename initials middlename lastname suffix postal_address affiliation email user created/);
 __PACKAGE__->columns(Primary => qw/author_id/);
 __PACKAGE__->columns(Essential => qw/firstname forename initials middlename lastname suffix misc postal_address affiliation email user/);
 __PACKAGE__->columns(Others => qw/created/);

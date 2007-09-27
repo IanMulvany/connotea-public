@@ -16,7 +16,6 @@ use utf8;
 # if Bibliotech::Clicks is loaded it will change the behavior of html_content() to add a click counter onclick handler
 
 __PACKAGE__->table('bookmark');
-#__PACKAGE__->columns(All => qw/bookmark_id url hash first_user citation created updated/);
 __PACKAGE__->columns(Primary => qw/bookmark_id/);
 __PACKAGE__->columns(Essential => qw/url hash citation first_user created updated/);
 __PACKAGE__->columns(TEMP => qw/x_adding x_for_user_bookmark user_bookmark_count_packed tags_packed document/);

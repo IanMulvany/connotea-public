@@ -3,7 +3,6 @@ use strict;
 use base 'Bibliotech::DBI';
 
 __PACKAGE__->table('citation_author');
-#__PACKAGE__->columns(All => qw/citation_author_id citation author displayorder created/);
 __PACKAGE__->columns(Primary => qw/citation_author_id/);
 __PACKAGE__->columns(Essential => qw/citation author displayorder/);
 __PACKAGE__->columns(Others => qw/created/);

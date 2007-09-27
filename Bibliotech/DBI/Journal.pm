@@ -3,7 +3,6 @@ use strict;
 use base 'Bibliotech::DBI';
 
 __PACKAGE__->table('journal');
-#__PACKAGE__->columns(All => qw/journal_id name issn coden country medline_code medline_ta nlm_unique_id created/);
 __PACKAGE__->columns(Primary => qw/journal_id/);
 __PACKAGE__->columns(Essential => qw/name issn coden country medline_code medline_ta nlm_unique_id/);
 __PACKAGE__->columns(Others => qw/created/);

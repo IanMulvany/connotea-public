@@ -3,7 +3,6 @@ use strict;
 use base 'Bibliotech::DBI';
 
 __PACKAGE__->table('gang');
-#__PACKAGE__->columns(All => qw/gang_id name owner description private created/);
 __PACKAGE__->columns(Primary => qw/gang_id/);
 __PACKAGE__->columns(Essential => qw/name owner private updated/);
 __PACKAGE__->columns(Others => qw/description created/);

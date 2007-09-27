@@ -3,7 +3,6 @@ use strict;
 use base 'Bibliotech::DBI';
 
 __PACKAGE__->table('user_bookmark_tag');
-#__PACKAGE__->columns(All => qw/user_bookmark_tag_id user_bookmark tag created/);
 __PACKAGE__->columns(Primary => qw/user_bookmark_tag_id/);
 __PACKAGE__->columns(Essential => qw/user_bookmark tag/);
 __PACKAGE__->columns(Others => qw/created/);

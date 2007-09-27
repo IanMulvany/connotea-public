@@ -3,7 +3,6 @@ use strict;
 use base 'Bibliotech::DBI';
 
 __PACKAGE__->table('bookmark_details');
-#__PACKAGE__->columns(All => qw/bookmark_id title created/);
 __PACKAGE__->columns(Primary => qw/bookmark_id/);
 __PACKAGE__->columns(Essential => qw/title created/);
 __PACKAGE__->force_utf8_columns(qw/title/);
