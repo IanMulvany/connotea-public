@@ -48,6 +48,20 @@ CREATE TABLE `author` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
+-- Table structure for table `article`
+--
+
+DROP TABLE IF EXISTS `article`;
+CREATE TABLE `article` (
+  `article_id` int(7) unsigned NOT NULL auto_increment,
+  `hash` varchar(32) NOT NULL default '',
+  `created` datetime NOT NULL default '0000-00-00 00:00:00',
+  `updated` datetime default NULL,
+  PRIMARY KEY  (`article_id`),
+  KEY `hash_idx` (`hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
 -- Table structure for table `bookmark`
 --
 

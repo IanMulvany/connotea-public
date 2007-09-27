@@ -162,3 +162,20 @@ update user_bookmark set def_public = 0 where private = 1 or private_gang is not
 alter table citation add column cs_score int(7) after cs_source;
 
 set FOREIGN_KEY_CHECKS = 1;
+
+-- Since 1.8:
+
+set FOREIGN_KEY_CHECKS = 0;
+
+CREATE TABLE `article` (
+  `article_id` int(7) unsigned NOT NULL auto_increment,
+  `hash` varchar(32) NOT NULL default '',
+  `created` datetime NOT NULL default '0000-00-00 00:00:00',
+  `updated` datetime default NULL,
+  PRIMARY KEY  (`article_id`),
+  KEY `hash_idx` (`hash`)
+) ENGINE=InnoDB;
+
+alter table citation add column article int(7) after hash;
+
+set FOREIGN_KEY_CHECKS = 1;

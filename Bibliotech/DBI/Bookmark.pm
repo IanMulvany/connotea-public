@@ -17,7 +17,8 @@ use utf8;
 
 __PACKAGE__->table('bookmark');
 __PACKAGE__->columns(Primary => qw/bookmark_id/);
-__PACKAGE__->columns(Essential => qw/url hash citation first_user created updated/);
+__PACKAGE__->columns(Essential => qw/url hash updated citation/);
+__PACKAGE__->columns(Others => qw/first_user created/);
 __PACKAGE__->columns(TEMP => qw/x_adding x_for_user_bookmark user_bookmark_count_packed tags_packed document/);
 __PACKAGE__->datetime_column('created', 'before_create');
 __PACKAGE__->datetime_column('updated', 'before_update');
@@ -25,6 +26,7 @@ __PACKAGE__->add_trigger('before_create' => \&set_correct_hash);
 __PACKAGE__->has_a(url => 'URI');
 __PACKAGE__->has_a(first_user => 'Bibliotech::User');
 __PACKAGE__->has_a(citation => 'Bibliotech::Citation');
+__PACKAGE__->has_a(article => 'Bibliotech::Article');
 __PACKAGE__->has_many(user_bookmarks_raw => 'Bibliotech::User_Bookmark');
 __PACKAGE__->has_many(users => ['Bibliotech::User_Bookmark' => 'user']);
 __PACKAGE__->might_have(details => 'Bibliotech::Bookmark_Details' => qw/title/);
