@@ -136,48 +136,48 @@ sub from_hash_of_text_values {
     return $_;
   };
   my $date_or_die = sub {
-    my $date = shift;
+    my $date = shift or return;
     my $obj = Bibliotech::Date->new($date);
     die "Cannot understand citation date \"$date\" - please clarify it.\n" if !defined($obj) or $obj->invalid;
     die 'The citation date must contain a year ('.$obj->citation.") - please clarify it.\n" unless $obj->year;
     return $obj;
   };
 
+  my $get_journal = sub {
+    my $name = shift or return;
+    Bibliotech::Unwritten::Journal->transfer(undef, {name => $name}, undef, 'construct');
+  };
+
   my $citation = Bibliotech::Unwritten::Citation->transfer
       (undef,
-       {title         => $text_ref->{title},
-	volume        => $text_ref->{volume},
-	issue         => $text_ref->{issue},
+       {title         => $text_ref->{title} || undef,
+	volume        => $text_ref->{volume} || undef,
+	issue         => $text_ref->{issue} || undef,
 	pubmed        => $fix_pubmed->($text_ref->{pubmed}) || undef,
 	doi           => $fix_doi->($text_ref->{doi}) || undef,
-	asin          => $text_ref->{asin},
-	journal       => ($text_ref->{journal} ? Bibliotech::Unwritten::Journal->transfer
-			                         (undef, {name => $text_ref->{journal}}, undef, 'construct')
-			                       : undef),
-	raw_date      => $text_ref->{date},
-	date          => ($text_ref->{date} ? $date_or_die->($text_ref->{date}) : undef),
-	do {
-	  my $start_page = $text_ref->{start_page};
-	  my $end_page   = $text_ref->{end_page};
-	  if (!$start_page or !$end_page) {
-	    my ($split_start_page, $split_end_page) = 
-		Bibliotech::Util::split_page_range($text_ref->{pages} ||
-						   $text_ref->{page} ||
-						   $text_ref->{page_range});
-	    $start_page ||= $split_start_page;
-	    $end_page   ||= $split_end_page;
-	  }
-	  ($start_page, $end_page);
-        },
-	ris_type      => $text_ref->{ris_type} || $text_ref->{ristype},
+	asin          => $text_ref->{asin} || undef,
+	journal       => $get_journal->($text_ref->{journal}) || undef,
+	raw_date      => $text_ref->{date} || undef,
+	date          => $date_or_die->($text_ref->{date}) || undef,
+	start_page    => $text_ref->{start_page} || undef,
+	end_page      => $text_ref->{end_page} || undef,
+	ris_type      => $text_ref->{ris_type} || $text_ref->{ristype} || undef,
 	user_supplied => 1,
 	cs_module     => 'User Edit',
 	cs_type       => undef,
 	cs_source     => undef,
 	cd_score      => undef,
-      },
+       },
        undef, 'construct');
+
+  # possibly redefine start_page and end_page using object method:
+  if (my $combined_start_and_end_pages = $text_ref->{pages} || $text_ref->{page} || $text_ref->{page_range}) {
+    $citation->page($combined_start_and_end_pages);
+  }
+
+  # define authors using object method:
   $citation->authors([Bibliotech::Util::split_author_names($text_ref->{authors})]);
+
   return $citation;
 }
 

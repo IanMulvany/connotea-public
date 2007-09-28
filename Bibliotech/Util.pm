@@ -596,19 +596,22 @@ sub hrtime {
   return ($result, sprintf('%0.4f', ($end - $start) / 1000000000));
 }
 
-# '1 to 2' => (1,2)
-# '1-2'    => (1,2)
-# '12-3'   => (12,13)
+# for '1-10' return (1, 10)
+# supports roman numerals and other page markers that aren't integers
+sub split_page_numbers {
+  local $_ = shift or return ();
+  m/^\s*(?:pp?a?g?e?s?\.? ?)?(\w+)(?:\W+| +[a-z]+ +)(\w+)\s*$/i or return ($_, undef);
+  return ($1, $2);
+}
+
+# for '100-1' return (100, 101) because the "-1" part is an abbreviated notation
+# supports roman numerals and other page markers that aren't integers
 sub split_page_range {
-  my $pages = shift or return ();
-  my ($start, $end) = $pages =~ /(\d+)\D+(\d+)/;
-  if (!defined $start) {
-    ($start) = $pages =~ /(\d+)/;
-    $end = $start;
-  }
-  elsif ($end < $start) {  # e.g. '27-8' yields (27, 8) and must be corrected to (27, 28)
-    $end = substr($start, 0, -length($end)) . $end;
-  }
+  my ($start, $end) = split_page_numbers(shift);
+  $end = substr($start, 0, length($start) - length($end)) . $end
+      if $start and $start =~ /^\d+$/ and
+         $end   and   $end =~ /^\d+$/ and
+         length($end) < length($start);
   return ($start, $end);
 }
 

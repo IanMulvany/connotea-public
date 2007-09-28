@@ -62,25 +62,6 @@ sub page {
   return $self->get_start_and_end_pages_joined;
 }
 
-# for '1-10' return (1, 10)
-# supports roman numerals and other page markers that aren't integers
-sub _split_page_numbers {
-  local $_ = shift or return ();
-  m/^\s*(?:pp?a?g?e?s?\.? ?)?(\w+)\W+(\w+)\s*$/ or return ($_, undef);
-  return ($1, $2);
-}
-
-# for '100-1' return (100, 101) because the "-1" part is an abbreviated notation
-# supports roman numerals and other page markers that aren't integers
-sub _split_page_numbers_correct_abbrev {
-  my ($start, $end) = _split_page_numbers(shift);
-  $end = substr($start, 0, length($start) - length($end)) . $end
-      if $start and $start =~ /^\d+$/ and
-         $end   and   $end =~ /^\d+$/ and
-         length($end) < length($start);
-  return ($start, $end);
-}
-
 sub set_start_and_end_pages {
   my ($self, $start, $end) = @_;
   $self->start_page($start);
@@ -90,7 +71,7 @@ sub set_start_and_end_pages {
 
 sub set_start_and_end_pages_joined {
   my ($self, $value) = @_;
-  return $self->set_start_and_end_pages(_split_page_numbers_correct_abbrev($value));
+  return $self->set_start_and_end_pages(Bibliotech::Util::split_page_range($value));
 }
 
 sub get_start_and_end_pages {
