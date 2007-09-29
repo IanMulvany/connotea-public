@@ -899,7 +899,7 @@ sub html_content {
   my $add_main_nonmain = sub { $add_main->(map(@{$output{$_}}, @nonmain)); };
   my $close_div = 0;
 
-  if ($main) {
+  if ($main and ref($self) eq 'Bibliotech::Component::ListOfRecent') {
     Bibliotech::Profile::start('duties of main component');
     my $any_filters = $command->filters_used;
     my $freematch   = $command->freematch;
