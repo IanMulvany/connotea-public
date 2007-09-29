@@ -35,10 +35,8 @@ sub heading {
 
 sub heading_dynamic {
   my ($self, $main) = @_;
-  my $heading = $main ? $self->bibliotech->command->description($main) : $self->heading;
-  #Don't lowercase anymore
-  #$heading =~ s/\b((Home|Recent|Popular|Active|User|Tag|Bookmark|Date|Uri|URI|Comment)(\'?s)?)\b/lc $1/ge;
-  return $heading;
+  return $self->bibliotech->command->description if $main;
+  return $self->heading;
 }
 
 sub list {

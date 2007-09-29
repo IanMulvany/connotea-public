@@ -143,10 +143,6 @@ sub _strip_popup {
 
 sub description {
   my ($self, %options) = @_;
-  my $page 	      = $self->page;
-  my $noun 	      = $page =~ /^(home|popular|recent)$/ ? 'Bookmarks' : _strip_popup(ucfirst($page));
-  my $adjective       = $page eq 'popular' ? 'Popular' : undef;
-  my $bookmarks       = $adjective ? "$adjective $noun" : $noun;
   my $user_block      = $options{user_block}       || [['Bookmarks', 1, undef],
 						       [undef, 1, "\'s bookmarks"],
 						       ['Bookmarks for ', 1, undef]];
@@ -167,25 +163,25 @@ sub description {
 						       ['with search terms ', 1, undef]];
   my $prefix  	      = $options{prefix};
   my $postfix 	      = $options{postfix};
-  foreach my $block ($user_block, $gang_block, $tag_block, $date_block, $bookmark_block) {
-    foreach (0, 1, 2) {
-      $block->[$_] =~ s/Bookmarks/$bookmarks/g;
-      $block->[$_] =~ s/bookmarks/\l$bookmarks/g;
-    }
-  }
-  my $freematch = $self->freematch;
-  my @freematch = $freematch ? @{$freematch->terms} : ();
-  my $freematch_data = @freematch ? [\@freematch] : undef;
-  return join(' ', grep($_,
-			$prefix,
-			$self->description_filter($self->user, 	   $user_block),
-			$self->description_filter($self->gang, 	   $gang_block),
-			$self->description_filter($self->tag,  	   $tag_block),
-			$self->description_filter($self->date, 	   $date_block).
-			$self->description_filter($self->bookmark, $bookmark_block),
-			$self->description_filter($freematch_data, $freematch_block),
-			$postfix
-			));
+  my $freematch       = $self->freematch;
+  my @freematch       = $freematch ? @{$freematch->terms} : ();
+  my $freematch_data  = @freematch ? [\@freematch] : undef;
+  local $_ = join(' ', grep($_,
+			    $prefix,
+			    $self->description_filter($self->user,     $user_block),
+			    $self->description_filter($self->gang,     $gang_block),
+			    $self->description_filter($self->tag,      $tag_block),
+			    $self->description_filter($self->date,     $date_block).
+			    $self->description_filter($self->bookmark, $bookmark_block),
+			    $self->description_filter($freematch_data, $freematch_block),
+			    $postfix));
+  my $page 	= $self->page;
+  my $noun 	= $page =~ /^(home|popular|recent)$/ ? 'Bookmarks' : _strip_popup(ucfirst($page));
+  my $adjective = $page eq 'popular' ? 'Popular' : undef;
+  my $bookmarks = ($adjective ? $adjective.' ' : '').$noun;
+  s/Bookmarks/$bookmarks/g;
+  s/bookmarks/\l$bookmarks/g;
+  return $_;
 }
 
 sub canonical_uri {
