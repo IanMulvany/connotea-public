@@ -895,18 +895,17 @@ sub html_content {
   my $add              = sub { push    @{$output{$section}}, grep(defined $_, @_); };
   my $add_main         = sub { push    @{$output{main}},     grep(defined $_, @_); };
   my $add_main_nonmain = sub { $add_main->(map(@{$output{$_}}, @nonmain)); };
-  my $close_div = 0;
 
   if ($main and ref($self) eq 'Bibliotech::Component::ListOfRecent') {
     Bibliotech::Profile::start('duties of main component');
     my $any_filters = $command->filters_used;
     my $freematch   = $command->freematch;
-    my $geocount    = $any_filters ?$query->full_geocount : 0;
+    my $geocount    = $any_filters ? $query->full_geocount : undef;
     $add->($self->html_content_se_annotations);
     $add->($self->html_content_heading($main))              unless $self->options->{noheading};
     $add->($self->html_content_annotations);
     $add->($self->html_content_wikiinfo);
-    $add->($self->html_content_geoinfo($geocount))          if $any_filters and $geocount;
+    $add->($self->html_content_geoinfo($geocount))          if $geocount;
     $add->($self->html_content_freematch_notes($freematch)) if $freematch;
     $add->($self->html_content_num_options)                 if $any_filters or $freematch;
     Bibliotech::Profile::stop();
@@ -916,29 +915,14 @@ sub html_content {
   my @memory_scores;
   my $create_memory_scores;
 
-  my $designtest = $cgi->param('designtest');
-  my $do_close_div = sub {
-    if ($designtest eq 'cabscroll2' or $designtest eq 'cabparts') {
-      while ($close_div) {
-	$add->($cgi->end_div);
-	$close_div--;
-      }
-    }
-  };
-
   Bibliotech::Profile::start('list loop');
-  #warn 'parts = '.Dumper($self->parts);
   foreach (@list) {
     if (!ref $_) {
-      $do_close_div->();
       $create_memory_scores = 0;
       my $text = $_;
       my $links;
-      #warn "text:$text heading:$heading\n";
       if ($text eq 'Cabinet') {
 	if ($heading eq 'Tags') {
-	  #warn Dumper([map { ref $_ ? ref($_).":$_" : $_ } @list]);
-	  #cluck 'Cabinet Tags';
 	  if (@users) {  # created above
 	    $text = $command->description_filter(\@users, [['Tags', 0, undef],
 							   [undef, 1, "\'s tags"],
@@ -970,7 +954,6 @@ sub html_content {
 			     $cgi->textfield(-id => 'tagfilter', -name => 'tagfilter', -size => 8,
 					     onkeyup => 'reorder_global(event)'));
 	  $create_memory_scores = 1;
-	  #warn "\$create_memory_scores = 1;";
 	}
 	elsif ($heading eq 'Users') {
 	  if (@tags) {  # created above
@@ -1018,31 +1001,7 @@ sub html_content {
 	push @nonmain, $section = 'related';
       }
       $add->($cgi->h3({class => 'sectiontitle'}, $text.':')) unless $self->options->{noheading};
-      if ($links) {
-	$add->($cgi->div({class => 'toggles'}, $links),
-	       ($designtest eq 'cabscroll2' ? 
-		($cgi->start_div({id => 'justtags_wrapper',
-				  onmouseover => 'this.style.marginRight = 0; '.
-				                 'this.style.overflow = "scroll";',
-				  onmouseout  => 'this.style.marginRight = "12px"; '.
-				                 'this.style.overflow = "hidden";',
-			        }),
-		 $cgi->start_div({id => 'justtags',
-				})) : (),
-		),
-	       ($designtest eq 'cabparts' ?
-		($cgi->div({id => 'cabparts'},
-			   map { $cgi->a({href => '#', onclick => 'document.getElementById("justtags").style.display = "block"; document.getElementById("tagfilter").value = "^'.$_->[1].'"; reorder_global(); return false;'}, $_->[0]) } ((map { [$_,$_] } ('a'..'z')), ['#!','0'])),
-		 $cgi->start_div({id => 'justtags_wrapper',
-				}),
-		 $cgi->start_div({id => 'justtags',
-				}),
-		 )
-		: ()
-		)
-	       );
-	$close_div += 2;
-      }
+      $add->($cgi->div({class => 'toggles'}, $links)) if $links;
     }
     else {
       (my $id = $_->table.'_'.$_->unique_value) =~ s/\W/_/g;
@@ -1051,7 +1010,6 @@ sub html_content {
 			    scalar $_->html_content($bibliotech, $class, $verbose, $main, $href_type)));
     }
   }
-  $do_close_div->();
   Bibliotech::Profile::stop();
 
   $javascript_block = $self->html_content_memory_scores_javascript(\@memory_scores) if !$main and @memory_scores;
@@ -1062,7 +1020,6 @@ sub html_content {
 
   my $pobj = Bibliotech::Page::HTML_Content->new({html_parts => \%output,
 						  javascript_block => $javascript_block});
-  #warn Dumper($pobj);
   return $self->memcache_save($pobj);
 }
 
