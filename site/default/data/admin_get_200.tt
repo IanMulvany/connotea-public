@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<rdf:RDF
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns="http://www.connotea.org/2005/01/schema#"
+>
+  <UserList rdf:about="[% encode_xml_utf8(object_location) %]">
+    [% FOREACH user IN answer.list %]
+    <item>
+      <User>
+        <rdf:value>[% encode_xml_utf8(user.label) %]</rdf:value>
+	<userID>[% user.user_id %]</userID>
+	<firstname>[% encode_xml_utf8(user.firstname) %]</firstname>
+	<lastname>[% encode_xml_utf8(user.lastname) %]</lastname>
+	<email>[% encode_xml_utf8(user.email) %]</email>
+	<created>[% user.created.iso8601_utc %]</created>
+	<updated>[% user.updated.iso8601_utc %]</updated>
+	[% IF user.active %]<isActive>1</isActive>[% END %]
+	[% IF NOT user.active %]<isInactive>1</isInactive>[% END %]
+	[% IF NOT user.verifycode %]<isVerified>1</isVerified>[% END %]
+	[% IF user.verifycode %]<isUnverified>1</isUnverified>[% END %]
+	[% IF user.verifycode %]<verifyLink>[% encode_xml_utf8(location _ 'verify?userid=' _ user.user_id _ '&code=' _ user.verifycode) %]</verifyLink>[% END %]
+	[% IF user.quarantined %]<isQuarantined>1</isQuarantined>[% END %]
+	[% IF NOT user.quarantined %]<isUnquarantined>1</isUnquarantined>[% END %]
+	[% IF user.quarantined %]<quarantined>[% user.quarantined.iso8601_utc %]</quarantined>[% END %]
+	<postCount>[% user.count_user_bookmarks %]</postCount>
+	<rdfs:seeAlso rdf:resource="[% location %]data/user/[% user.username %]" />
+      </User>
+    </item>
+    [% END %]
+  </UserList>
+  <UserListStats rdf:about="[% encode_xml_utf8(object_location) %]">
+    <entity>
+      <Users>
+	<total>[% answer.vars.total_user_count %]</total>
+	<active>[% answer.vars.active_user_count %]</active>
+	<inactive>[% answer.vars.inactive_user_count %]</inactive>
+      </Users>
+    </entity>
+    <entity>
+      <Posts>
+	<total>[% answer.vars.total_user_bookmarks %]</total>
+	<average>[% answer.vars.average_user_bookmarks %]</average>
+	<median>[% answer.vars.median_user_bookmarks %]</median>
+      </Posts>
+    </entity>
+  </UserListStats>
+</rdf:RDF>

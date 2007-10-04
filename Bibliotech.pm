@@ -668,18 +668,22 @@ sub new_user_possibly_send_email {
   return $self->new_user_send_email($user, $redirect_email ? (outfile => $redirect_email) : ());
 }
 
+sub _verify_url {
+  my ($location, $user_id, $verifycode) = @_;
+  return $location.'verify?userid='.$user_id.'&code='.$verifycode;
+}
+
 sub new_user_send_email {
   my ($self, $user, %options) = @_;
   $user or die 'no user object';
-  my $user_id  = $user->user_id or die 'No user_id';
-  my $username = $user->username or die 'No username';
-  my $verifycode = $user->verifycode
-      or die "User $username currently has no verify code - perhaps already verified?\n";
-  my $location = $self->location or die 'No location, hyperlink will not work';
-  my $sitename = $self->sitename or die 'No site name';
+  my $user_id    = $user->user_id    or die 'No user_id';
+  my $username   = $user->username   or die 'No username';
+  my $verifycode = $user->verifycode or die "User $username currently has no verify code - perhaps already verified?\n";
+  my $location   = $self->location   or die 'No location, hyperlink will not work';
+  my $sitename   = $self->sitename   or die 'No site name';
   $options{file}    ||= 'register_email';
   $options{subject} ||= $sitename.' signup';
-  $options{var}     ||= {url => "${location}verify?userid=${user_id}&code=${verifycode}"};
+  $options{var}     ||= {url => _verify_url($location, $user_id, $verifycode)};
   $self->notify_user($user, %options);
   return $user;
 }

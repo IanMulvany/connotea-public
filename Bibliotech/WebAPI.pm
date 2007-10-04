@@ -201,6 +201,49 @@ sub answer {
 	});
 }
 
+package Bibliotech::WebAPI::AdminUtil;
+use Bibliotech::Component::AdminForm;
+
+sub is_admin_user {
+  my $user = shift;
+  my $username = $user->username;
+  return grep { $username eq $_ } @{$Bibliotech::Component::AdminForm::ADMIN_USERS};
+}
+
+sub check_admin_user {
+  return if is_admin_user(shift);
+  return Bibliotech::WebAPI::Answer->new
+        ({code    => 403,
+	  message => 'Forbidden',
+	  list    => [],
+	});
+}
+
+package Bibliotech::WebAPI::Action::Admin::GetOrPost;
+use base 'Bibliotech::WebAPI::Action';
+use Bibliotech::Component::AdminForm;
+
+sub answer {
+  my $self       = shift;
+  my $bibliotech = $self->bibliotech;
+  my $denied     = Bibliotech::WebAPI::AdminUtil::check_admin_user($bibliotech->user);
+  return $denied if $denied;
+  my $admin      = Bibliotech::Component::AdminForm->new({bibliotech => $bibliotech});
+  my $results    = $admin->results($bibliotech->cgi);
+  return Bibliotech::WebAPI::Answer->new
+        ({code    => 200,
+	  message => 'Admin Lookup',
+	  list    => $results,
+	  vars    => $admin->vars($results),
+	});
+}
+
+package Bibliotech::WebAPI::Action::Admin::Get;
+use base 'Bibliotech::WebAPI::Action::Admin::GetOrPost';
+
+package Bibliotech::WebAPI::Action::Admin::Post;
+use base 'Bibliotech::WebAPI::Action::Admin::GetOrPost';
+
 package Bibliotech::WebAPI::Action::Adminstats::Get;
 use base 'Bibliotech::WebAPI::Action';
 use Bibliotech::Component::AdminStats;
@@ -208,6 +251,8 @@ use Bibliotech::Component::AdminStats;
 sub answer {
   my $self       = shift;
   my $bibliotech = $self->bibliotech;
+  my $denied     = Bibliotech::WebAPI::AdminUtil::check_admin_user($bibliotech->user);
+  return $denied if $denied;
   my $stats      = Bibliotech::Component::AdminStats->new({bibliotech => $bibliotech});
   return Bibliotech::WebAPI::Answer->new
         ({code    => 200,

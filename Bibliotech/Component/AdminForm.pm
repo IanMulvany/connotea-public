@@ -29,41 +29,44 @@ sub html_content {
   my $bibliotech = $self->bibliotech;
   my $cgi        = $bibliotech->cgi;
   my $results    = ($cgi->param('button') eq 'search' ? $self->results($cgi) : undef);
-  my $o          = $self->tt('compadmin',
-			     {results => $results,
-			      do {
-				my $ub_counts;
-				my $get_ub_counts = sub {
-				  return @{$ub_counts} if defined $ub_counts;
-				  return @{$ub_counts = []} unless defined $results;
-				  return @{$ub_counts = [map { $_->count_user_bookmarks } @{$results}]};
-				};
-				(total_user_bookmarks   => sub { sum    ($get_ub_counts->()) },
-				 average_user_bookmarks => sub { average($get_ub_counts->()) },
-				 median_user_bookmarks  => sub { median ($get_ub_counts->()) },
-				);
-			      },
-			      do {
-				my $user_count;
-				my $get_user_count = sub {
-				  return $user_count if defined $user_count;
-				  return $user_count = 0 unless defined $results;
-				  return $user_count = $results->count;
-				};
-				my $active_user_count;
-				my $get_active_user_count = sub {
-				  return $active_user_count if defined $active_user_count;
-				  return $active_user_count = 0 unless defined $results;
-				  return $active_user_count = grep { $_->active } @{$results};
-				};
-				(total_user_count    => sub { $get_user_count->() },
-				 active_user_count   => sub { $get_active_user_count->() },
-				 inactive_user_count => sub { $get_user_count->() - $get_active_user_count->() },
-				);
-			      },
-			     },
-			     undef);
+  my $o          = $self->tt('compadmin', $self->vars($results), undef);
   return Bibliotech::Page::HTML_Content->simple($o);
+}
+
+sub vars {
+  my ($self, $results) = @_;
+  {results => $results,
+   do {
+     my $ub_counts;
+     my $get_ub_counts = sub {
+       return @{$ub_counts} if defined $ub_counts;
+       return @{$ub_counts = []} unless defined $results;
+       return @{$ub_counts = [map { $_->count_user_bookmarks } @{$results}]};
+     };
+     (total_user_bookmarks   => sub { sum    ($get_ub_counts->()) },
+      average_user_bookmarks => sub { average($get_ub_counts->()) },
+      median_user_bookmarks  => sub { median ($get_ub_counts->()) },
+     );
+   },
+   do {
+     my $user_count;
+     my $get_user_count = sub {
+       return $user_count if defined $user_count;
+       return $user_count = 0 unless defined $results;
+       return $user_count = $results->count;
+     };
+     my $active_user_count;
+     my $get_active_user_count = sub {
+       return $active_user_count if defined $active_user_count;
+       return $active_user_count = 0 unless defined $results;
+       return $active_user_count = grep { $_->active } @{$results};
+     };
+     (total_user_count    => sub { $get_user_count->() },
+      active_user_count   => sub { $get_active_user_count->() },
+      inactive_user_count => sub { $get_user_count->() - $get_active_user_count->() },
+     );
+   },
+  };
 }
 
 sub chop_point_zero {
