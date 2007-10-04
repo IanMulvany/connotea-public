@@ -14,7 +14,7 @@
 	<lastname>[% encode_xml_utf8(user.lastname) %]</lastname>
 	<email>[% encode_xml_utf8(user.email) %]</email>
 	<created>[% user.created.iso8601_utc %]</created>
-	<updated>[% user.updated.iso8601_utc %]</updated>
+	[% IF user.updated %][% IF user.updated.valid %]<updated>[% user.updated.iso8601_utc %]</updated>[% END %][% END %]
 	[% IF user.active %]<isActive>1</isActive>[% END %]
 	[% IF NOT user.active %]<isInactive>1</isInactive>[% END %]
 	[% IF NOT user.verifycode %]<isVerified>1</isVerified>[% END %]
