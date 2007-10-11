@@ -43,35 +43,6 @@ require Bibliotech::DBI::Journal;
 require Bibliotech::DBI::Unwritten::Journal;
 require Bibliotech::DBI::Date;
 
-package URI::OpenURL;
-# this routine from Tim Brody. Will be in next (0.4.2) release of URI::OpenURL
-# (some changes made)
-
-sub as_hybrid
-{
-  my $self = shift;
-  my @KEVS = $self->query_form;
-  # Add the referent
-  my @md = $self->referent->metadata();
-  # 'title' has been changed to 'jtitle'
-  for(my $i = 0; $i < @md; $i+=2) {
-    $md[$i] = 'title' if($md[$i] eq 'jtitle');
-  }
-  push @KEVS, @md;
-  # Add the referrer's id
-  if (my @id = $self->referrer->id) {
-    push @KEVS, map { s/^info:(?:sid\/)?//; sid => $_; } @id;
-  }
-  # Add the referent's id
-  if (my @id = $self->referent->id) {
-    push @KEVS, map { s|^info:(\w+)/|$1:|; s/info://; s/sid://; /^(doi|pmid|bibcode|oai):/ ? (id => $_) : (); } @id;
-  }
-  # Return a new URI (otherwise we pollute ourselves)
-  my $hybrid = new URI::OpenURL($self);
-  $hybrid->query_form(@KEVS);
-  $hybrid;
-}
-
 package Bibliotech::DBI::Class::DBI::Search::CaseInsensitive;
 use base 'Class::DBI::Search::Basic';
 

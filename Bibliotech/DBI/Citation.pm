@@ -230,11 +230,13 @@ sub is_openurl_uri_possible {
 sub openurl_uri {
   my ($self, %options) = @_;
 
-  my $bibliotech = $options{bibliotech};
-  my $user = $options{user} || (defined $bibliotech ? $bibliotech->user : $Bibliotech::Apache::USER);
-  my $resolver_uri = $options{resolver_uri} || (defined $user ? $user->openurl_resolver : undef) or return undef;
+  my $bibliotech     = $options{bibliotech};
+  my $user           = $options{user}           || (defined $bibliotech ? $bibliotech->user : $Bibliotech::Apache::USER);
+  my $resolver_uri   = $options{resolver_uri}   || (defined $user ? $user->openurl_resolver : undef) or return undef;
   my $resolver_alias = $options{resolver_alias} || (defined $user ? $user->openurl_name : undef) || 'OpenURL';
+
   my ($referrer_id, $requester_id, $referent_id);
+
   if ($bibliotech) {
     my $location = $bibliotech->location;
     my $host = $location->host;
@@ -254,11 +256,10 @@ sub openurl_uri {
     }
   }
 
-  my $openurl = new URI::OpenURL ($resolver_uri);
-  $openurl->referrer(id => $referrer_id) if $referrer_id;
+  my $openurl = URI::OpenURL->new($resolver_uri);
+  $openurl->referrer (id => $referrer_id)  if $referrer_id;
   $openurl->requester(id => $requester_id) if $requester_id;
-  #$openurl->serviceType->scholarlyService(fulltext => 'yes');
-  $openurl->referent($referent_id ? (id => $referent_id) : ());
+  $openurl->referent (id => $referent_id)  if $referent_id;
 
   my %citation;
   if (my $first_author = $self->first_author) {
