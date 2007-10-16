@@ -145,7 +145,10 @@ sub answer {
     my $code = 500;
     $code = 404 if $e =~ /\bnot found\b/;
     $code = 400 if $e =~ /\bmalformed tags\b/;
-    $e = "SPAM\n" if $e =~ /^SPAM /;  # suppress additional information
+    if ($e =~ /^SPAM/) {
+      $code = 403;
+      $e = "SPAM\n";  # suppress additional information
+    }
     return Bibliotech::WebAPI::Answer->new
 	({code    => $code,
 	  message => $e,
