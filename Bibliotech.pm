@@ -170,6 +170,29 @@ sub preadd {
   return $bookmark;
 }
 
+sub _popular_tag_names_for_change_antispam_calc {
+  [map { $_->name }
+   Bibliotech::Tag->search_for_popular_tags_in_window
+   ('30 DAY', '10 MINUTE', ['uploaded'], 5, 5, 5, 1, 100)];
+}
+
+sub popular_tag_names_for_change_antispam {
+  my $self = shift;
+  my $memcache = $self->memcache;
+  my ($cache_key, $now);
+  if ($memcache) {
+    $cache_key = Bibliotech::Cache::Key->new($self,
+					     class => ref $self,
+					     method => '_popular_tag_names_for_change_antispam');
+    $now = Bibliotech::Util::now();
+    my $cached = $memcache->get_with_last_updated($cache_key, $now, 1, 1);
+    return $cached if defined $cached;
+  }
+  my $ref = _popular_tag_names_for_change_antispam_calc();
+  $memcache->set_with_last_updated($cache_key, $ref, $now) if defined $cache_key;
+  return $ref;
+}
+
 sub change {
   my ($self, %options) = @_;
 
@@ -249,6 +272,7 @@ sub change {
 	    defined $citation ? (1, $citation->cs_score || undef)
                               : (0, undef); },
        $options{prefilled} || 0,
+       $self->popular_tag_names_for_change_antispam || [],
        $options{captcha} || 0,
        $user->is_captcha_karma_bad,
        $ANTISPAM_SCORE_LOG,

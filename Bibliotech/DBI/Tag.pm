@@ -77,7 +77,10 @@ sub parse_ignore_list {
 
 # call search_for_tag_cloud() and the privacy parameter is handled for you
 __PACKAGE__->set_sql(for_tag_cloud_need_privacy => <<'');
-SELECT *
+SELECT   __ESSENTIAL__,
+         memory_score,
+         memory_score_recency,
+         memory_score_frequency
 FROM
 (
 SELECT   __ESSENTIAL(t)__,
@@ -106,7 +109,10 @@ sub search_for_tag_cloud {
 
 # call search_for_tag_cloud_in_window() and the privacy parameter is handled for you
 __PACKAGE__->set_sql(for_tag_cloud_in_window_need_privacy => <<'');
-SELECT *
+SELECT   __ESSENTIAL__,
+         memory_score,
+         memory_score_recency,
+         memory_score_frequency
 FROM
 (
 SELECT   __ESSENTIAL(t)__,
@@ -154,7 +160,11 @@ sub search_for_tag_cloud_in_window {
 
 # call search_for_popular_tags_in_window() and the privacy parameter is handled for you
 __PACKAGE__->set_sql(for_popular_tags_in_window_need_privacy => <<'');
-SELECT *
+SELECT   __ESSENTIAL__,
+         filtered_count,
+         filtered_user_count,
+         filtered_bookmark_count,
+         rss_date_override
 FROM
 (
 SELECT   __ESSENTIAL(t)__,
@@ -178,7 +188,10 @@ AND      updated <= NOW() - INTERVAL %s
        	 LEFT JOIN __TABLE(Bibliotech::User_Bookmark_Tag=ubt)__ ON (__JOIN(ub ubt)__)
          LEFT JOIN __TABLE(Bibliotech::Tag=t)__ ON (__JOIN(ubt t)__)
 GROUP BY t.tag_id
-HAVING   filtered_count > filtered_user_count AND filtered_count >= ? AND filtered_user_count >= ? AND filtered_bookmark_count >= ?
+HAVING   filtered_count > filtered_user_count
+AND      filtered_count >= ?
+AND      filtered_user_count >= ?
+AND      filtered_bookmark_count >= ?
 ORDER BY filtered_count DESC
 LIMIT    %s
 ) AS ti
@@ -200,7 +213,7 @@ sub search_for_popular_tags_in_window {
 							       $limit + @ignore,
 							       $ignore_question_marks,
 							       $limit);
-  return $self->sth_to_objects($sth, [@privacybind, @ignore, $post_count_min, $user_count_min, $bookmark_count_min]);
+  return $self->sth_to_objects($sth, [@privacybind, $post_count_min, $user_count_min, $bookmark_count_min, @ignore]);
 }
 
 sub users {

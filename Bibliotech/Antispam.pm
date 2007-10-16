@@ -124,19 +124,20 @@ sub is_not_spam {
 }
 
 sub check {
-  my ($user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled, $captcha, $is_karma_bad, $scorelog, $captchalog) = @_;
+  my ($user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled, $popular_tags_ref, $captcha, $is_karma_bad, $scorelog, $captchalog) = @_;
   my $username = $user->username;
   return wantarray ? (0) : 0 if grep {$username eq $_} @{$TRUSTED_USER_LIST};
   my @basics = (unique_id($username, $bookmark->uri, $tags_ref, $description, $title, $comment),
 		$user, $bookmark, $tags_ref, $description, $title, $comment,
-		$has_citation, $citation_understands_score, $prefilled);
+		$has_citation, $citation_understands_score, $prefilled,
+		$popular_tags_ref);
   return check_captcha(@basics, $captcha, $is_karma_bad, $captchalog) if $captcha or $is_karma_bad;
   return check_raw    (@basics, $scorelog);
 }
 
 sub check_raw {
-  my ($id, $user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled, $logfilename) = @_;
-  my $scorelist = score($user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled);
+  my ($id, $user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled, $popular_tags_ref, $logfilename) = @_;
+  my $scorelist = score($user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled, $popular_tags_ref);
   write_score_log($logfilename, $id, $user->username, $bookmark->url, $tags_ref, $description, $title, $comment, $scorelist);
   my $score = $scorelist->total;
   my $check = $score > $SCORE_MAX;
@@ -147,11 +148,11 @@ sub check_raw {
 }
 
 sub check_captcha {
-  my ($id, $user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled, $captcha, $is_karma_bad, $logfilename) = @_;
+  my ($id, $user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled, $popular_tags_ref, $captcha, $is_karma_bad, $logfilename) = @_;
   write_captcha_log($logfilename, $id, $captcha) if $captcha;
   my $check = $captcha != 1;
   return $check unless wantarray;
-  my $scorelist = score($user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled);
+  my $scorelist = score($user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled, $popular_tags_ref);
   my $score = $scorelist->total;
   my $check_score = $score > $SCORE_MAX;
   my $super = $score > $SCORE_SUPER_MAX;
@@ -221,7 +222,7 @@ sub append {
 }
 
 sub score {
-  my ($user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled) = @_;
+  my ($user, $bookmark, $tags_ref, $description, $title, $comment, $has_citation, $citation_understands_score, $prefilled, $popular_tags_ref) = @_;
   my $uri      = $bookmark->url;
   my $username = $user->username;
   my $email    = $user->email;
@@ -241,7 +242,7 @@ sub score {
 	[tag_really_bad_phrase_list => tag_really_bad_phrase_list($tags_ref)],
 	[tags_too_many              => tags_too_many($tags_ref)],
 	[tags_two_alliterative      => tags_two_alliterative($tags_ref)],
-	[tag_popular                => tag_popular($tags_ref)],
+	[tag_popular                => tag_popular($tags_ref, $popular_tags_ref)],
 	[strange_tag_combo          => strange_tag_combo($tags_ref)],
 	[title_bad_phrase           => title_bad_phrase($title)],
 	[title_sitemap              => title_sitemap($title)],
@@ -482,10 +483,6 @@ sub uri_bad_host {
   return _uri_bad_host($uri, $URI_BAD_HOST_LIST, $URI_BAD_HOST_SCORE);
 }
 
-sub _get_popular_tags {
-  Bibliotech::Tag->search_for_popular_tags_in_window('30 DAY', '10 MINUTE', ['uploaded'], 5, 5, 5, 1, 100);
-}
-
 sub _tag_popular {
   my ($tags_ref, $popular_tags_ref, $score) = @_;
   return 0 if !$score;
@@ -493,8 +490,8 @@ sub _tag_popular {
 }
 
 sub tag_popular {
-  my $tags_ref = shift;
-  return _tag_popular($tags_ref || [], [map { $_->name } _get_popular_tags()], $TAG_POPULAR_SCORE);
+  my ($tags_ref, $popular_tags_ref) = @_;
+  return _tag_popular($tags_ref || [], $popular_tags_ref || [], $TAG_POPULAR_SCORE);
 }
 
 sub _strange_tag_combo {
