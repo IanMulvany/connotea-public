@@ -147,6 +147,11 @@ sub handler {
   return $self->explainable_http_code(FORBIDDEN, 'Data requests must have a user.')
       if $output eq 'data' and !$USER_ID;
 
+  # block one particular spammer that is hitting us with over 100,000 /data/add's a day from many IP addresses
+  return $self->explainable_http_code(FORBIDDEN, 'Data requests not accepted with the given User-Agent string.')
+      if $output eq 'data' and do { local $_ = $r->header_in('User-Agent');
+				    $_ eq 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727)'; };
+
   my $canonical_path = $command->canonical_uri(undef, undef, 1);
   $self->canonical_path($canonical_path);
 
