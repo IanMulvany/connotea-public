@@ -25,7 +25,7 @@ s|\([Cc]\)( Copyright)|&copy;$1|g;
 s|<li>|<li style="list-style-image: url(arrow.gif)">|g;
 s|<li style="list-style-image: url\(arrow.gif\)">(<a href=)|<li>$1|g;
 s|(<p><a name="__index__"></a></p>.*?)<ul>|$1<ul class="indexlist">|gs;
-s|\A|<h1 class="pagetitle">Connotea Code</h1>\n<p class="welcome">The source code for Connotea is available for you to use and modify under the terms of the GNU GPL.</p>\n|;
+s|\A|<h1>Connotea Code</h1>\n<p class="welcome">The source code for Connotea is available for you to use and modify under the terms of the GNU GPL.</p>\n|;
 s/\[\%/[\% tt_start_tag !!]/g;
 s/\%\]/[\% tt_end_tag \%]/g;
 s/tt_start_tag !!\]/tt_start_tag \%]/g;
