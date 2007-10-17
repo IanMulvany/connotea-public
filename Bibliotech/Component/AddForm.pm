@@ -54,10 +54,9 @@ sub html_content {
       else {
 	if (my $uri = $cgi->param('uri')) {
 	  $self->remember_current_uri;
-	  my $bookmark_for_visitor = eval { $bibliotech->preadd(uri => $uri) }; # if $uri =~ /\bnature\.com\//;
+	  eval { $bibliotech->preadd(uri => $uri) }; # if $uri =~ /\bnature\.com\//;
 	  # if the eval above catches an error just ignore it
-	  return Bibliotech::Page::HTML_Content->simple
-	      ($self->tt('compaddwelcome', {bookmark => $bookmark_for_visitor}));
+	  die "Location: ${location}home?uri=$uri\n";
 	}
 	else {
 	  $msg = 'to add a bookmark';

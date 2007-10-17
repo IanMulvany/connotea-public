@@ -739,6 +739,9 @@ sub tt_general_vars_calc {
 				      $cgi->param('debug'); },
 	  design_test_param  => sub { my $cgi = $bibliotech->cgi or return;
 				      $cgi->param('designtest'); },
+	  bookmark           => sub { my $cgi = $bibliotech->cgi or return;
+				      my $uri = $cgi->param('uri') or return;
+				      Bibliotech::Bookmark->new($uri); },
 	  );
 }
 
