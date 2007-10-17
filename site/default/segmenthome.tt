@@ -1,6 +1,7 @@
 <div id="home">
 
   <div>
+  [% SET bookmark = passed_bookmark %]
   [% IF NOT bookmark %]
     <h1>Welcome to [% sitename %]</h1>
     <p><a href="[% location %]register">Register</a></p>
