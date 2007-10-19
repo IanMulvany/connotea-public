@@ -526,8 +526,7 @@ sub postedby {
   if ($in_html) {
     push @posted, ('|',
 		   $self->privacy_status_html($bibliotech),
-		   $cgi->a({href => $bookmark->href_search_global($bibliotech)}, 'info'),
-		   ($adding ? () : ('|', _proxit_link($self->bookmark->url, $cgi))));
+		   $cgi->a({href => $bookmark->href_search_global($bibliotech)}, 'info'));
   }
 
   if (@posted) {
