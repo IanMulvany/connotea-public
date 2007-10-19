@@ -21,6 +21,17 @@ use Bibliotech::Util;
 __PACKAGE__->mk_accessors(map($_->{name}, @FILTERS),
 			  qw/verb output page start num sort freematch wiki_path/);
 
+BEGIN {
+  no strict 'refs';
+  foreach my $filter (map($_->{name}, @FILTERS)) {
+    *{$filter.'_flun'} = sub {
+      my $self = shift;
+      my $contents = $self->$filter or return ();
+      return $contents->flatten->unique;
+    };
+  }
+}
+
 sub page_or_inc {
   my $page = shift->page;
   return $page->[0] if ref $page;
@@ -315,21 +326,6 @@ sub export_href {
 						      page   => [set => 'export'],
 						      start  => [set => undef],
 						      num    => [set => undef]});
-}
-
-# only needed if AUTOLOAD is below
-sub DESTROY {
-  #my $self = shift;
-  #$self->SUPER::DESTROY(@_);
-}
-
-sub AUTOLOAD {
-  my $self = shift;
-  (my $name = our $AUTOLOAD) =~ s/.*:://;
-  (my $set = $name) =~ s/_flun$// or die "autoload here is for *_flun calls (not $name)";
-  die "cannot call $name" unless $self->can($set);
-  my $contents = $self->$set or return ();
-  return $contents->flatten->unique;
 }
 
 1;

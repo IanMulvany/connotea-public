@@ -153,13 +153,13 @@ sub html_content {
       $cgi->param(usertitle => $usertitle) unless $cgi->param('usertitle');
       $bookmark->adding(1);  # temp column, suppresses copy link in html_output
       if ($validationmsg) {
-	my ($user_bookmark) = Bibliotech::User_Bookmark->search(user => $user, bookmark => $bookmark);
-	$bookmark->for_user_bookmark($user_bookmark) if $user_bookmark;
+	my $user_article = $user->find_bookmark($bookmark);
+	$bookmark->for_user_article($user_article) if $user_article;
       }
       if (!$button) {
-	my ($user_bookmark) = Bibliotech::User_Bookmark->search(user => $user, bookmark => $bookmark);
-	if ($user_bookmark) {
-	  $bookmark->for_user_bookmark($user_bookmark);
+	my $user_article = $user->find_bookmark($bookmark);
+	if ($user_article) {
+	  $bookmark->for_user_article($user_article);
 	  if ($add and $main) {
 	    # trying to add an already added bookmark
 	    my $editlink = 'edit'.($popup ? 'popup' : '');
@@ -167,21 +167,21 @@ sub html_content {
 	    die "Location: $location$editlink?note=alreadyknown&uri=$hash\n";
 	  }
 	  if ($edit) {
-	    $cgi->param(usertitle => $user_bookmark->title);
-	    $cgi->param(description => $user_bookmark->description);
-	    $cgi->param(tags => join(' ', map { /\s/ ? "\"$_\"" : $_ } map { $_->name } $user_bookmark->tags));
-	    my $lastcomment = $user_bookmark->last_comment;
+	    $cgi->param(usertitle => $user_article->title);
+	    $cgi->param(description => $user_article->description);
+	    $cgi->param(tags => join(' ', map { /\s/ ? "\"$_\"" : $_ } map { $_->name } $user_article->tags));
+	    my $lastcomment = $user_article->last_comment;
 	    if ($lastcomment) {
 	      my $entry = $lastcomment->entry;
 	      $entry =~ s| *<br ?/?>|\n|g;
 	      $cgi->param(lastcomment => $entry);
 	    }
-	    $cgi->param(private => $user_bookmark->private);
-	    if (my $private_gang = $user_bookmark->private_gang) {
+	    $cgi->param(private => $user_article->private);
+	    if (my $private_gang = $user_article->private_gang) {
 	      $cgi->param(group => $private_gang->name);
 	      $cgi->param(private => 2);  # for radio group
 	    }
-	    if (my $private_until = $user_bookmark->private_until) {
+	    if (my $private_until = $user_article->private_until) {
 	      if ($private_until->has_been_reached) {
 		$cgi->param(private => 0);  # for radio group
 	      }
@@ -189,7 +189,7 @@ sub html_content {
 		$cgi->param(embargo => $private_until->utc->ymdhm);
 	      }
 	    }
-	    $cgi->param(mywork => $user_bookmark->user_is_author);
+	    $cgi->param(mywork => $user_article->user_is_author);
 	  }
 	}
 	else {
@@ -203,8 +203,8 @@ sub html_content {
 	if ($add) {
 	  if (my $from = $cgi->param('from')) {
 	    if (my $from_user = Bibliotech::User->normalize_option({user => $from})) {
-	      my ($user_bookmark) = Bibliotech::User_Bookmark->search(user => $from_user, bookmark => $bookmark);
-	      $bookmark->for_user_bookmark($user_bookmark) if $user_bookmark;
+	      my $user_article = $from_user->find_bookmark($bookmark);
+	      $bookmark->for_user_article($user_article) if $user_article;
 	    }
 	  }
 	}
@@ -781,8 +781,8 @@ our @citation_field_names = qw/ctitle cjournal cvolume cissue cpages cdate cauth
 
 sub _check_if_citation_edited {
   my $cgi = shift;
-  my $new = sub { $cgi->param(shift)||''; };
-  my $old = sub { $cgi->param(shift.'2')||''; };
+  my $new = sub { $cgi->param(shift())||''; };
+  my $old = sub { $cgi->param(shift().'2')||''; };
   return any { $new->($_) ne $old->($_) } @citation_field_names;
 }
 

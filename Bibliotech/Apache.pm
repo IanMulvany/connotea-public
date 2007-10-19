@@ -540,30 +540,24 @@ sub query_handler {
   #return code_for_handler_return($final_rc);
 }
 
-# helper routine: provide format, result, and HTTP status code and get back same plus extension and type
-# in the case that the format is not known you'll get back appropriate 404
-sub _get_extension_and_type {
-  my ($fmt, $result, $rc, $inc_filename) = @_;
-  return ($result, $rc, HTML_EXTENSION,    HTML_MIME_TYPE)    if $fmt eq 'html' and !$inc_filename;
-  return ($result, $rc, RSS_EXTENSION,     RSS_MIME_TYPE)     if $fmt eq 'rss';
-  return ($result, $rc, RIS_EXTENSION,     RIS_MIME_TYPE)     if $fmt eq 'ris';
-  return ($result, $rc, GEO_EXTENSION,     GEO_MIME_TYPE)     if $fmt eq 'geo';
-  return ($result, $rc, HTML_EXTENSION,    HTML_MIME_TYPE)    if $fmt eq 'tt';
-  return ($result, $rc, BIBTEX_EXTENSION,  BIBTEX_MIME_TYPE)  if $fmt eq 'bib';
-  return ($result, $rc, ENDNOTE_EXTENSION, ENDNOTE_MIME_TYPE) if $fmt eq 'end';
-  return ($result, $rc, MODS_EXTENSION,    MODS_MIME_TYPE)    if $fmt eq 'mods';
-  return ($result, $rc, TEXT_EXTENSION,    TEXT_MIME_TYPE)    if $fmt eq 'txt';
-  return ($result, $rc, TEXT_EXTENSION,    TEXT_MIME_TYPE)    if $fmt eq 'plain';
-  return ($result, $rc, WORD_EXTENSION,    WORD_MIME_TYPE)    if $fmt eq 'word';
-  return ($result, $rc, RDF_EXTENSION,     RDF_MIME_TYPE)     if $fmt eq 'data';
-  if ($fmt eq 'html' and $inc_filename) {
-    my ($ext) = $inc_filename =~ /(\.\w{1,5})$/;
-    if ($ext) {
-      return ($result, $rc, $ext, CSS_MIME_TYPE)        if $ext eq '.css';
-      return ($result, $rc, $ext, JAVASCRIPT_MIME_TYPE) if $ext eq '.js';
-      return ($result, $rc, $ext, TEXT_MIME_TYPE)       if $ext eq '.txt';
-    }
-    return ($result, $rc, $ext, HTML_MIME_TYPE);
+# helper routine, provide format and result and an HTTP status code, extension, and MIME type are added
+sub get_extension_and_type {
+  my ($self, $fmt, $result) = @_;
+  return ($result, OK, '.html', HTML_MIME_TYPE)    if $fmt eq 'html';
+  return ($result, OK, '.rss',  RSS_MIME_TYPE)     if $fmt eq 'rss';
+  return ($result, OK, '.ris',  RIS_MIME_TYPE)     if $fmt eq 'ris';
+  return ($result, OK, '.kml',  GEO_MIME_TYPE)     if $fmt eq 'geo';
+  return ($result, OK, '.html', HTML_MIME_TYPE)    if $fmt eq 'tt';
+  return ($result, OK, '.bib',  BIBTEX_MIME_TYPE)  if $fmt eq 'bib';
+  return ($result, OK, '.end',  ENDNOTE_MIME_TYPE) if $fmt eq 'end';
+  return ($result, OK, '.xml',  MODS_MIME_TYPE)    if $fmt eq 'mods';
+  return ($result, OK, '.txt',  TEXT_MIME_TYPE)    if $fmt eq 'txt';
+  return ($result, OK, '.txt',  TEXT_MIME_TYPE)    if $fmt eq 'plain';
+  return ($result, OK, '.xml',  XML_MIME_TYPE)     if $fmt eq 'word';
+  if ($fmt eq 'data') {
+    my $rc = $result->code;
+    my $page = Bibliotech::Page->new({bibliotech => $self});
+    return ($page->tt_content_for_web_api($result), $rc, '.rdf', RDF_MIME_TYPE);
   }
   return (undef, NOT_FOUND, undef, undef);
 }

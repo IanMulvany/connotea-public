@@ -16,7 +16,10 @@ require Exporter;
 our @ISA = ('Exporter');
 our @EXPORT = qw(@FILTERS %FILTERS);
 
-# the order of this array must match the order of the units in the 'command' production in Bibliotech::Parser right after output and page
+# the order of this array must match the order of the units in the
+# 'query_command' production in the Bibliotech::Parser grammar right
+# after output and page
+
 our @FILTERS = ({code => 'USER',
 		 name => 'user',
 		 label => 'user',
@@ -54,7 +57,15 @@ our @FILTERS = ({code => 'USER',
 		 db => 1,
 		 table => 'bookmark',
 		 table_primary => 'b.bookmark_id',
-		 table_search => 'b.url'});
+		 table_search => 'b.url'},
+		{code => 'ARTICLE',
+		 name => 'article',
+		 label => 'article',
+		 class => 'Bibliotech::Article',
+		 db => 1,
+		 table => 'article',
+		 table_primary => 'a.article_id',
+		 table_search => 'a.hash'});
 our %FILTERS;
 $FILTERS{$_->{name}} = $_ foreach (@FILTERS);
 

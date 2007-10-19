@@ -3,7 +3,7 @@
 # Tag creation and deletion testing
 # Also test user tag annotations
 
-use Test::More tests => 40;
+use Test::More tests => 46;
 use Test::Exception;
 use strict;
 use warnings;
@@ -14,6 +14,8 @@ BEGIN {
 
 is_table_empty_or_bail('Bibliotech::User');
 is_table_empty_or_bail('Bibliotech::Tag');
+is_table_empty_or_bail('Bibliotech::Bookmark');
+is_table_empty_or_bail('Bibliotech::Article');
 
 my $bibliotech = get_test_bibliotech_object_1_test();
 my $user       = get_test_user_7_tests($bibliotech);
@@ -32,7 +34,11 @@ $comment       = simple_create_3_tests('Bibliotech::Comment' => {entry => 'New c
 $annotate      = simple_create_3_tests('Bibliotech::User_Tag_Annotation' => {user => $user, tag => $tag, comment => $comment});
 
 my $bookmark   = simple_create_3_tests('Bibliotech::Bookmark' => {url => 'test:1'});
-my $post       = simple_create_3_tests('Bibliotech::User_Bookmark' => {user => $user, bookmark => $bookmark});
+my $article    = simple_create_3_tests('Bibliotech::Article' => {hash => $bookmark->hash});
+my $post       = simple_create_3_tests('Bibliotech::User_Article' => {user => $user, article => $article, bookmark => $bookmark});
+
+$bookmark->article($article);
+$bookmark->mark_updated;
 
 lives_ok { $post->link_tag($tag) } 'link_tag';
 is(join(' ', map { $_->name } $post->tags), 'hooray', 'tagged hooray');
@@ -43,7 +49,10 @@ lives_ok { $bibliotech->retag($user, $tag, $tag2) } 'retag';
 is(join(' ', map { $_->name } $post->tags), 'bye', 'tagged bye');
 
 $user->delete;
+
 is_table_empty('Bibliotech::User');
 is_table_empty('Bibliotech::Tag');
+is_table_empty('Bibliotech::Bookmark');
+is_table_empty('Bibliotech::Article');
 is_table_empty('Bibliotech::User_Tag_Annotation');
 is_table_empty('Bibliotech::Comment');

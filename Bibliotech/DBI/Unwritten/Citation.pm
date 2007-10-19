@@ -19,7 +19,7 @@ sub link_author {
 }
 
 sub write {
-  my ($self, $bookmark_or_user_bookmark) = @_;
+  my ($self, $bookmark_or_user_article) = @_;
 
   my $journal_mem = $self->journal;
   my $journal;
@@ -35,9 +35,9 @@ sub write {
     $citation->link_author([++$i => $author]);  # that's not link_author() in this class... it's in Bibliotech::Citation
   }
 
-  if ($bookmark_or_user_bookmark) {
-    $bookmark_or_user_bookmark->citation($citation);
-    $bookmark_or_user_bookmark->update;
+  if ($bookmark_or_user_article) {
+    $bookmark_or_user_article->citation($citation);
+    $bookmark_or_user_article->update;
   }
 
   return $citation;

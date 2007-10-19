@@ -37,15 +37,15 @@ sub vars {
   my ($self, $results) = @_;
   {results => $results,
    do {
-     my $ub_counts;
-     my $get_ub_counts = sub {
-       return @{$ub_counts} if defined $ub_counts;
-       return @{$ub_counts = []} unless defined $results;
-       return @{$ub_counts = [map { $_->count_user_bookmarks } @{$results}]};
+     my $ua_counts;
+     my $get_ua_counts = sub {
+       return @{$ua_counts} if defined $ua_counts;
+       return @{$ua_counts = []} unless defined $results;
+       return @{$ua_counts = [map { $_->count_user_articles } @{$results}]};
      };
-     (total_user_bookmarks   => sub { sum    ($get_ub_counts->()) },
-      average_user_bookmarks => sub { average($get_ub_counts->()) },
-      median_user_bookmarks  => sub { median ($get_ub_counts->()) },
+     (total_user_articles   => sub { sum    ($get_ua_counts->()) },
+      average_user_articles => sub { average($get_ua_counts->()) },
+      median_user_articles  => sub { median ($get_ua_counts->()) },
      );
    },
    do {
@@ -145,7 +145,7 @@ sub sth_for_results {
   };
 
   $normal->($_) foreach (qw/user_id username email lastname firstname active/);
-  $normal->('bookmarks', 'user_bookmarks_count_packed', 'having');
+  $normal->('articles', 'user_articles_count_packed', 'having');
   $normal->('group', 'g.name');
   $between->('created');
 

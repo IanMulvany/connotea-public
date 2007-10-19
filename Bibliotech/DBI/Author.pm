@@ -12,7 +12,7 @@ __PACKAGE__->has_many(citations => ['Bibliotech::Citation_Author' => 'citation']
 __PACKAGE__->has_a(user => 'Bibliotech::User');
 
 sub my_alias {
-  'a';
+  'au';
 }
 
 sub clean_whitespace_all {

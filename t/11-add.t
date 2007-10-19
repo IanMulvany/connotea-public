@@ -12,7 +12,7 @@ BEGIN {
 
 is_table_empty_or_bail('Bibliotech::User');
 is_table_empty_or_bail('Bibliotech::Bookmark');
-is_table_empty_or_bail('Bibliotech::User_Bookmark');
+is_table_empty_or_bail('Bibliotech::User_Article');
 
 my $bibliotech = get_test_bibliotech_object_1_test();
 my $user       = get_test_user_7_tests($bibliotech);
@@ -50,57 +50,57 @@ throws_ok { $bibliotech->add(user => $user, uri => 'test:invalidtag', tags => ['
           qr/invalid tag/i, 'adding post with invalid tag name caught';
 Bibliotech::Bookmark->new('test:invalidtag')->delete;
 
-my $user_bookmark;
+my $user_article;
 lives_and {
-  ok(defined($user_bookmark = $bibliotech->add(user => $user, uri => 'test:1', tags => ['test'],
-					       skip_antispam => 1)),
-     'user_bookmark defined');
+  ok(defined($user_article = $bibliotech->add(user => $user, uri => 'test:1', tags => ['test'],
+					      skip_antispam => 1)),
+     'user_article defined');
 } 'added test:1';
 my $bookmark = Bibliotech::Bookmark->new('test:1');
-$bookmark->delete if not defined $user_bookmark and defined $bookmark;
+$bookmark->delete if not defined $user_article and defined $bookmark;
 SKIP: {
-  skip 'user_bookmark is not defined', 5 unless defined $user_bookmark;
-  is($user_bookmark->private,           0, 'private 0');
-  is($user_bookmark->private_gang,  undef, 'private_gang undef');
-  is($user_bookmark->private_until, undef, 'private_until undef');
-  is($user_bookmark->quarantined,   undef, 'quarantined undef');
-  is($user_bookmark->def_public,        1, 'def_public 1');
+  skip 'user_article is not defined', 5 unless defined $user_article;
+  is($user_article->private,           0, 'private 0');
+  is($user_article->private_gang,  undef, 'private_gang undef');
+  is($user_article->private_until, undef, 'private_until undef');
+  is($user_article->quarantined,   undef, 'quarantined undef');
+  is($user_article->def_public,        1, 'def_public 1');
 }
 $bookmark->delete if defined $bookmark;
 
 lives_and {
-  ok(defined($user_bookmark = $bibliotech->add(user => $user, uri => 'test:2', tags => ['test'],
-					       private => 1,
-					       skip_antispam => 1)),
-     'user_bookmark defined');
+  ok(defined($user_article = $bibliotech->add(user => $user, uri => 'test:2', tags => ['test'],
+					      private => 1,
+					      skip_antispam => 1)),
+     'user_article defined');
 } 'added test:2';
 $bookmark = Bibliotech::Bookmark->new('test:2');
-$bookmark->delete if not defined $user_bookmark and defined $bookmark;
+$bookmark->delete if not defined $user_article and defined $bookmark;
 SKIP: {
-  skip 'user_bookmark is not defined', 5 unless defined $user_bookmark;
-  is($user_bookmark->private,           1, 'private 1');
-  is($user_bookmark->private_gang,  undef, 'private_gang undef');
-  is($user_bookmark->private_until, undef, 'private_until undef');
-  is($user_bookmark->quarantined,   undef, 'quarantined undef');
-  is($user_bookmark->def_public,        0, 'def_public 0');
+  skip 'user_article is not defined', 5 unless defined $user_article;
+  is($user_article->private,           1, 'private 1');
+  is($user_article->private_gang,  undef, 'private_gang undef');
+  is($user_article->private_until, undef, 'private_until undef');
+  is($user_article->quarantined,   undef, 'quarantined undef');
+  is($user_article->def_public,        0, 'def_public 0');
 }
 $bookmark->delete if defined $bookmark;
 
 lives_and {
-  ok(defined($user_bookmark = $bibliotech->add(user => $user, uri => 'test:3', tags => ['test'],
-					       private_until => Bibliotech::Date->new('2200-01-01 01:00:00'),
-					       skip_antispam => 1)),
-     'user_bookmark defined');
+  ok(defined($user_article = $bibliotech->add(user => $user, uri => 'test:3', tags => ['test'],
+					      private_until => Bibliotech::Date->new('2200-01-01 01:00:00'),
+					      skip_antispam => 1)),
+     'user_article defined');
 } 'added test:3';
 $bookmark = Bibliotech::Bookmark->new('test:3');
-$bookmark->delete if not defined $user_bookmark and defined $bookmark;
+$bookmark->delete if not defined $user_article and defined $bookmark;
 SKIP: {
-  skip 'user_bookmark is not defined', 5 unless defined $user_bookmark;
-  is($user_bookmark->private,           0, 'private 0');
-  is($user_bookmark->private_gang,  undef, 'private_gang undef');
-  is($user_bookmark->private_until->mysql_datetime, '2200-01-01 01:00:00', 'private_until 2200-01-01 01:00:00');
-  is($user_bookmark->quarantined,   undef, 'quarantined undef');
-  is($user_bookmark->def_public,        0, 'def_public 0');
+  skip 'user_article is not defined', 5 unless defined $user_article;
+  is($user_article->private,           0, 'private 0');
+  is($user_article->private_gang,  undef, 'private_gang undef');
+  is($user_article->private_until->mysql_datetime, '2200-01-01 01:00:00', 'private_until 2200-01-01 01:00:00');
+  is($user_article->quarantined,   undef, 'quarantined undef');
+  is($user_article->def_public,        0, 'def_public 0');
 }
 $bookmark->delete if defined $bookmark;
 
@@ -108,4 +108,4 @@ $user->delete;
 
 is_table_empty('Bibliotech::User');
 is_table_empty_or_bail('Bibliotech::Bookmark');
-is_table_empty_or_bail('Bibliotech::User_Bookmark');
+is_table_empty_or_bail('Bibliotech::User_Article');

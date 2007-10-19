@@ -62,12 +62,12 @@ sub tags {
   return @tags;
 }
 
-sub user_bookmarks {
+sub user_articles {
   my $self = shift;
   my $q = new Bibliotech::Query;
   $q->set_gang($self);
   $q->activeuser($Bibliotech::Apache::USER);
-  return $q->user_bookmarks;
+  return $q->user_articles;
 }
 
 sub unique {
@@ -125,17 +125,16 @@ sub standard_annotation_text {
           To create your own $sitename collection, $register";
 }
 
+# one extra chore with deleting a gang is the user_articles that are private to that gang:
+#   private to gang -> becomes private to user
+#   private to gang with embargo date -> becomes private to user, keep embargo date
 sub delete {
-  #warn 'delete gang';
   my $self = shift;
-  # one extra chore with deleting a gang is the user_bookmarks that are private to that gang:
-  #   private to gang -> becomes private to user
-  #   private to gang with embargo date -> becomes private to user, keep embargo date
-  my $iter = Bibliotech::User_Bookmark->search(private_gang => $self);
-  while (my $user_bookmark = $iter->next) {
-    $user_bookmark->private(1);
-    $user_bookmark->private_gang(undef);
-    $user_bookmark->mark_updated;
+  my $iter = Bibliotech::User_Article->search(private_gang => $self);
+  while (my $user_article = $iter->next) {
+    $user_article->private(1);
+    $user_article->private_gang(undef);
+    $user_article->mark_updated;
   }
   return $self->SUPER::delete(@_);
 }

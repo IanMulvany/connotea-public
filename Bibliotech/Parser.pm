@@ -94,6 +94,9 @@ bookmark_part : ...!keyword_for_bookmark /[0-9a-f]{32}/ <commit>
               | ...!keyword_for_bookmark /[^\'\" ][^\" ]*/
                 { $item[2] }
 
+article_part : ...!keyword_for_article /[0-9a-f]{32}/ <commit>
+               { $item[2] }
+
 filename_part : ...!keyword /[\w\.]+/
 
 user_boolAND_part : <skip:'/*'> user_part(2.. /\+/)
@@ -108,6 +111,9 @@ date_boolAND_part : <skip:'/*'> date_part(2.. /\+/)
 bookmark_boolAND_part : <skip:'/*'> bookmark_part(2.. /\+/)
 { $item[2] }
 
+article_boolAND_part : <skip:'/*'> article_part(2.. /\+/)
+{ $item[2] }
+
 user_boolOR_part : user_boolAND_part | user_part
 { $item[1] }
 
@@ -120,6 +126,9 @@ date_boolOR_part : date_boolAND_part | date_part
 bookmark_boolOR_part : bookmark_boolAND_part | bookmark_part
 { $item[1] }
 
+article_boolOR_part : article_boolAND_part | article_part
+{ $item[1] }
+
 user_keyword : 'user'
 
 gang_keyword : 'group'
@@ -130,32 +139,39 @@ date_keyword : 'date'
 
 bookmark_keyword : 'uri'
 
-raw_keyword : user_keyword | gang_keyword | tag_keyword | date_keyword | bookmark_keyword
+article_keyword : 'article'
+
+raw_keyword : user_keyword | gang_keyword | tag_keyword | date_keyword | bookmark_keyword | article
 
 keyword : raw_keyword <reject: $text =~ /^\w/>
 { $item[1] }
 
-raw_keyword_for_user : gang_keyword | tag_keyword | date_keyword | bookmark_keyword
+raw_keyword_for_user : gang_keyword | tag_keyword | date_keyword | bookmark_keyword | article_keyword
 
 keyword_for_user : raw_keyword_for_user <reject: $text =~ /^\w/>
 { $item[1] }
 
-raw_keyword_for_gang : tag_keyword | date_keyword | bookmark_keyword
+raw_keyword_for_gang : tag_keyword | date_keyword | bookmark_keyword | article_keyword
 
 keyword_for_gang : raw_keyword_for_gang <reject: $text =~ /^\w/>
 { $item[1] }
 
-raw_keyword_for_tag : date_keyword | bookmark_keyword
+raw_keyword_for_tag : date_keyword | bookmark_keyword | article_keyword
 
 keyword_for_tag : raw_keyword_for_tag <reject: $text =~ /^\w/>
 { $item[1] }
 
-raw_keyword_for_date : bookmark_keyword
+raw_keyword_for_date : bookmark_keyword | article_keyword
 
 keyword_for_date : raw_keyword_for_date <reject: $text =~ /^\w/>
 { $item[1] }
 
-keyword_for_bookmark : <reject>
+raw_keyword_for_bookmark : article_keyword
+
+keyword_for_bookmark : raw_keyword_for_bookmark <reject: $text =~ /^\w/>
+{ $item[1] }
+
+keyword_for_article : <reject>
 
 user : user_keyword <commit> user_boolOR_part(s?)
 { Bibliotech::Parser::validate_part_list('user', 'user', 'Bibliotech::User', $item[3]); }
@@ -171,6 +187,9 @@ date : date_keyword <commit> date_boolOR_part(s?)
 
 bookmark : bookmark_keyword <commit> bookmark_boolOR_part(s?)
 { Bibliotech::Parser::validate_part_list('bookmark', 'bookmark', 'Bibliotech::Bookmark', $item[3]); }
+
+article : article_keyword <commit> article_boolOR_part(s?)
+{ Bibliotech::Parser::validate_part_list('article', 'article', 'Bibliotech::Article', $item[3]); }
 
 start_keyword : 'start'
 
@@ -215,7 +234,7 @@ arg : digit_arg
 modifiers : '?' arg(s /\&/)
 { my @x = map { @{$_} } @{$item[2]}; my %y = @x; \%y; }
 
-query_command : /^/ <skip:'/+'> auth(?) output(?) page(?) user(?) gang(?) tag(?) date(?) bookmark(?) <skip:'/*'> modifiers(?) /$/
+query_command : /^/ <skip:'/+'> auth(?) output(?) page(?) user(?) gang(?) tag(?) date(?) bookmark(?) article(?) <skip:'/*'> modifiers(?) /$/
 { Bibliotech::Command->new
       ({verb      => undef,
 	output    => $item[4]->[0] || 'html',
@@ -223,16 +242,18 @@ query_command : /^/ <skip:'/+'> auth(?) output(?) page(?) user(?) gang(?) tag(?)
 					 $item[7]->[0] ||
 					 $item[8]->[0] ||
 					 $item[9]->[0] ||
-					 $item[10]->[0]) ? 'home' : 'recent'),
+					 $item[10]->[0] ||
+				         $item[11]->[0]) ? 'home' : 'recent'),
         user      => $item[6]->[0]  ? bless($item[6]->[0],  'Bibliotech::Parser::NamePartSet') : undef,
 	gang      => $item[7]->[0]  ? bless($item[7]->[0],  'Bibliotech::Parser::NamePartSet') : undef,
 	tag       => $item[8]->[0]  ? bless($item[8]->[0],  'Bibliotech::Parser::NamePartSet') : undef,
 	date      => $item[9]->[0]  ? bless($item[9]->[0],  'Bibliotech::Parser::NamePartSet') : undef,
 	bookmark  => $item[10]->[0] ? bless($item[10]->[0], 'Bibliotech::Parser::NamePartSet') : undef,
-	start     => $item[12]->[0]->{start} || undef,
-	num       => $item[12]->[0]->{num}   || Bibliotech::Parser::num_default($item[4]->[0]),
-	sort      => $item[12]->[0]->{sort}  || undef,
-	freematch => Bibliotech::Parser::Freematch->new($item[12]->[0]->{'q'}) || undef,
+	article   => $item[11]->[0] ? bless($item[11]->[0], 'Bibliotech::Parser::NamePartSet') : undef,
+	start     => $item[13]->[0]->{start} || undef,
+	num       => $item[13]->[0]->{num}   || Bibliotech::Parser::num_default($item[4]->[0]),
+	sort      => $item[13]->[0]->{sort}  || undef,
+	freematch => Bibliotech::Parser::Freematch->new($item[13]->[0]->{'q'}) || undef,
        });
 }
 

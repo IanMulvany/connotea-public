@@ -29,22 +29,22 @@ sub first_author {
   (shift->authors)[0];
 }
 
-sub bookmarks_or_user_bookmarks {
+sub bookmarks_or_user_articles {
   my $self = shift;
-  return (Bibliotech::Bookmark->search(citation => $self), Bibliotech::User_Bookmark->search(citation => $self));
+  return (Bibliotech::Bookmark->search(citation => $self),
+	  Bibliotech::User_Article->search(citation => $self));
 }
 
-sub bookmarks_or_user_bookmarks_count {
-  my @bookmarks_or_user_bookmarks = shift->bookmarks_or_user_bookmarks;
-  return scalar @bookmarks_or_user_bookmarks;
+sub bookmarks_or_user_articles_count {
+  my @bookmarks_or_user_articles = shift->bookmarks_or_user_articles;
+  return scalar @bookmarks_or_user_articles;
 }
 
 sub delete {
-  #warn 'delete citation';
   my $self = shift;
-  foreach my $bookmark_or_user_bookmark ($self->bookmarks_or_user_bookmarks) {
-    $bookmark_or_user_bookmark->citation(undef);
-    $bookmark_or_user_bookmark->update;
+  foreach my $bookmark_or_user_article ($self->bookmarks_or_user_articles) {
+    $bookmark_or_user_article->citation(undef);
+    $bookmark_or_user_article->mark_updated;
   }
   return $self->SUPER::delete(@_);
 };

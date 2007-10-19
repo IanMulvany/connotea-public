@@ -2,7 +2,7 @@
 
 # Bookmark creation testing
 
-use Test::More tests => 48;
+use Test::More tests => 52;
 use Test::Exception;
 use strict;
 use warnings;
@@ -30,6 +30,8 @@ my $fail_tag    = '/\\';
 
 is_table_empty_or_bail('Bibliotech::User');
 is_table_empty_or_bail('Bibliotech::Bookmark');
+is_table_empty_or_bail('Bibliotech::Article');
+is_table_empty_or_bail('Bibliotech::User_Article');
 
 my $bibliotech = get_test_bibliotech_object_1_test();
 
@@ -100,24 +102,24 @@ ok (!$private_until->has_been_reached, 'Date has not been reached');
 #Bibliotech::SpecialTagSet->scan(\$@valid_tag);
 
 # Link the test user to the bookmark.
-my $user_bookmark;
+my $user_article;
 lives_ok {
-    $user_bookmark = $user->link_bookmark($bookmark);
+    $user_article = $user->link_bookmark($bookmark);
 } 'link_bookmark';
 
-# Check that link_bookmark returns a User_Bookmark object and verify that the
+# Check that link_bookmark returns a User_Article object and verify that the
 # created entry id is is a positive number.
-isa_ok($user_bookmark,'Bibliotech::User_Bookmark');
-ok ($user_bookmark->user_bookmark_id ge 0, 'user_bookmark_id integrity');
+isa_ok($user_article,'Bibliotech::User_Article');
+ok ($user_article->user_article_id ge 0, 'user_article_id integrity');
 
 # Using the previous valid private_until date, apply it to bookmark and verify
 # application.
-ok ($user_bookmark->private_until($private_until), 'Set private_until date');
-isa_ok($user_bookmark->private_until, 'Bibliotech::Date');
-is ($user_bookmark->private_until->utc_year,$private_until->utc_year,
+ok ($user_article->private_until($private_until), 'Set private_until date');
+isa_ok($user_article->private_until, 'Bibliotech::Date');
+is ($user_article->private_until->utc_year,$private_until->utc_year,
     'private_until matches test value');
 
-$user_bookmark->update;
+$user_article->update;
 
 # Set the test user as the first user of the bookmark.
 # Verify that readback is the test user.
@@ -130,7 +132,10 @@ $bookmark->update;
 # number of users from the user bookmark table.
 is (Bibliotech::User->count_active,1,'user bookmark setup verify');
 
-lives_ok { $user_bookmark->delete } 'delete user_bookmark';
-is_table_empty('Bibliotech::User_Bookmark');
-lives_ok { $user->delete } 'user delete';
+lives_ok { $user_article->delete } 'delete user_article';
+is_table_empty('Bibliotech::User_Article');
+is_table_empty('Bibliotech::Article');
+is_table_empty('Bibliotech::Bookmark');
+
+lives_ok { $user->delete } 'delete user';
 is_table_empty('Bibliotech::User');

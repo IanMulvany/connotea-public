@@ -125,34 +125,34 @@ sub fetch {
   shift->data->shift;
 }
 
-# return (unwritten) user_bookmarks in Bibliotech::Import::ResultList (even if only one)
+# return (unwritten) user_articles in Bibliotech::Import::ResultList (even if only one)
 # analogous to citations() method in Bibliotech::CitationSource
-sub user_bookmarks {
+sub user_articles {
   my $self = shift;
   $self->trial_mode(2);
-  return $self->generate_user_bookmarks;
+  return $self->generate_user_articles;
 }
 
-# return (unwritten) user_bookmarks in Bibliotech::Import::ResultList (even if only one)
-# bookmarks will be preadd()'d and authoritative metadata will be fetched and noted
-sub user_bookmarks_write_bookmarks {
+# return (unwritten) user_articles in Bibliotech::Import::ResultList (even if only one)
+# articles will be preadd()'d and authoritative metadata will be fetched and noted
+sub user_articles_write_articles {
   my $self = shift;
   $self->trial_mode(1);
-  return $self->generate_user_bookmarks;
+  return $self->generate_user_articles;
 }
 
 # actually write
-sub import_user_bookmarks {
+sub import_user_articles {
   my $self = shift;
   $self->trial_mode(0);
-  return $self->generate_user_bookmarks;
+  return $self->generate_user_articles;
 }
 
 our $NO   = 'This record will not be added to your library because';
 our $NOPE = 'This record will not be added because';
 
 # do the work
-sub generate_user_bookmarks {
+sub generate_user_articles {
   my $self = shift;
 
   my $bibliotech        = $self->bibliotech;  # don't fail unless trial_mode != 2 ... see below
@@ -191,7 +191,7 @@ sub generate_user_bookmarks {
     unless ($select_all) { next unless $count == $selections[0]; shift @selections; }  # skip if unchecked
     $count_acceptable++;  # gets decremented back in case of error
     
-    my ($user_bookmark, @info, $uri, $title, $description, @tags);
+    my ($user_article, @info, $uri, $title, $description, @tags);
     my $accept = sub {
       my ($info_ref, $tags_ref);
       ($info_ref, $uri, $title, $description, $tags_ref) = @_;
@@ -229,36 +229,36 @@ sub generate_user_bookmarks {
     }
     else {
       eval {
-	$user_bookmark = $bibliotech->add(uri         => $uri,
-					  title       => $title,
-					  description => $description,
-					  tags 	      => \@tags,
-					  user 	      => $user,
-					  captcha     => $captcha,
-					  construct   => $noncommital);
+	$user_article = $bibliotech->add(uri         => $uri,
+					 title       => $title,
+					 description => $description,
+					 tags 	     => \@tags,
+					 user 	     => $user,
+					 captcha     => $captcha,
+					 construct   => $noncommital);
       };
-      if ($@) {
-	die $@ if $@ =~ / at .* line /;
-	if ($@ eq "SPAM\n") {
+      if (my $e = $@) {
+	die $e if $e =~ / at .* line /;
+	if ($e =~ /^SPAM/) {
 	  $is_spam = 1;
 	}
 	else {
-	  $error ||= $@;
+	  $error ||= $e;
 	}
 	$construct_all = 1;
       }
     }
     if ($construct_all) {
-      $user_bookmark = construct Bibliotech::Unwritten::User_Bookmark
+      $user_article = Bibliotech::Unwritten::User_Article->construct
 	  ({user        => $user,
-	    bookmark    => construct Bibliotech::Unwritten::Bookmark ({url => URI->new("$uri" || 'NO_URI')}),
+	    bookmark    => Bibliotech::Unwritten::Bookmark->construct({url => URI->new("$uri" || 'NO_URI')}),
 	    title       => $title,
 	    description => $description});
-      $user_bookmark->bookmark->for_user_bookmark($user_bookmark);
+      $user_article->bookmark->for_user_article($user_article);
       $noncommital = 1;
     }
-    die 'no user_bookmark object' unless defined $user_bookmark;
-    my $bookmark = $user_bookmark->bookmark;
+    die 'no user_article object' unless defined $user_article;
+    my $bookmark = $user_article->bookmark;
     die 'no bookmark object' unless defined $bookmark;
     if ($bookmark->citation) {
       push @info, 'The link associated with this record has been understood and authoritative bibliographic information will be used in place of the data in the '.$self->file_noun.".\n";
@@ -268,20 +268,20 @@ sub generate_user_bookmarks {
 	unless ($citation->is_only_title_eq($title)) {
 	  $citation->update;
 	  if ($noncommital) {
-	    $user_bookmark->citation($citation);
-	    $user_bookmark->update;
+	    $user_article->citation($citation);
+	    $user_article->update;
 	  }
 	  else {
-	    $citation->write($user_bookmark);
+	    $citation->write($user_article);
 	  }
 	}
       }
     }
-    push @result, Bibliotech::Import::Result->new({block         => $entry->block,
-						   user_bookmark => $user_bookmark,
-						   warning       => (@info ? join("\n", @info) : undef),
-						   error         => $error,
-						   is_spam       => $is_spam,
+    push @result, Bibliotech::Import::Result->new({block        => $entry->block,
+						   user_article => $user_article,
+						   warning      => (@info ? join("\n", @info) : undef),
+						   error        => $error,
+						   is_spam      => $is_spam,
 						  });
   }
   return Bibliotech::Import::ResultList->new(@result);
@@ -357,7 +357,7 @@ sub _back_check_for_dups {
   my ($uri, $result_ref) = @_;
   my $count = @{$result_ref};
   for (my $i = 0; $i < $count; $i++) {
-    my $prior_uri = $result_ref->[$i]->user_bookmark->bookmark->url;
+    my $prior_uri = $result_ref->[$i]->user_article->bookmark->url;
     die "$NO the link associated with it is a duplicate of another in this batch (see \#".($i+1).").\n"
 	if $prior_uri eq $uri;
   }
@@ -501,7 +501,7 @@ sub fetch {
 package Bibliotech::Import::Result;
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw/block user_bookmark warning error is_spam/);
+__PACKAGE__->mk_accessors(qw/block user_article warning error is_spam/);
 
 1;
 __END__

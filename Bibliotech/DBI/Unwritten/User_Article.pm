@@ -1,9 +1,9 @@
-package Bibliotech::Unwritten::User_Bookmark;
+package Bibliotech::Unwritten::User_Article;
 use strict;
-use base ('Bibliotech::Unwritten', 'Bibliotech::User_Bookmark');
+use base ('Bibliotech::Unwritten', 'Bibliotech::User_Article');
 
 __PACKAGE__->columns(TEMP => qw/x_tags title description/);
-# title and description are needed in TEMP because you can't relate a User_Bookmark_Details object to an undefined User_Bookmark
+# title and description are needed in TEMP because you can't relate a User_Article_Details object to an undefined User_Article
 
 sub tags {
   my ($self, $value) = @_;

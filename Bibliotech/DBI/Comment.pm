@@ -11,7 +11,7 @@ __PACKAGE__->columns(Others => qw/updated/);
 __PACKAGE__->force_utf8_columns(qw/entry/);
 __PACKAGE__->datetime_column('created', 'before_create');
 __PACKAGE__->datetime_column('updated', 'before_update');
-__PACKAGE__->has_many(user_bookmark_comments => 'Bibliotech::User_Bookmark_Comment');
+__PACKAGE__->has_many(user_article_comments => 'Bibliotech::User_Article_Comment');
 
 sub my_alias {
   'c';
@@ -28,37 +28,37 @@ sub html_content {
   return $bibliotech->cgi->div({class => $class}, Bibliotech::Util::encode_markup_xhtml_utf8($entry));
 }
 
-__PACKAGE__->set_sql(from_bookmark_need_privacy => <<'');
+__PACKAGE__->set_sql(from_article_need_privacy => <<'');
 SELECT 	 __ESSENTIAL(c)__
-FROM     __TABLE(Bibliotech::Bookmark=b)__,
-         __TABLE(Bibliotech::User_Bookmark=ub)__,
-       	 __TABLE(Bibliotech::User_Bookmark_Comment=ubc)__,
+FROM     __TABLE(Bibliotech::Article=a)__,
+         __TABLE(Bibliotech::User_Article=ua)__,
+       	 __TABLE(Bibliotech::User_Article_Comment=uac)__,
          __TABLE(Bibliotech::Comment=c)__
-WHERE  	 __JOIN(b ub)__
-AND    	 __JOIN(ub ubc)__
-AND    	 __JOIN(ubc c)__
-AND    	 b.bookmark_id = ?
+WHERE  	 __JOIN(a ua)__
+AND    	 __JOIN(ua uac)__
+AND    	 __JOIN(uac c)__
+AND    	 a.article_id = ?
 AND      %s
 GROUP BY c.comment_id
 ORDER BY c.created
 
-sub search_from_bookmark {
-  my ($self, $bookmark_id) = @_;
+sub search_from_article {
+  my ($self, $article_id) = @_;
   my ($privacywhere, @privacybind) = Bibliotech::Query->privacywhere($Bibliotech::Apache::USER);
-  my $sth = $self->sql_from_bookmark_need_privacy($privacywhere);
-  return $self->sth_to_objects($sth, [$bookmark_id, @privacybind]);
+  my $sth = $self->sql_from_article_need_privacy($privacywhere);
+  return $self->sth_to_objects($sth, [$article_id, @privacybind]);
 }
 
-__PACKAGE__->set_sql(from_user_bookmark => <<'');
-SELECT 	 __ESSENTIAL(c3)__
-FROM     __TABLE(Bibliotech::User_Bookmark=c1)__,
-       	 __TABLE(Bibliotech::User_Bookmark_Comment=c2)__,
-         __TABLE(Bibliotech::Comment=c3)__,
-WHERE  	 __JOIN(c1 c2)__
-AND    	 __JOIN(c2 c3)__
-AND    	 c1.user_bookmark_id = ?
-GROUP BY c3.comment_id
-ORDER BY c2.created
+__PACKAGE__->set_sql(from_user_article => <<'');
+SELECT 	 __ESSENTIAL(c)__
+FROM     __TABLE(Bibliotech::User_Article=ua)__,
+       	 __TABLE(Bibliotech::User_Article_Comment=uac)__,
+         __TABLE(Bibliotech::Comment=c)__,
+WHERE  	 __JOIN(ua uac)__
+AND    	 __JOIN(uac c)__
+AND    	 ua.user_article_id = ?
+GROUP BY c.comment_id
+ORDER BY uac.created
 
 1;
 __END__

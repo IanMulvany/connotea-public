@@ -14,39 +14,48 @@
 </tr>
 <tr>
   <td>Posts</td>
-  <td align="right">[% commas(total_user_bookmarks) %]</td>
+  <td align="right">[% commas(total_user_articles) %]</td>
   <td align="right">&nbsp;</td>
-  <td align="right">[% commas(new_user_bookmarks('24 hour')) %]</td>
+  <td align="right">[% commas(new_user_articles('24 hour')) %]</td>
   <td align="right">&nbsp;</td>
-  <td align="right">[% commas(new_user_bookmarks('168 hour')) %]</td>
+  <td align="right">[% commas(new_user_articles('168 hour')) %]</td>
   <td align="right">&nbsp;</td>
 </tr>
 <tr>
   <td>&nbsp;&nbsp;&nbsp;&nbsp;Public</td>
-  <td align="right">[% commas(total_user_bookmarks_public) %]</td>
-  <td align="right">[% percent(total_user_bookmarks_public, total_user_bookmarks) %]</td>
-  <td align="right">[% commas(new_user_bookmarks_public('24 hour')) %]</td>
-  <td align="right">[% percent(new_user_bookmarks_public('24 hour'), new_user_bookmarks('24 hour')) %]</td>
-  <td align="right">[% commas(new_user_bookmarks_public('168 hour')) %]</td>
-  <td align="right">[% percent(new_user_bookmarks_public('168 hour'), new_user_bookmarks('168 hour')) %]</td>
+  <td align="right">[% commas(total_user_articles_public) %]</td>
+  <td align="right">[% percent(total_user_articles_public, total_user_articles) %]</td>
+  <td align="right">[% commas(new_user_articles_public('24 hour')) %]</td>
+  <td align="right">[% percent(new_user_articles_public('24 hour'), new_user_articles('24 hour')) %]</td>
+  <td align="right">[% commas(new_user_articles_public('168 hour')) %]</td>
+  <td align="right">[% percent(new_user_articles_public('168 hour'), new_user_articles('168 hour')) %]</td>
 </tr>
 <tr>
   <td>&nbsp;&nbsp;&nbsp;&nbsp;Private</td>
-  <td align="right">[% commas(total_user_bookmarks_private) %]</td>
-  <td align="right">[% percent(total_user_bookmarks_private, total_user_bookmarks) %]</td>
-  <td align="right">[% commas(new_user_bookmarks_private('24 hour')) %]</td>
-  <td align="right">[% percent(new_user_bookmarks_private('24 hour'), new_user_bookmarks('24 hour')) %]</td>
-  <td align="right">[% commas(new_user_bookmarks_private('168 hour')) %]</td>
-  <td align="right">[% percent(new_user_bookmarks_private('168 hour'), new_user_bookmarks('168 hour')) %]</td>
+  <td align="right">[% commas(total_user_articles_private) %]</td>
+  <td align="right">[% percent(total_user_articles_private, total_user_articles) %]</td>
+  <td align="right">[% commas(new_user_articles_private('24 hour')) %]</td>
+  <td align="right">[% percent(new_user_articles_private('24 hour'), new_user_articles('24 hour')) %]</td>
+  <td align="right">[% commas(new_user_articles_private('168 hour')) %]</td>
+  <td align="right">[% percent(new_user_articles_private('168 hour'), new_user_articles('168 hour')) %]</td>
 </tr>
 <tr>
   <td>&nbsp;&nbsp;&nbsp;&nbsp;Author-posted</td>
-  <td align="right">[% commas(total_user_bookmarks_mywork) %]</td>
-  <td align="right">[% percent(total_user_bookmarks_mywork, total_user_bookmarks) %]</td>
-  <td align="right">[% commas(new_user_bookmarks_mywork('24 hour')) %]</td>
-  <td align="right">[% percent(new_user_bookmarks_mywork('24 hour'), new_user_bookmarks('24 hour')) %]</td>
-  <td align="right">[% commas(new_user_bookmarks_mywork('168 hour')) %]</td>
-  <td align="right">[% percent(new_user_bookmarks_mywork('168 hour'), new_user_bookmarks('168 hour')) %]</td>
+  <td align="right">[% commas(total_user_articles_mywork) %]</td>
+  <td align="right">[% percent(total_user_articles_mywork, total_user_articles) %]</td>
+  <td align="right">[% commas(new_user_articles_mywork('24 hour')) %]</td>
+  <td align="right">[% percent(new_user_articles_mywork('24 hour'), new_user_articles('24 hour')) %]</td>
+  <td align="right">[% commas(new_user_articles_mywork('168 hour')) %]</td>
+  <td align="right">[% percent(new_user_articles_mywork('168 hour'), new_user_articles('168 hour')) %]</td>
+</tr>
+<tr>
+  <td>Articles</td>
+  <td align="right">[% commas(total_articles) %]</td>
+  <td align="right">&nbsp;</td>
+  <td align="right">[% commas(new_articles('24 hour')) %]</td>
+  <td align="right">&nbsp;</td>
+  <td align="right">[% commas(new_articles('168 hour')) %]</td>
+  <td align="right">&nbsp;</td>
 </tr>
 <tr>
   <td>Pre-Add's</td>

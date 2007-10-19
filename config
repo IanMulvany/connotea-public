@@ -85,7 +85,6 @@ GENERAL {
 
   # control how many bookmarks are considered for "linked" lists
   #LINKED_RECENT_INTERVAL = '24 HOUR'
-  #LINKED_MAX_USER_BOOKMARKS = 100
 
   # set to true if you don't want to bother checking a new user's
   # email address and instead just log them straight in

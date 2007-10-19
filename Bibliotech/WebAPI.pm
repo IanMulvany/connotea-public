@@ -4,7 +4,7 @@ use strict;
 package Bibliotech::WebAPI::Answer;
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw/list code message vars/);
+__PACKAGE__->mk_accessors(qw/list code message vars url dnote/);
 
 sub new {
   my ($class, $options) = @_;
@@ -13,6 +13,16 @@ sub new {
   $options->{list} ||= [];
   $options->{vars} ||= {};
   return $class->SUPER::new($options);
+}
+
+sub simple {
+  my ($class, $code, $message, $list, $vars, $url, $dnote) = @_;
+  return $class->new({code    => $code,
+		      message => $message,
+		      list    => $list,
+		      vars    => $vars,
+		      url     => $url,
+		      dnote   => $dnote});
 }
 
 sub is_success { 
@@ -45,6 +55,12 @@ sub data_content {
   shift->answer(@_);
 }
 
+# utility routine for children classes
+sub make_answer {
+  my $class = shift;
+  return Bibliotech::WebAPI::Answer->simple(@_);
+}
+
 package Bibliotech::WebAPI::Action::NotImplemented;
 use base 'Bibliotech::WebAPI::Action';
 
@@ -53,20 +69,15 @@ sub not_implemented_message {
 }
 
 sub answer {
-  return Bibliotech::WebAPI::Answer->new({code    => 501,
-					  message => shift->not_implemented_message,
-					  list    => [],
-					});
+  my $self = shift;
+  $self->make_answer(501, $self->not_implemented_message);
 }
 
 package Bibliotech::WebAPI::Action::Noop::Get;
 use base 'Bibliotech::WebAPI::Action';
 
 sub answer {
-  return Bibliotech::WebAPI::Answer->new({code    => 200,
-					  message => 'No Operation OK',
-					  list    => [],
-					});
+  shift->make_answer(200, 'No Operation OK');
 }
 
 package Bibliotech::WebAPI::Action::GenericQuery;
@@ -89,28 +100,19 @@ sub answer {
   my $self = shift;
   my $main = $self->instance($self->main_component) or die 'no main component instance';
   my $iter = $main->list(main => 1); defined $iter or die 'no iterator';  # should be a Bibliotech::DBI::Set
-  #if ($iter->count == 0) {
-    #return Bibliotech::WebAPI::Answer->new
-	#({code    => 404,
-	  #message => 'No items found',
-	  #list    => [],
-	#});
-  #}
+  #return $self->make_answer(404, 'No Items Found') if $iter->count == 0;
   my $bibliotech = $self->bibliotech;
   my $num = $bibliotech->command->num;
   my $max_num = 1000;
+  my $dnote;
   if (defined $num and $num > $max_num) {
     $num = $max_num;
-    my $host = $bibliotech->location->host;
-    my $text = 'Not all records - '.
-               "parameter num set a value greater than the maximum of $max_num; reset to $max_num";
-    $bibliotech->request->headers_out->set(Warning => "199 $host $text");
+    $dnote = join(' ',
+		  '199',
+		  $bibliotech->location->host,
+		  "Not all records - parameter num set a value greater than the maximum of $max_num; reset to $max_num");
   }
-  return Bibliotech::WebAPI::Answer->new
-        ({code    => 200,
-	  message => 'Items found',
-	  list    => $iter,
-	});
+  return $self->make_answer(200, 'Items Found', $iter, undef, $dnote);
 }
 
 package Bibliotech::WebAPI::Action::Recent::Get;
@@ -135,12 +137,11 @@ package Bibliotech::WebAPI::Action::AddOrEdit::Post;
 use base 'Bibliotech::WebAPI::Action';
 
 sub answer {
-  my $self          = shift;
-  my $action        = shift;
-  my $bibliotech    = $self->bibliotech;
-  my $addform       = Bibliotech::Component::AddForm->new({bibliotech => $bibliotech});
-  my $user_bookmark
-      = eval { $addform->call_action_with_cgi_params($action, $bibliotech->user, $bibliotech->cgi); };
+  my $self         = shift;
+  my $action       = shift;
+  my $bibliotech   = $self->bibliotech;
+  my $addform      = Bibliotech::Component::AddForm->new({bibliotech => $bibliotech});
+  my $user_article = eval { $addform->call_action_with_cgi_params($action, $bibliotech->user, $bibliotech->cgi); };
   if (my $e = $@) {
     my $code = 500;
     $code = 404 if $e =~ /\bnot found\b/;
@@ -149,18 +150,9 @@ sub answer {
       $code = 403;
       $e = "SPAM\n";  # suppress additional information
     }
-    return Bibliotech::WebAPI::Answer->new
-	({code    => $code,
-	  message => $e,
-	  list    => [],
-	});
+    return $self->make_answer($code, $e);
   }
-  $bibliotech->request->headers_out->set(Location => $user_bookmark->href_search_global($bibliotech));
-  return Bibliotech::WebAPI::Answer->new
-        ({code    => 201,
-	  message => "\u$action OK",
-	  list    => [$user_bookmark],
-	});
+  return $self->make_answer(201, ucfirst($action).' OK', [$user_article], $user_article->href_search_global($bibliotech));
 }
 
 package Bibliotech::WebAPI::Action::Add::Post;
@@ -188,20 +180,12 @@ sub answer {
     my $uri = $bibliotech->cgi->param('uri') or die "No URI specified.\n";
     $bibliotech->remove(user => $user, uri => $uri) or die "No URI removed.\n";
   };
-  if ($@) {
+  if (my $e = $@) {
     my $code = 500;
-    $code = 404 if $@ =~ /^No URI/;
-    return Bibliotech::WebAPI::Answer->new
-	({code    => $code,
-	  message => $@,
-	  list    => [],
-	});
+    $code = 404 if $e =~ /^No URI/;
+    return $self->make_answer($code, $e);
   }
-  return Bibliotech::WebAPI::Answer->new
-        ({code    => 200,
-	  message => 'Remove OK',
-	  list    => [],
-	});
+  return $self->make_answer(200, 'Remove OK');
 }
 
 package Bibliotech::WebAPI::AdminUtil;
@@ -257,12 +241,7 @@ sub answer {
   my $denied     = Bibliotech::WebAPI::AdminUtil::check_admin_user($bibliotech->user);
   return $denied if $denied;
   my $stats      = Bibliotech::Component::AdminStats->new({bibliotech => $bibliotech});
-  return Bibliotech::WebAPI::Answer->new
-        ({code    => 200,
-	  message => 'Stats',
-	  list    => [],
-	  vars    => $stats->stat_vars,
-	});
+  return $self->make_answer(200, 'Stats', undef, $stats->stat_vars);
 }
 
 1;

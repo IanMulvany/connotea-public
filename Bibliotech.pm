@@ -108,7 +108,7 @@ sub import_file {
   my $importer;
   if ($type) {
     my $class = 'Bibliotech::Import::'.$type;
-    $class->can('user_bookmarks') or die "type $type not supported";
+    $class->can('user_articles') or die "type $type not supported";
     $importer = $class->new($options) or die 'no importer object';
     my $score = $importer->understands($doc);
     die "Sorry, this file was not recognized as the selected type.\n" unless $score;
@@ -119,7 +119,7 @@ sub import_file {
     $importer = $scanner->scan($doc, [$options])
 	or die "File format not recognized. Please check the list of types supported.\n";
   }
-  return $importer->generate_user_bookmarks;
+  return $importer->generate_user_articles;
 }
 
 sub preadd_validate_uri {
@@ -257,11 +257,11 @@ sub change {
   my $comment     = Bibliotech::Util::sanitize($options{comment});
   my $lastcomment = Bibliotech::Util::sanitize($options{lastcomment});
 
-  my $copying_user_bookmark;
+  my $copying_user_article;
   if ($options{from}) {
     my $from = Bibliotech::User->normalize_option(\%options, field => 'from');
     if ($from->user_id != $user->user_id) {
-      ($copying_user_bookmark) = Bibliotech::User_Bookmark->search(user => $from, bookmark => $bookmark);
+      ($copying_user_article) = Bibliotech::User_Article->search(user => $from, bookmark => $bookmark);
     }
   }
 
@@ -283,72 +283,10 @@ sub change {
 
   my $dbh = Bibliotech::DBI->db_Main;
   $dbh->do('SET AUTOCOMMIT=0');
-  my $user_bookmark = eval {
-    my $user_bookmark;
-    unless ($options{construct}) {
-      if ($add) {
-	$user_bookmark = $user->link_bookmark($bookmark);
-	die 'no user_bookmark object' unless defined $user_bookmark;
-      }
-      else {
-	$user_bookmark = $user->find_bookmark($bookmark);
-	die "This URI was not found for this user.\n" unless defined $user_bookmark;
-      }
-    }
-    else {
-      $user_bookmark = construct Bibliotech::Unwritten::User_Bookmark ({user => $user, bookmark => $bookmark});
-      die 'no unwritten user_bookmark object' unless defined $user_bookmark;
-      $user_bookmark->bookmark->for_user_bookmark($user_bookmark);
-    }
-    if (($add and $user->quarantined) or $options{captcha} == 1) {
-      # adding by a quarantined user, or they were given a captcha and passed it - quarantine this post
-      $user_bookmark->set_datetime_now('quarantined');
-    }
+  my $user_article = eval {
+    my $user_citation;
+    my $operative_citation = $bookmark->citation;
     if ($add or $edit) {
-      if ($add) {
-	if (!$bookmark->first_user and $bookmark->count_user_bookmarks_no_privacy == 1) {
-	  $bookmark->first_user($user);
-	  $bookmark->update;
-	}
-	if ($copying_user_bookmark) {
-	  if (my $copying_citation = $copying_user_bookmark->citation) {
-	    $user_bookmark->citation($copying_citation);
-	  }
-	}
-      }
-      $user_bookmark->user_is_author($user_is_author ? 1 : 0) if $add or defined $user_is_author;
-      $user_bookmark->private       ($private        ? 1 : 0) if $add or defined $private;
-      $user_bookmark->private_gang  ($private_gang  || undef) if $add or defined $private_gang;
-      $user_bookmark->private_until ($private_until || undef) if $add or defined $private_until;
-
-      # def_public is merely a speed optimization field for faster
-      # SQL. We don't allow a value to be passed in; for consistency we
-      # simply calculate the correct value here.
-      $user_bookmark->def_public    (($user_bookmark->private               ||
-				      defined $user_bookmark->private_gang  ||
-				      defined $user_bookmark->private_until ||
-				      defined $user_bookmark->quarantined)     ? 0 : 1);
-
-      if (defined $title or defined $description) {
-	$user_bookmark->title($title || undef)                if $add or defined $title;
-	$user_bookmark->description($description || undef)    if $add or defined $description;
-	$user_bookmark->mark_updated;
-      }
-      $user_bookmark->update_links_one_to_many('Bibliotech::Tag' => $tags_ref);
-      if ($edit) {
-	if (defined $lastcomment) {
-	  if ($lastcomment) {
-	    $user_bookmark->update_last_comment($lastcomment);
-	  }
-	  else {
-	    if (my $user_bookmark_comment = $user_bookmark->last_user_bookmark_comment) {
-	      my $comment = $user_bookmark_comment->comment;
-	      $user_bookmark_comment->delete;
-	      $comment->delete unless $comment->user_bookmark_comments->count;
-	    }
-	  }
-	}
-      }
       if (defined $options{user_citation}) {
 	my $parsed_citation = eval {
 	  Bibliotech::Unwritten::Citation->from_hash_of_text_values($options{user_citation});
@@ -357,12 +295,93 @@ sub change {
 	  die "Citation: $@" if $@ !~ /\bcitation\b/i;
 	  die $@;
 	}
-	$user_bookmark->citation($parsed_citation->write);
+	$user_citation = $parsed_citation->write;
+	$operative_citation = $user_citation;
       }
     }
-    $user_bookmark->link_comment($comment) if $comment;
-    $user_bookmark->mark_updated;
-    return $user_bookmark;
+    my $user_article;
+    unless ($options{construct}) {
+      if ($add) {
+	my $article = Bibliotech::Article->find_or_create_for_bookmark_and_citation($bookmark, $operative_citation);
+	die 'no article object' unless defined $article;
+	$bookmark->article($article);
+	$bookmark->update;
+	my ($existing) = Bibliotech::User_Article->search(user => $user, article => $article);
+	if (defined $existing) {
+	  # switch to the new bookmark
+	  $user_article = $existing;
+	  $user_article->bookmark($bookmark);
+	  $user_article->update;
+	}
+	else {
+	  $user_article = $user->link_bookmark([$bookmark, $article]);
+	}
+	die 'no user_article object' unless defined $user_article;
+      }
+      else {
+	$user_article = $user->find_bookmark($bookmark);
+	die "This URI was not found for this user.\n" unless defined $user_article;
+      }
+    }
+    else {
+      $user_article = Bibliotech::Unwritten::User_Article->construct({user => $user, bookmark => $bookmark});
+      die 'no unwritten user_article object' unless defined $user_article;
+      $user_article->bookmark->for_user_article($user_article);
+    }
+    if (($add and $user->quarantined) or $options{captcha} == 1) {
+      # adding by a quarantined user, or they were given a captcha and passed it - quarantine this post
+      $user_article->set_datetime_now('quarantined');
+    }
+    if ($add or $edit) {
+      if ($add) {
+	if (!$bookmark->first_user) {
+	  $bookmark->first_user($user);
+	  $bookmark->update;
+	}
+	if ($copying_user_article) {
+	  if (my $copying_citation = $copying_user_article->citation) {
+	    $user_article->citation($copying_citation);
+	  }
+	}
+      }
+      $user_article->user_is_author($user_is_author ? 1 : 0) if $add or defined $user_is_author;
+      $user_article->private       ($private        ? 1 : 0) if $add or defined $private;
+      $user_article->private_gang  ($private_gang  || undef) if $add or defined $private_gang;
+      $user_article->private_until ($private_until || undef) if $add or defined $private_until;
+
+      # def_public is merely a speed optimization field for faster
+      # SQL. We don't allow a value to be passed in; for consistency we
+      # simply calculate the correct value here.
+      $user_article->def_public    (($user_article->private               ||
+				     defined $user_article->private_gang  ||
+				     defined $user_article->private_until ||
+				     defined $user_article->quarantined)     ? 0 : 1);
+
+      if (defined $title or defined $description) {
+	$user_article->title($title || undef)                if $add or defined $title;
+	$user_article->description($description || undef)    if $add or defined $description;
+	$user_article->mark_updated;
+      }
+      $user_article->update_links_one_to_many('Bibliotech::Tag' => $tags_ref);
+      if ($edit) {
+	if (defined $lastcomment) {
+	  if ($lastcomment) {
+	    $user_article->update_last_comment($lastcomment);
+	  }
+	  else {
+	    if (my $user_article_comment = $user_article->last_user_article_comment) {
+	      my $comment = $user_article_comment->comment;
+	      $user_article_comment->delete;
+	      $comment->delete unless $comment->user_article_comments->count;
+	    }
+	  }
+	}
+      }
+      $user_article->citation($user_citation) if defined $user_citation;
+    }
+    $user_article->link_comment($comment) if $comment;
+    $user_article->mark_updated;
+    return $user_article;
   };
   if (my $e = $@) {
     $dbh->do('ROLLBACK');
@@ -371,7 +390,7 @@ sub change {
   }
   $dbh->do('COMMIT');
   $dbh->do('SET AUTOCOMMIT=1');
-  return $user_bookmark;
+  return $user_article;
 }
 
 sub add {
@@ -394,13 +413,13 @@ sub edit {
 
 sub remove {
   my ($self, %options) = @_;
-  my $user_bookmark = $self->check(%options) or return 0;
-  return $self->remove_user_bookmark($user_bookmark);
+  my $user_article = $self->check(%options) or return 0;
+  return $self->remove_user_article($user_article);
 }
 
-sub remove_user_bookmark {
-  my ($self, $user_bookmark) = @_;
-  $user_bookmark->delete;  # all logic pushed into DBI.pm
+sub remove_user_article {
+  my ($self, $user_article) = @_;
+  $user_article->delete;  # all logic pushed into DBI.pm
   return 1;
 }
 
@@ -411,12 +430,15 @@ sub check {
 
   my $uri = Bibliotech::Bookmark->normalize_option_to_simple_uri_object(\%options);
   my ($bookmark) = Bibliotech::Bookmark->search(url => $uri);
-  return 0 unless $bookmark;
+  return 0 unless defined $bookmark;
 
-  my ($user_bookmark) = Bibliotech::User_Bookmark->search(user => $user, bookmark => $bookmark);
-  return 0 unless $user_bookmark;
+  my $article = $bookmark->article;
+  return 0 unless defined $article;
 
-  return $user_bookmark;
+  my ($user_article) = Bibliotech::User_Article->search(user => $user, article => $article);
+  return 0 unless defined $user_article;
+
+  return $user_article;
 }
 
 sub pull_title {
@@ -485,7 +507,7 @@ sub pull_citation_calc {
   defined $bookmark or die 'must provide a bookmark';
 
   (   UNIVERSAL::can($bookmark, 'url')
-   && UNIVERSAL::can($bookmark, 'user_bookmarks')
+   && UNIVERSAL::can($bookmark, 'user_articles')
    && UNIVERSAL::can($bookmark, 'delete')
    && UNIVERSAL::can($bookmark, 'update'))
     or die 'bookmark object type is not recognized ('.ref($bookmark).')';
@@ -514,7 +536,7 @@ sub pull_citation_calc {
   die "Error from ${ref}::filter(\'$uri\'): $@" if $@;
   if (defined $new_uri) {
     if ($new_uri eq '') {
-      $bookmark->delete unless $bookmark->user_bookmarks->count;
+      $bookmark->delete unless $bookmark->user_articles->count;
       my $errstr = $mod_obj->errstr || 'Sorry, you cannot add the given URI: '.$uri;
       chomp $errstr;
       if (my $log = $self->log) {
@@ -533,7 +555,7 @@ sub pull_citation_calc {
       my ($new_bookmark) = Bibliotech::Bookmark->search_url_case_sensitive($new_uri);
       if (defined $new_bookmark) {
 	# if what we want to transition to is already in our database, switch to that bookmark
-	$bookmark->delete unless $bookmark->user_bookmarks->count;
+	$bookmark->delete unless $bookmark->user_articles->count;
 	undef $bookmark;
 	$bookmark = $new_bookmark;
       }
@@ -595,6 +617,21 @@ sub pull_citation_save {
     $citation->write($bookmark);
   }
   return $bookmark;
+}
+
+# $bookmark is an add()'d bookmark
+# $citations_model_ref is the result of a citations() call to a CitationSource module and has
+#   non-saved citation data in it
+# $original_module_str is a string representing a description from the module that got the data
+sub handle_citation_results {
+  my ($self, $bookmark, $citations_model_ref, $original_module_str, $original_module_score) = @_;
+  my $user_supplied = $bookmark->isa('Bibliotech::User_Bookmark') ? 1 : 0;
+  my $citation = Bibliotech::Unwritten::Citation->from_citationsource_result_list($citations_model_ref,
+										  $user_supplied,
+										  $original_module_str,
+										  $original_module_score)
+      or die 'no citation - module: '.$original_module_str.', uri: '.$bookmark->url;
+  return $citation->write($bookmark);
 }
 
 sub validate_user_fields_for_new_user {
@@ -917,26 +954,26 @@ sub retag_normalized {
 
   my $count = 0;
   foreach my $tag1 (@{$old_tags_ref}) {
-    my $iter = Bibliotech::User_Bookmark_Tag->search_user_tag($user, $tag1);
-    while (my $user_bookmark_tag = $iter->next) {
-      my $user_bookmark = $user_bookmark_tag->user_bookmark;
-      $user_bookmark_tag->delete;
+    my $iter = Bibliotech::User_Article_Tag->search_user_tag($user, $tag1);
+    while (my $user_article_tag = $iter->next) {
+      my $user_article = $user_article_tag->user_article;
+      $user_article_tag->delete;
       if (@{$new_tags_ref}) {
 	foreach my $tag2 (@{$new_tags_ref}) {
-	  Bibliotech::User_Bookmark_Tag->find_or_create({user_bookmark => $user_bookmark, tag => $tag2});
+	  Bibliotech::User_Article_Tag->find_or_create({user_article => $user_article, tag => $tag2});
 	}
       }
       else {
-	if ($user_bookmark->tags->count == 0) {
+	if ($user_article->tags->count == 0) {
 	  my $dtag = Bibliotech::Tag->new('default', 1);
-	  Bibliotech::User_Bookmark_Tag->find_or_create({user_bookmark => $user_bookmark, tag => $dtag});
+	  Bibliotech::User_Article_Tag->find_or_create({user_article => $user_article, tag => $dtag});
 	}
       }
-      $user_bookmark->mark_updated;  # cause user_bookmark html_content() to notice, for caching
+      $user_article->mark_updated;  # cause user_article html_content() to notice, for caching
       $count++;
     }
     Bibliotech::User_Tag_Annotation->search(user => $user, tag => $tag1)->delete_all;
-    $tag1->delete unless $tag1->bookmarks->count or $tag1->user_tag_annotations->count;
+    $tag1->delete unless $tag1->count_user_articles or $tag1->user_tag_annotations->count;
   }
 
   $user->last_deletion_now;

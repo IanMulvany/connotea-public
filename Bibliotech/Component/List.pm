@@ -23,7 +23,6 @@ use Data::Dumper;
 use Carp qw/cluck/;
 
 (our $LINKED_RECENT_INTERVAL = Bibliotech::Config->get('LINKED_RECENT_INTERVAL') || '24 HOUR') =~ s|^(\d+)$|$1 HOUR|;
-our $LINKED_MAX_USER_BOOKMARKS = Bibliotech::Config->get('LINKED_MAX_USER_BOOKMARKS') || 100;
 
 sub last_updated_basis {
   ('DBI', 'LOGIN', 'USER');
@@ -126,7 +125,7 @@ sub calc_query_set {
   my %avoid_dump;
   unless ($command->filters_used) {
     my $time = Bibliotech::DBI->db_Main->selectrow_array('SELECT NOW() - INTERVAL '.$LINKED_RECENT_INTERVAL);
-    $avoid_dump{where} = ['ub.created' => {'>=', $time}];
+    $avoid_dump{where} = ['ua.created' => {'>=', $time}];
   }
   # note that although you go to the query object there is a limitation on the same field you ask for
   $query_set = $command->$table ? [$bibliotech->query->$plural(all => 1, %avoid_dump)] : new Set::Array;
@@ -136,13 +135,13 @@ sub calc_query_set {
   return $query_set;
 }
 
-sub calc_user_bookmark_ids {
+sub calc_user_article_ids {
   my ($self, %options) = @_;
-  return map($_->user_bookmark_id, $self->bibliotech->query->user_bookmarks(%options));
+  return map($_->user_article_id, $self->bibliotech->query->user_articles(%options));
 }
 
 sub calc_linked_set {
-  my ($self, $class, $cabinet_set, $query_set, $user_bookmark_ids_ref, $note) = @_;
+  my ($self, $class, $cabinet_set, $query_set, $user_article_ids_ref, $note) = @_;
 
   my $quick_key = $class.($note ? ",$note" : '');
   my $quick = $Bibliotech::Apache::QUICK{'Bibliotech::Component::List::calc_linked_set'}->{$quick_key};
@@ -154,17 +153,17 @@ sub calc_linked_set {
   my $table = $class->table;
   my $primary = $class->primary_column;
 
-  my @user_bookmark_ids = $user_bookmark_ids_ref ? @{$user_bookmark_ids_ref} : $self->calc_user_bookmark_ids;
+  my @user_article_ids = $user_article_ids_ref ? @{$user_article_ids_ref} : $self->calc_user_article_ids;
 
   my $linked_set = do {
-    if (@user_bookmark_ids) {
+    if (@user_article_ids) {
       my $sql_call = 'sql_joined';
       $sql_call .= '_plus_'.$table unless $table eq 'user';
       my $alias = join('', map(substr($_, 0, 1), split(/_/, $table)));
-      my $sth = $class->$sql_call(join(', ', map("$alias.$_", $class->_essential)).', COUNT(ub.user_bookmark_id) as sort',
-				  'AND ub.user_bookmark_id IN ('.join(',', map('?', @user_bookmark_ids)).')',
+      my $sth = $class->$sql_call(join(', ', map("$alias.$_", $class->_essential)).', COUNT(ua.user_article_id) as sort',
+				  'AND ua.user_article_id IN ('.join(',', map('?', @user_article_ids)).')',
 				  "GROUP BY $primary", '', 'ORDER BY sort DESC', 'LIMIT 50');
-      $sth->execute(@user_bookmark_ids);
+      $sth->execute(@user_article_ids);
       Bibliotech::DBI::Set->new(map { $class->construct($_) } $sth->fetchall_hash);
     }
     else {
@@ -180,7 +179,7 @@ sub calc_linked_set {
 }
 
 sub calc_related_set {
-  my ($self, $class, $cabinet_set, $query_set, $linked_set, $user_bookmark_ids_ref) = @_;
+  my ($self, $class, $cabinet_set, $query_set, $linked_set, $user_article_ids_ref) = @_;
 
   my $quick = $Bibliotech::Apache::QUICK{'Bibliotech::Component::List::calc_related_set'}->{$class};
   return $quick if defined $quick;
@@ -192,17 +191,17 @@ sub calc_related_set {
   my $table = $class->table;
   my $primary = $class->primary_column;
 
-  my @user_bookmark_ids = $user_bookmark_ids_ref ? @{$user_bookmark_ids_ref} : $self->calc_user_bookmark_ids;
+  my @user_article_ids = $user_article_ids_ref ? @{$user_article_ids_ref} : $self->calc_user_article_ids;
 
   my $related_set = do {
-    if (@user_bookmark_ids) {
+    if (@user_article_ids) {
       my $sql_call = 'sql_joined';
       $sql_call .= '_plus_'.$table unless $table eq 'user';
       $sql_call .= '_related_'.$table;
-      my $sth = $class->$sql_call(join(', ', map("r.$_", $class->_essential)).', COUNT(ub2.user_bookmark_id) as sort',
-				  'AND ub.user_bookmark_id IN ('.join(',', map('?', @user_bookmark_ids)).')',
+      my $sth = $class->$sql_call(join(', ', map("r.$_", $class->_essential)).', COUNT(ua2.user_article_id) as sort',
+				  'AND ua.user_article_id IN ('.join(',', map('?', @user_article_ids)).')',
 				  "GROUP BY r.$primary", '', 'ORDER BY sort DESC', 'LIMIT 50');
-      $sth->execute(@user_bookmark_ids);
+      $sth->execute(@user_article_ids);
       Bibliotech::DBI::Set->new(map { $class->construct($_) } $sth->fetchall_hash);
     }
     else {
@@ -226,8 +225,8 @@ sub is_tag_linked {
   return scalar @set;
 }
 
-# works for side bars when main is of type user_bookmark
-sub list_multipart_from_user_bookmarks {
+# works for side bars when main is of type user_article
+sub list_multipart_from_user_articles {
   my ($self, $class) = @_;
   my %parts = %{$self->parts||{}};
   my (@final, $cabinet_set, $query_set, $linked_set, $related_set);
@@ -240,7 +239,7 @@ sub list_multipart_from_user_bookmarks {
     push @final, Query => @{$query_set} if @{$query_set} and $parts{query};
 
     if ($parts{linked} || $parts{related} || $parts{main}) {
-      my @ids = $self->calc_user_bookmark_ids;
+      my @ids = $self->calc_user_article_ids;
 
       $linked_set = $self->calc_linked_set($class, $cabinet_set, $query_set, \@ids);
       push @final, Linked => @{$linked_set} if @{$linked_set} and $parts{linked};
@@ -302,7 +301,7 @@ sub html_content_num_options {
   return $cgi->div({ id => 'sort-and-number-bar' },
            $cgi->div({ id => 'sort' }, '&nbsp;'),
            $cgi->div({id => 'number'}, 
-             $cgi->span({ class => 'number-label' }, 'Number of bookmarks per page: '), 
+             $cgi->span({ class => 'number-label' }, 'Number of articles per page: '), 
              $cgi->div({ id => 'number-buttons' },
                join(' | ', @numlinks)
              )
@@ -1028,7 +1027,7 @@ sub rss_content {
   my $bibliotech = $self->bibliotech;
   my @output;
   my $iterator = $self->list(main => 1) or return ();
-  Bibliotech::Profile::start('converting user_bookmark objects to rss hash data');
+  Bibliotech::Profile::start('converting user_article objects to rss hash data');
   my $obj = $iterator->first;
   while (defined $obj) {
     push @output, scalar $obj->rss_content($bibliotech, $verbose);
@@ -1085,7 +1084,7 @@ sub heading {
 sub list {
   my $self = shift;
   my %options = @_;
-  return $self->list_multipart_from_user_bookmarks('Bibliotech::User') unless $options{main};
+  return $self->list_multipart_from_user_articles('Bibliotech::User') unless $options{main};
   return $self->bibliotech->query->users(sortdir => 'DESC', %options);
 }
 
@@ -1120,7 +1119,7 @@ sub heading {
 sub list {
   my $self = shift;
   my %options = @_;
-  return $self->list_multipart_from_user_bookmarks('Bibliotech::Gang') unless $options{main};
+  return $self->list_multipart_from_user_articles('Bibliotech::Gang') unless $options{main};
   return $self->bibliotech->query->gangs(sortdir => 'DESC', %options);
 }
 
@@ -1181,7 +1180,7 @@ sub heading {
 sub list {
   my $self = shift;
   my %options = @_;
-  return $self->list_multipart_from_user_bookmarks('Bibliotech::Tag') unless $options{main};
+  return $self->list_multipart_from_user_articles('Bibliotech::Tag') unless $options{main};
   return $self->bibliotech->query->tags(sortdir => 'DESC', %options);
 }
 
@@ -1229,9 +1228,6 @@ sub last_updated_basis {
 sub list {
   my ($self, %options) = @_;
   my $bibliotech = $self->bibliotech;
-  #my $time = Bibliotech::DBI->db_Main->selectrow_array('SELECT NOW() - INTERVAL 4 DAY'); #'.$POPULAR_WINDOW);
-#  $bibliotech->query->popular($bibliotech->command->user ? () : (having => [sortvalue => {'>', 1}], [where => ['ub.created' => {'>', $time}], where => ['ub.updated' => {'>', $time}]]), %options);
-  #$bibliotech->query->popular($bibliotech->command->user ? () : (having => [sortvalue => {'>', 1}], where => ['ub.created' => {'>', $time}]), %options);
   $bibliotech->query->popular($bibliotech->command->user ? () : (having => [sortvalue => {'>', 1}]), %options);
 }
 
@@ -1249,7 +1245,7 @@ sub heading {
 }
 
 sub list {
-  shift->bibliotech->query->bookmarks(@_);
+  shift->bibliotech->query->articles(@_);
 }
 
 sub html_content {
@@ -1306,11 +1302,11 @@ sub html_content {
   if (@bookmarks) {
     foreach my $bookmark (@bookmarks) {
       push @output, $cgi->div(scalar $bookmark->html_content($bibliotech, $class, 1, $main)) unless $just_comments;
-      if (my @user_bookmark_comments = $bookmark->user_bookmark_comments) {
-	foreach my $user_bookmark_comment (@user_bookmark_comments) {
-	  my $user_bookmark = $user_bookmark_comment->user_bookmark;
-	  my $user = $user_bookmark->user;
-	  my $comment = $user_bookmark_comment->comment;
+      if (my @user_article_comments = $bookmark->user_article_comments) {
+	foreach my $user_article_comment (@user_article_comments) {
+	  my $user_article = $user_article_comment->user_article;
+	  my $user = $user_article->user;
+	  my $comment = $user_article_comment->comment;
 	  push @output, $cgi->div({class => 'commentdisplay'},
 				  $cgi->div({class => 'commentbyline'},
 					    $user->link($bibliotech, 'commentator', 'href_search_global', undef, $verbose),

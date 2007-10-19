@@ -104,12 +104,15 @@ sub stat_vars {
   my $cache = {};
   my %stats =
       ((map { total_and_new($cache, undef, @{$_}) }
-	(['user_bookmarks', 'public', 'private', 'mywork',
-	  'select count(*) from user_bookmark where '.
+	(['user_articles', 'public', 'private', 'mywork',
+	  'select count(*) from user_article where '.
 	  '%PUBLIC[private = 0 and private_gang is null and private_until is null] '.
 	  '%PRIVATE[(private = 1 or private_gang is not null or private_until is not null)] '.
 	  '%MYWORK[user_is_author = 1] '.
 	  '%NEW[and created >= NOW() - ]'],
+	 ['articles',
+	  'select count(*) from article '.
+	  '%NEW[where created >= NOW() - ]'],
 	 ['bookmarks',
 	  'select count(*) from bookmark '.
 	  '%NEW[where created >= NOW() - ]'],
@@ -117,25 +120,25 @@ sub stat_vars {
 	  'select count(*) from user where '.
 	  '%ACTIVE[active = 1] %VERIFIED[verifycode is null] %NEW[and created >= NOW() - ]'],
 	 ['users_1plus',
-	  'select count(distinct u.user_id) from user_bookmark ub left join user u on (ub.user = u.user_id) '.
+	  'select count(distinct u.user_id) from user_article ua left join user u on (ua.user = u.user_id) '.
 	  '%NEW[where u.created >= NOW() - ]'],
 	 ['citations',
 	  'select count(*) from ('.
 	  'select citation_id from ('.
 	  'select c.citation_id, c.created '.
-	  'from user_bookmark ub '.
-	  'left join bookmark b on (ub.bookmark = b.bookmark_id) '.
+	  'from user_article ua '.
+	  'left join bookmark b on (ua.bookmark = b.bookmark_id) '.
 	  'left join citation c on (b.citation = c.citation_id) '.
 	  'UNION '.
 	  'select c.citation_id, c.created '.
-	  'from user_bookmark ub '.
-	  'left join citation c on (ub.citation = c.citation_id) '.
+	  'from user_article ua '.
+	  'left join citation c on (ua.citation = c.citation_id) '.
 	  ') as u1 %NEW[where created >= NOW() - ]'.
 	  ') as u2'],
 	 ['citations_authoritative', 'pubmed', 'doi', 'asin',
 	  'select count(c.citation_id) '.
-	  'from user_bookmark ub '.
-	  'left join bookmark b on (ub.bookmark = b.bookmark_id) '.
+	  'from user_article ua '.
+	  'left join bookmark b on (ua.bookmark = b.bookmark_id) '.
 	  'left join citation c on (b.citation = c.citation_id) '.
 	  'where '.
 	  '%PUBMED[c.pubmed is not null and c.pubmed != \'\'] '.
@@ -145,8 +148,8 @@ sub stat_vars {
 	 ],
 	 ['citations_personal', 'pubmed', 'doi', 'asin',
 	  'select count(c.citation_id) '.
-	  'from user_bookmark ub '.
-	  'left join citation c on (ub.citation = c.citation_id) '.
+	  'from user_article ua '.
+	  'left join citation c on (ua.citation = c.citation_id) '.
 	  'where '.
 	  '%PUBMED[c.pubmed is not null and c.pubmed != \'\'] '.
 	  '%DOI[c.doi is not null and c.doi != \'\'] '.

@@ -16,7 +16,7 @@ use Bibliotech::Profile;
 our %COUNT_CALLS;
 
 BEGIN {
-  foreach my $table (qw/bookmark tag user user_bookmark/) {
+  foreach my $table (qw/article bookmark tag user user_article/) {
     my $class = Bibliotech::DBI->class_for_table($table);
     $COUNT_CALLS{'count_all_'.$table} = sub { $class->count_all };
     $COUNT_CALLS{'count_active_'.$table} = sub { $class->count_active };

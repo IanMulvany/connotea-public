@@ -139,17 +139,20 @@ sub freematch {
 # provide the correct SQL snippet and binding parameters for privacy,
 # given a particular user who is the active user
 sub _privacywhere {
-  my $user_id      = shift or return 'ub.def_public = 1';  # rest of routine is moot if no user
-  my $gang_ids_ref = shift;
+  my ($user_id, $gang_ids_ref) = @_;
 
-  my $PUBLIC  =       '(ub.private = 0 AND ub.private_gang IS NULL)';
+  # short-circuit if we can use def_public index for a visitor
+  # the private_until check is undesirable, we have to have it because it changes with time
+  defined $user_id or return '(ub.def_public = 1 OR ub.private_until <= NOW())';
+
+  my $PUBLIC  =       '(ua.private = 0 AND ua.private_gang IS NULL)';
   my $MINE    = sub { return unless defined $user_id;
-		      'ub.user = ?', $user_id };
+		      'ua.user = ?', $user_id };
   my $MYGANGS = sub { return unless defined $user_id;
 		      my @gangs = @{$gang_ids_ref} or return;
-		      'ub.private_gang IN ('.join(',', map('?', @gangs)).')', @gangs; };
-  my $EXPIRED =       '(ub.private_until IS NOT NULL AND ub.private_until <= NOW())';
-  my $NOTQUAR =       'ub.quarantined IS NULL';
+		      'ua.private_gang IN ('.join(',', map('?', @gangs)).')', @gangs; };
+  my $EXPIRED =       '(ua.private_until IS NOT NULL AND ua.private_until <= NOW())';
+  my $NOTQUAR =       'ua.quarantined IS NULL';
 
   my @algo    = ('(', '(', $PUBLIC, ' OR ', $MYGANGS, ' OR ', $EXPIRED, ')', ' AND ', $NOTQUAR, ')', ' OR ', $MINE);
 
@@ -173,6 +176,7 @@ sub privacywhere {
   return _privacywhere(defined $user ? ($user->user_id, [map { $_->gang_id } $user->gangs]) : ());
 }
 
+# fake an INTERSECT type SQL snippet for a database lacking a real INTERSECT command
 sub _sql_intersect {
   my $select_field = shift or die 'no select field';
   my $inner_field  = shift or die 'no inner field';
@@ -181,198 +185,205 @@ sub _sql_intersect {
   return ''    if @_ == 0;
   return $_[0] if @_ == 1;
   my $counter = 0;
-  return "SELECT $select_field FROM ("
-         .join(' UNION ALL ', map { "SELECT $inner_field FROM ($_) AS interinner".(++$counter) } @_)
-         .") AS inter GROUP BY $group_field HAVING COUNT($count_field) = ".scalar(@_);
+  return join('',
+	      'SELECT ', $select_field, ' FROM (',
+	      join(' UNION ALL ', map { join('', 'SELECT ', $inner_field, ' FROM (', $_, ') AS interinner', ++$counter) } @_),
+	      ') AS inter GROUP BY ', $group_field, ' HAVING COUNT(', $count_field, ') = ', scalar(@_));
 }
 
 sub _sql_union {
   join(' UNION ', @_);
 }
 
-sub _sql_select_user_bookmark_id {
-  my $need_bookmark_id = shift;
-  return 'SELECT user_bookmark_id' unless $need_bookmark_id;
+sub _sql_select_user_article_id {
+  my $need_article_id = shift;
+  return 'SELECT user_article_id' unless $need_article_id;
   my $extra = shift;
-  return 'SELECT bookmark AS bookmark_id, user_bookmark_id, '.$extra;
+  return 'SELECT article AS article_id, user_article_id'.($extra ? ', '.$extra : '');
 }
 
-sub _sql_ub_selection_user {
-  my ($namepart, $need_bookmark_id) = @_;
-  _sql_select_user_bookmark_id($need_bookmark_id, 'user AS user_id')
-      .' FROM user_bookmark WHERE user = '.$namepart->obj_id_or_zero;
+sub _sql_ua_selection_user {
+  my ($namepart, $need_article_id) = @_;
+  _sql_select_user_article_id($need_article_id, 'user AS user_id')
+      .' FROM user_article WHERE user = '.$namepart->obj_id_or_zero;
 }
 
-sub _sql_ub_selection_tag {
-  my ($namepart, $need_bookmark_id) = @_;
-  return 'SELECT user_bookmark AS user_bookmark_id FROM user_bookmark_tag WHERE tag = '.$namepart->obj_id_or_zero
-      unless $need_bookmark_id;
-  return 'SELECT ub.bookmark AS bookmark_id, ub.user_bookmark_id, ubt.tag AS tag_id FROM user_bookmark_tag ubt LEFT JOIN user_bookmark ub ON (ubt.user_bookmark = ub.user_bookmark_id) WHERE ubt.tag = '.$namepart->obj_id_or_zero;
+sub _sql_ua_selection_tag {
+  my ($namepart, $need_article_id) = @_;
+  return 'SELECT user_article AS user_article_id FROM user_article_tag WHERE tag = '.$namepart->obj_id_or_zero
+      unless $need_article_id;
+  return 'SELECT ua.article AS article_id, ua.user_article_id, uat.tag AS tag_id FROM user_article_tag uat LEFT JOIN user_article ua ON (uat.user_article = ua.user_article_id) WHERE uat.tag = '.$namepart->obj_id_or_zero;
 }
 
-sub _sql_ub_selection_gang {
-  my ($namepart, $need_bookmark_id) = @_;
-  _sql_select_user_bookmark_id($need_bookmark_id, 'ug.gang AS gang_id')
-      .' FROM user_gang ug LEFT JOIN user_bookmark ub ON (ug.user = ub.user) WHERE ug.gang = '.$namepart->obj_id_or_zero;
+sub _sql_ua_selection_gang {
+  my ($namepart, $need_article_id) = @_;
+  _sql_select_user_article_id($need_article_id, 'ug.gang AS gang_id')
+      .' FROM user_gang ug LEFT JOIN user_article ua ON (ug.user = ua.user) WHERE ug.gang = '.$namepart->obj_id_or_zero;
 }
 
-sub _sql_ub_selection_date {
-  my ($namepart, $need_bookmark_id) = @_;
+sub _sql_ua_selection_date {
+  my ($namepart, $need_article_id) = @_;
   my $date = $namepart->obj->mysql_date;
-  _sql_select_user_bookmark_id($need_bookmark_id, 'TO_DAYS(created) AS date_id')
-      ." FROM user_bookmark WHERE created BETWEEN \'$date 00:00:00\' AND \'$date 23:59:59\'";
+  _sql_select_user_article_id($need_article_id, 'TO_DAYS(created) AS date_id')
+      ." FROM user_article WHERE created BETWEEN \'$date 00:00:00\' AND \'$date 23:59:59\'";
 }
 
-sub _sql_ub_selection_bookmark {
-  my ($namepart, $need_bookmark_id) = @_;
-  _sql_select_user_bookmark_id($need_bookmark_id, 'user AS user_id')
-      .' FROM user_bookmark WHERE bookmark = '.$namepart->obj_id_or_zero;
+sub _sql_ua_selection_bookmark {
+  my ($namepart, $need_article_id) = @_;
+  _sql_select_user_article_id($need_article_id)
+      .' FROM bookmark b LEFT JOIN article a ON (b.article = a.article_id) LEFT JOIN user_article ua ON (a.article_id = ua.article) WHERE bookmark_id = '.$namepart->obj_id_or_zero;
+}
+
+sub _sql_ua_selection_article {
+  my ($namepart, $need_article_id) = @_;
+  _sql_select_user_article_id($need_article_id)
+      .' FROM article a LEFT JOIN user_article ua ON (a.article_id = ua.article) WHERE a.article_id = '.$namepart->obj_id_or_zero;
 }
 
 sub _sql_user_tag_super_optimized {
   my ($user_namepart, $tag_namepart) = @_;
   my $user_id = $user_namepart->obj_id_or_zero;
   my $tag_id  = $tag_namepart->obj_id_or_zero;
-  return "SELECT ub.user_bookmark_id FROM user_bookmark ub LEFT JOIN user_bookmark_tag ubt ON (ub.user_bookmark_id = ubt.user_bookmark) WHERE ub.user = $user_id AND ubt.tag = $tag_id";
+  return "SELECT ua.user_article_id FROM user_article ua LEFT JOIN user_article_tag uat ON (ua.user_article_id = uat.user_article) WHERE ua.user = $user_id AND uat.tag = $tag_id";
 }
 
 sub _sql_user_date_super_optimized {
   my ($user_namepart, $date_namepart) = @_;
   my $user_id = $user_namepart->obj_id_or_zero;
   my $date    = $date_namepart->obj->mysql_date;
-  return "SELECT user_bookmark_id FROM user_bookmark WHERE user = $user_id AND created BETWEEN \'$date 00:00:00\' AND \'$date 23:59:59\'";
+  return "SELECT user_article_id FROM user_article WHERE user = $user_id AND created BETWEEN \'$date 00:00:00\' AND \'$date 23:59:59\'";
 }
 
-sub _sql_user_bookmark_super_optimized {
-  my ($user_namepart, $bookmark_namepart) = @_;
+sub _sql_user_article_super_optimized {
+  my ($user_namepart, $article_namepart) = @_;
   my $user_id     = $user_namepart->obj_id_or_zero;
-  my $bookmark_id = $bookmark_namepart->obj_id_or_zero;
-  return "SELECT user_bookmark_id FROM user_bookmark WHERE user = $user_id AND bookmark = $bookmark_id";
+  my $article_id = $article_namepart->obj_id_or_zero;
+  return "SELECT user_article_id FROM user_article WHERE user = $user_id AND article = $article_id";
 }
 
 sub _sql_user_gang_super_optimized {
   my ($user_namepart, $gang_namepart) = @_;
   my $user_id = $user_namepart->obj_id_or_zero;
   my $gang_id = $gang_namepart->obj_id_or_zero;
-  return "SELECT ub.user_bookmark_id FROM user_gang ug INNER JOIN user_bookmark ub ON (ug.user = ub.user) WHERE ug.user = $user_id AND ug.gang = $gang_id";
+  return "SELECT ua.user_article_id FROM user_gang ug INNER JOIN user_article ua ON (ug.user = ua.user) WHERE ug.user = $user_id AND ug.gang = $gang_id";
 }
 
 sub _sql_tag_date_super_optimized {
   my ($tag_namepart, $date_namepart) = @_;
   my $tag_id = $tag_namepart->obj_id_or_zero;
   my $date   = $date_namepart->obj->mysql_date;
-  return "SELECT ub.user_bookmark_id FROM user_bookmark ub LEFT JOIN user_bookmark_tag ubt ON (ub.user_bookmark_id = ubt.user_bookmark) WHERE ubt.tag = $tag_id AND ub.created BETWEEN \'$date 00:00:00\' AND \'$date 23:59:59\'";
+  return "SELECT ua.user_article_id FROM user_article ua LEFT JOIN user_article_tag uat ON (ua.user_article_id = uat.user_article) WHERE uat.tag = $tag_id AND ua.created BETWEEN \'$date 00:00:00\' AND \'$date 23:59:59\'";
 }
 
-sub _sql_tag_bookmark_super_optimized {
-  my ($tag_namepart, $bookmark_namepart) = @_;
+sub _sql_tag_article_super_optimized {
+  my ($tag_namepart, $article_namepart) = @_;
   my $tag_id      = $tag_namepart->obj_id_or_zero;
-  my $bookmark_id = $bookmark_namepart->obj_id_or_zero;
-  return "SELECT ub.user_bookmark_id FROM user_bookmark ub LEFT JOIN user_bookmark_tag ubt ON (ub.user_bookmark_id = ubt.user_bookmark) WHERE ubt.tag = $tag_id AND ub.bookmark = $bookmark_id";
+  my $article_id = $article_namepart->obj_id_or_zero;
+  return "SELECT ua.user_article_id FROM user_article ua LEFT JOIN user_article_tag uat ON (ua.user_article_id = uat.user_article) WHERE uat.tag = $tag_id AND ua.article = $article_id";
 }
 
 sub _sql_gang_tag_super_optimized {
   my ($gang_namepart, $tag_namepart) = @_;
   my $gang_id = $gang_namepart->obj_id_or_zero;
   my $tag_id  = $tag_namepart->obj_id_or_zero;
-  return "SELECT ub.user_bookmark_id FROM user_gang ug INNER JOIN user_bookmark ub ON (ug.user = ub.user) LEFT JOIN user_bookmark_tag ubt ON (ub.user_bookmark_id = ubt.user_bookmark) WHERE ug.gang = $gang_id AND ubt.tag = $tag_id";
+  return "SELECT ua.user_article_id FROM user_gang ug INNER JOIN user_article ua ON (ug.user = ua.user) LEFT JOIN user_article_tag uat ON (ua.user_article_id = uat.user_article) WHERE ug.gang = $gang_id AND uat.tag = $tag_id";
 }
 
 sub _sql_gang_date_super_optimized {
   my ($gang_namepart, $date_namepart) = @_;
   my $gang_id = $gang_namepart->obj_id_or_zero;
   my $date    = $date_namepart->obj->mysql_date;
-  return "SELECT ub.user_bookmark_id FROM user_gang ug INNER JOIN user_bookmark ub ON (ug.user = ub.user) WHERE ug.gang = $gang_id AND ub.created BETWEEN \'$date 00:00:00\' AND \'$date 23:59:59\'";
+  return "SELECT ua.user_article_id FROM user_gang ug INNER JOIN user_article ua ON (ug.user = ua.user) WHERE ug.gang = $gang_id AND ua.created BETWEEN \'$date 00:00:00\' AND \'$date 23:59:59\'";
 }
 
-sub _sql_date_bookmark_super_optimized {
-  my ($date_namepart, $bookmark_namepart) = @_;
+sub _sql_date_article_super_optimized {
+  my ($date_namepart, $article_namepart) = @_;
   my $date        = $date_namepart->obj->mysql_date;
-  my $bookmark_id = $bookmark_namepart->obj_id_or_zero;
-  return "SELECT user_bookmark_id FROM user_bookmark WHERE bookmark = $bookmark_id AND created BETWEEN \'$date 00:00:00\' AND \'$date 23:59:59\'";
+  my $article_id = $article_namepart->obj_id_or_zero;
+  return "SELECT user_article_id FROM user_article WHERE article = $article_id AND created BETWEEN \'$date 00:00:00\' AND \'$date 23:59:59\'";
 }
 
-sub _sql_gang_bookmark_super_optimized {
-  my ($gang_namepart, $bookmark_namepart) = @_;
+sub _sql_gang_article_super_optimized {
+  my ($gang_namepart, $article_namepart) = @_;
   my $gang_id     = $gang_namepart->obj_id_or_zero;
-  my $bookmark_id = $bookmark_namepart->obj_id_or_zero;
-  return "SELECT ub.user_bookmark_id FROM user_gang ug INNER JOIN user_bookmark ub ON (ug.user = ub.user) WHERE ug.gang = $gang_id AND ub.bookmark = $bookmark_id";
+  my $article_id = $article_namepart->obj_id_or_zero;
+  return "SELECT ua.user_article_id FROM user_gang ug INNER JOIN user_article ua ON (ug.user = ua.user) WHERE ug.gang = $gang_id AND ua.article = $article_id";
 }
 
 sub _sql_super_optimized {
   my ($earlier_filter, $earlier_namepart, $later_filter, $later_namepart) = @_;
-  my $sql = eval "_sql_${earlier_filter}_${later_filter}_super_optimized(\$earlier_namepart, \$later_namepart)";
-  die $@ if $@;
-  return $sql;
+  no strict 'refs';
+  return &{'_sql_'.$earlier_filter.'_'.$later_filter.'_super_optimized'}($earlier_namepart, $later_namepart);
 }
 
-sub _sql_ub_selection {
-  my ($namepart, $need_bookmark_id) = @_;
+sub _sql_ua_selection {
+  my ($namepart, $need_article_id) = @_;
 
   defined $namepart or die 'no namepart';
   UNIVERSAL::isa($namepart, 'Bibliotech::Parser::NamePart') or die 'namepart is wrong type: '.ref($namepart);
-  defined $need_bookmark_id or die 'no need_bookmark_id flag';
+  defined $need_article_id or die 'no need_article_id flag';
 
   my $class = $namepart->class;
-  return _sql_ub_selection_user($namepart, $need_bookmark_id)     if $class eq 'Bibliotech::User';
-  return _sql_ub_selection_user($namepart, $need_bookmark_id)     if $class eq 'Bibliotech::User';
-  return _sql_ub_selection_tag($namepart, $need_bookmark_id)      if $class eq 'Bibliotech::Tag';
-  return _sql_ub_selection_gang($namepart, $need_bookmark_id)     if $class eq 'Bibliotech::Gang';
-  return _sql_ub_selection_date($namepart, $need_bookmark_id)     if $class eq 'Bibliotech::Date';
-  return _sql_ub_selection_bookmark($namepart, $need_bookmark_id) if $class eq 'Bibliotech::Bookmark';
-  die "_sql_ub_selection unhandled class ($class)";
+  return _sql_ua_selection_user($namepart, $need_article_id)     if $class eq 'Bibliotech::User';
+  return _sql_ua_selection_user($namepart, $need_article_id)     if $class eq 'Bibliotech::User';
+  return _sql_ua_selection_tag($namepart, $need_article_id)      if $class eq 'Bibliotech::Tag';
+  return _sql_ua_selection_gang($namepart, $need_article_id)     if $class eq 'Bibliotech::Gang';
+  return _sql_ua_selection_date($namepart, $need_article_id)     if $class eq 'Bibliotech::Date';
+  return _sql_ua_selection_bookmark($namepart, $need_article_id) if $class eq 'Bibliotech::Bookmark';
+  return _sql_ua_selection_article($namepart, $need_article_id)  if $class eq 'Bibliotech::Article';
+  die "_sql_ua_selection unhandled class ($class)";
 }
 
-sub _sql_get_user_bookmark_ids_for_one_criterion {
+sub _sql_get_user_article_ids_for_one_criterion {
   my $namepart = shift;
-  _sql_ub_selection($namepart, 0);
+  _sql_ua_selection($namepart, 0);
 }
 
-sub _sql_get_user_bookmark_ids_and_bookmark_ids_for_one_criterion {
+sub _sql_get_user_article_ids_and_article_ids_for_one_criterion {
   my $namepart = shift;
-  _sql_ub_selection($namepart, 1);
+  _sql_ua_selection($namepart, 1);
 }
 
-sub _sql_get_all_user_bookmark_ids {
-  'SELECT user_bookmark_id FROM user_bookmark';
+sub _sql_get_all_user_article_ids {
+  'SELECT user_article_id FROM user_article';
 }
 
-sub _search_ub_optimized_sql_select_user_bookmark_ids_only {
+sub _search_ua_optimized_sql_select_user_article_ids_only {
   my ($output, $get_namepartset, $filters_used, $is_two_filters_used_once) = @_;
       
   return _sql_super_optimized(map { $_ => @{$get_namepartset->($_)} } $filters_used->()) if $is_two_filters_used_once->();
 
-  my $OR_ub  = sub { _sql_union    (@_) };
-  my $AND_ub = sub { _sql_intersect(('user_bookmark_id') x 4, @_) };
+  my $OR_ua  = sub { _sql_union    (@_) };
+  my $AND_ua = sub { _sql_intersect(('user_article_id') x 4, @_) };
   my $AND_b  = sub { my $filter = shift;
-		     my $needs_merge_on_bookmark_id = $filter =~ /^(?:user|gang|date)$/ && @_ > 1;
-		     return $AND_ub->(map { $_->(0) } @_) unless $needs_merge_on_bookmark_id;
-                     _sql_intersect('MAX(user_bookmark_id) AS user_bookmark_id',
-				    "bookmark_id, user_bookmark_id, ${filter}_id",
-				    'bookmark_id',
+		     my $needs_merge_on_article_id = $filter =~ /^(?:user|gang|date)$/ && @_ > 1;
+		     return $AND_ua->(map { $_->(0) } @_) unless $needs_merge_on_article_id;
+                     _sql_intersect('MAX(user_article_id) AS user_article_id',
+				    "article_id, user_article_id, ${filter}_id",
+				    'article_id',
 				    "DISTINCT ${filter}_id",
 				    map { $_->(1) } @_) };
   my $ALL    = sub { local $_ = shift; ref $_ eq 'ARRAY' ? @{$_} : ($_) };
   my $nameparts_specified = sub { local $_ = shift;
 				  @{add_geotagged_tag_to_namepart_set($output, $_, $get_namepartset->($_) || [])} };
 
-  return $AND_ub->(map { my $filter = $_;      # AND the filters: /user/martin/tag/perl = martin AND perl
-           $OR_ub->(map { my $slashpart = $_;  # OR the parts of a filter: /user/martin/ben = martin OR ben
+  return $AND_ua->(map { my $filter = $_;      # AND the filters: /user/martin/tag/perl = martin AND perl
+           $OR_ua->(map { my $slashpart = $_;  # OR the parts of a filter: /user/martin/ben = martin OR ben
      	     $AND_b->($filter,                 # AND the plus'd parts: /user/martin+ben = martin AND ben
      		      map { my $namepart = $_;
 			    sub { $_[0]
-				  ? _sql_get_user_bookmark_ids_and_bookmark_ids_for_one_criterion($namepart)
-				  : _sql_get_user_bookmark_ids_for_one_criterion($namepart)
+				  ? _sql_get_user_article_ids_and_article_ids_for_one_criterion($namepart)
+				  : _sql_get_user_article_ids_for_one_criterion($namepart)
 				};
      	     } $ALL->($slashpart))
      	   } $nameparts_specified->($filter))
          } $filters_used->())
-         || _sql_get_all_user_bookmark_ids();
+         || _sql_get_all_user_article_ids();
 }
 
-sub _search_ub_optimized_sql_select_user_bookmark_ids_only_using_command {
+sub _search_ua_optimized_sql_select_user_article_ids_only_using_command {
   my $command = shift;
-  return _search_ub_optimized_sql_select_user_bookmark_ids_only
+  return _search_ua_optimized_sql_select_user_article_ids_only
       ($command->output,
        sub { my $filter = shift; $command->$filter },
        sub { $command->filters_used },
@@ -382,12 +393,12 @@ sub _search_ub_optimized_sql_select_user_bookmark_ids_only_using_command {
       );
 }
 
-sub _search_ub_optimized_count {
-  my ($sql_select_user_bookmark_ids_only_with_privacy, $privacybind_ref) = @_;
+sub _search_ua_optimized_count {
+  my ($sql_select_user_article_ids_only_with_privacy, $privacybind_ref) = @_;
 
-  my $sth = Bibliotech::User_Bookmark->psql_packed_count_query_using_subselect
-      ($sql_select_user_bookmark_ids_only_with_privacy);
-  Bibliotech::Profile::start('query object waiting for mysql for count (_search_ub_optimized)');
+  my $sth = Bibliotech::User_Article->psql_packed_count_query_using_subselect
+      ($sql_select_user_article_ids_only_with_privacy);
+  Bibliotech::Profile::start('query object waiting for mysql for count (_search_ua_optimized)');
   eval { $sth->execute(@{$privacybind_ref}) or die $sth->errstr };
   die "count execute died: $@" if $@;
   my ($count) = $sth->fetchrow_array;
@@ -397,35 +408,35 @@ sub _search_ub_optimized_count {
   return $count;
 }
 
-sub _search_ub_optimized_data {
-  my ($sql_select_user_bookmark_ids_only_with_privacy, $privacywhere, $privacybind_ref, $activeuser, $sort, $sortdir, $start, $num) = @_;
+sub _search_ua_optimized_data {
+  my ($sql_select_user_article_ids_only_with_privacy, $privacywhere, $privacybind_ref, $activeuser, $sort, $sortdir, $start, $num) = @_;
 
-  my @select       = Bibliotech::User_Bookmark->packed_select;
+  my @select       = Bibliotech::User_Article->packed_select;
   my $limit        = join(' ', 'LIMIT', int($start).',', int($num) || 100000);
-  my $orderby      = join(' ', 'ORDER BY', $sort || 'ub.created', $sortdir || 'DESC');
+  my $orderby      = join(' ', 'ORDER BY', $sort || 'ua.created', $sortdir || 'DESC');
   my @privacybind  = @{$privacybind_ref};
-  (my $ubo_orderby = $orderby) =~ s/\bub\./ubo./g;
-  Bibliotech::Profile::start('_search_ub_optimized_data creating temp table qq2');
-  my $qq2 = join(' ', $sql_select_user_bookmark_ids_only_with_privacy, $ubo_orderby, $limit);
+  (my $uao_orderby = $orderby) =~ s/\bua\./uao./g;
+  Bibliotech::Profile::start('_search_ua_optimized_data creating temp table qq2');
+  my $qq2 = join(' ', $sql_select_user_article_ids_only_with_privacy, $uao_orderby, $limit);
   my $dbh = Bibliotech::DBI->db_Main;
   eval {
     eval { $dbh->do('DROP TEMPORARY TABLE IF EXISTS qq2'); };  # for buggy situations
     die 'dropping temporary table qq2: '.$@ if $@;
     eval { $dbh->do($QQ2 = 'CREATE TEMPORARY TABLE qq2 AS '.$qq2, undef, @privacybind) or die 'failed qq2 creation'; };
     die 'creating temporary table qq2: '.$@ if $@;
-    eval { $dbh->do('ALTER TABLE qq2 ADD INDEX user_bookmark_id_idx (user_bookmark_id)') or die 'failed qq2 indexing'; };
+    eval { $dbh->do('ALTER TABLE qq2 ADD INDEX user_article_id_idx (user_article_id)') or die 'failed qq2 indexing'; };
     die 'adding index to qq2: '.$@ if $@;
   };
   die "setting up qq2: $@" if $@;
   Bibliotech::Profile::stop();
 
-  my $sth = Bibliotech::User_Bookmark->psql_packed_query_using_subselect  # <----- cross-ref this in Bibliotech::DBI
+  my $sth = Bibliotech::User_Article->psql_packed_query_using_subselect
       (join(', ', @select),
        'qq2',
        $privacywhere,
        $orderby);
 
-  Bibliotech::Profile::start('query object waiting for mysql for data (_search_ub_optimized)');
+  Bibliotech::Profile::start('query object waiting for mysql for data (_search_ua_optimized)');
   my $activeuser_id = eval { return 0 unless defined $activeuser;
 			     return $activeuser unless ref $activeuser;
 			     return $activeuser->user_id;
@@ -435,9 +446,9 @@ sub _search_ub_optimized_data {
   my @data = @{$sth->fetchall_arrayref};
   Bibliotech::Profile::stop();
 
-  Bibliotech::Profile::start('converting packed arrays to user_bookmark objects');
-  my $names_ref = Bibliotech::User_Bookmark->select2names(\@select);
-  my $set = Bibliotech::DBI::Set->new(map { Bibliotech::User_Bookmark->unpack_packed_select($names_ref, $_) }
+  Bibliotech::Profile::start('converting packed arrays to user_article objects');
+  my $names_ref = Bibliotech::User_Article->select2names(\@select);
+  my $set = Bibliotech::DBI::Set->new(map { Bibliotech::User_Article->unpack_packed_select($names_ref, $_) }
 				      map { bless($_, 'Bibliotech::DBI::Set::Line') }
 				      @data);
   Bibliotech::Profile::stop();
@@ -446,45 +457,45 @@ sub _search_ub_optimized_data {
 	  sum map { $_->is_geotagged || 0 } @{$set});  # geocount
 }
 
-sub _search_ub_optimized_sql_select_user_bookmark_ids_only_with_privacy {
-  my ($sql_select_user_bookmark_ids_only, $privacywhere) = @_;
-  (my $ubo_privacywhere = $privacywhere) =~ s/\bub\./ubo./g;
-  return "SELECT ubs.user_bookmark_id FROM ($sql_select_user_bookmark_ids_only) AS ubs ".
-         "NATURAL JOIN user_bookmark ubo WHERE $ubo_privacywhere AND ubo.user_bookmark_id IS NOT NULL";
+sub _search_ua_optimized_sql_select_user_article_ids_only_with_privacy {
+  my ($sql_select_user_article_ids_only, $privacywhere) = @_;
+  (my $uao_privacywhere = $privacywhere) =~ s/\bua\./uao./g;
+  return "SELECT uas.user_article_id FROM ($sql_select_user_article_ids_only) AS uas ".
+         "NATURAL JOIN user_article uao WHERE $uao_privacywhere AND uao.user_article_id IS NOT NULL";
 }
 
-sub _search_ub_optimized_sql_select_user_bookmark_ids_only_with_privacy_qq {
-  my ($sql_select_user_bookmark_ids_only, $privacywhere) = @_;
-  if ($sql_select_user_bookmark_ids_only eq 'SELECT user_bookmark_id FROM user_bookmark') {
-    (my $ubo_privacywhere = $privacywhere) =~ s/\bub\./ubo./g;
-    return "SELECT ubo.user_bookmark_id FROM user_bookmark AS ubo WHERE $ubo_privacywhere";
+sub _search_ua_optimized_sql_select_user_article_ids_only_with_privacy_qq {
+  my ($sql_select_user_article_ids_only, $privacywhere) = @_;
+  if ($sql_select_user_article_ids_only eq 'SELECT user_article_id FROM user_article') {
+    (my $uao_privacywhere = $privacywhere) =~ s/\bua\./uao./g;
+    return "SELECT uao.user_article_id FROM user_article AS uao WHERE $uao_privacywhere";
   }
   else {
     my $dbh = Bibliotech::DBI->db_Main;
     eval {
       eval { $dbh->do('DROP TEMPORARY TABLE IF EXISTS qq1'); };  # for buggy situations
       die 'dropping temporary table qq1: '.$@ if $@;
-      eval { $dbh->do($QQ1 = 'CREATE TEMPORARY TABLE qq1 AS '.$sql_select_user_bookmark_ids_only) or die 'failed qq1 creation'; };
+      eval { $dbh->do($QQ1 = 'CREATE TEMPORARY TABLE qq1 AS '.$sql_select_user_article_ids_only) or die 'failed qq1 creation'; };
       die 'creating temporary table qq1: '.$@ if $@;
-      eval { $dbh->do('ALTER TABLE qq1 ADD INDEX user_bookmark_id_idx (user_bookmark_id)') or die 'failed qq1 indexing'; };
+      eval { $dbh->do('ALTER TABLE qq1 ADD INDEX user_article_id_idx (user_article_id)') or die 'failed qq1 indexing'; };
       die 'adding index to qq1: '.$@ if $@;
     };
     die "setting up qq1: $@" if $@;
   }
-  (my $ubo_privacywhere = $privacywhere) =~ s/\bub\./ubo./g;
-  return "SELECT ubs.user_bookmark_id FROM qq1 AS ubs ".
-         "NATURAL JOIN user_bookmark ubo WHERE $ubo_privacywhere AND ubo.user_bookmark_id IS NOT NULL";
+  (my $uao_privacywhere = $privacywhere) =~ s/\bua\./uao./g;
+  return "SELECT uas.user_article_id FROM qq1 AS uas ".
+         "NATURAL JOIN user_article uao WHERE $uao_privacywhere AND uao.user_article_id IS NOT NULL";
 }
 
-# _search_ub_optimized does the same as _search() provided that there
+# _search_ua_optimized does the same as _search() provided that there
 # are no options to _search() in excess of the parameters that
-# _search_ub_optimized() accepts, except class which must be
-# 'Bibliotech::User_Bookmark'.
-sub _search_ub_optimized {
+# _search_ua_optimized() accepts, except class which must be
+# 'Bibliotech::User_Article'.
+sub _search_ua_optimized {
   my ($self, $activeuser, $sort, $sortdir, $start, $num) = @_;
 
   Bibliotech::Profile::start(sub { join(' ',
-					'_search_ub_optimized:',
+					'_search_ua_optimized:',
 					$activeuser,
 					$sort, $sortdir,
 					$start, $num,
@@ -500,20 +511,20 @@ sub _search_ub_optimized {
   $dbh->do('SET AUTOCOMMIT=0');
   eval {
 
-    Bibliotech::Profile::start('_search_ub_optimized creating temp table qq1');
+    Bibliotech::Profile::start('_search_ua_optimized creating temp table qq1');
 
     my ($privacywhere, @privacybind) = $self->privacywhere($activeuser);
-    my $sql_select_user_bookmark_ids_only_with_privacy =
-	_search_ub_optimized_sql_select_user_bookmark_ids_only_with_privacy_qq
-	(_search_ub_optimized_sql_select_user_bookmark_ids_only_using_command($self->command),
+    my $sql_select_user_article_ids_only_with_privacy =
+	_search_ua_optimized_sql_select_user_article_ids_only_with_privacy_qq
+	(_search_ua_optimized_sql_select_user_article_ids_only_using_command($self->command),
 	 $privacywhere);
 
     Bibliotech::Profile::stop();
 
-    ($set, $geocount) = _search_ub_optimized_data ($sql_select_user_bookmark_ids_only_with_privacy,
+    ($set, $geocount) = _search_ua_optimized_data ($sql_select_user_article_ids_only_with_privacy,
 						   $privacywhere, \@privacybind,
 						   $activeuser, $sort, $sortdir, $start, $num);
-    $count            = _search_ub_optimized_count($sql_select_user_bookmark_ids_only_with_privacy,
+    $count            = _search_ua_optimized_count($sql_select_user_article_ids_only_with_privacy,
 						   \@privacybind);
   };
   my $e = $@;
@@ -537,7 +548,7 @@ sub _search_ub_optimized {
 sub _full_count {
   my ($self, $name, $activeuser, $sql_wrap, $params_ref) = @_;
   my ($privacywhere, @privacybind) = $self->privacywhere($activeuser);
-  my $subselect = _search_ub_optimized_sql_select_user_bookmark_ids_only_with_privacy(_search_ub_optimized_sql_select_user_bookmark_ids_only_using_command($self->command), $privacywhere);
+  my $subselect = _search_ua_optimized_sql_select_user_article_ids_only_with_privacy(_search_ua_optimized_sql_select_user_article_ids_only_using_command($self->command), $privacywhere);
   my $sth = Bibliotech::DBI->db_Main->prepare_cached(sprintf($sql_wrap, $subselect));
   Bibliotech::Profile::start('query object waiting for mysql for '.$name);
   eval { $sth->execute(@privacybind, @{$params_ref||[]}) or die $sth->errstr };
@@ -550,14 +561,14 @@ sub _full_count {
 
 sub full_count {
   my ($self, $activeuser) = @_;
-  my $sql = "SELECT COUNT(ubjg.user_bookmark_id) FROM (%s) AS ubjg";
+  my $sql = "SELECT COUNT(uajg.user_article_id) FROM (%s) AS uajg";
   return $self->_full_count('count', $activeuser, $sql);
 }
 
 sub full_geocount {
   my ($self, $activeuser) = @_;
   my $tag_id = geotagged_tag_namepart()->obj_id_or_zero or return 0;
-  my $sql = "SELECT COUNT(ubjg.user_bookmark_id) FROM (%s) AS ubjg LEFT JOIN user_bookmark_tag ubt ON (ubjg.user_bookmark_id = ubt.user_bookmark) WHERE ubt.tag = ?";
+  my $sql = "SELECT COUNT(uajg.user_article_id) FROM (%s) AS uajg LEFT JOIN user_article_tag uat ON (uajg.user_article_id = uat.user_article) WHERE uat.tag = ?";
   return $self->_full_count('geocount', $activeuser, $sql, [$tag_id]);
 }
 
@@ -591,7 +602,7 @@ sub _search {
   }
 
   unless (defined $final_set) {
-    unless ($options{class} ne 'Bibliotech::User_Bookmark' or
+    unless ($options{class} ne 'Bibliotech::User_Article' or
 	    $options{freematch} or
 	    $self->freematch or
 	    $options{no_freematch} or
@@ -601,7 +612,7 @@ sub _search {
 	    $options{having}) {
       my ($optimized_count, $optimized_geocount);
       ($final_set, $optimized_count, $optimized_geocount) = 
-	  $self->_search_ub_optimized($options{activeuser} || $self->activeuser,
+	  $self->_search_ua_optimized($options{activeuser} || $self->activeuser,
 				      $options{sort},
 				      $options{sortdir},
 				      $options{start} || $self->start,
@@ -628,7 +639,7 @@ sub _search {
 
     my ($privacywhere, @privacybind) = $self->privacywhere($activeuser);
     
-    # for each of various keys (USER BOOKMARK TAG DATE) there can zero or more search matches
+    # for each of various keys (USER ARTICLE TAG DATE) there can zero or more search matches
     # the matches are OR'd
     # if a match is an arrayref the constituent elements are AND'd
     # psuedo-code:
@@ -657,11 +668,11 @@ sub _search {
     }
     else {
       $group = $alias_primary;
-      if ($group eq 'ub.user_bookmark_id' and !$self->command->filters_used) {
+      if ($group eq 'ua.user_article_id' and !$self->command->filters_used) {
 	foreach (@select) {
 	  s/^$alias_primary$/MAX($alias_primary)/;
 	}
-	$group = 'b.bookmark_id';
+	$group = 'b.article';
       }
     }
     my $groupby = $group ? "GROUP BY $group" : '';
@@ -743,9 +754,9 @@ sub _search {
 	else {
 	  my @thisselect = @select;
 	  my $thisgroupby = $groupby;
-	  if ($alias eq 'ub' and (ref $match or $key eq 'DUMMY')) {
+	  if ($alias eq 'ua' and (ref $match or $key eq 'DUMMY')) {
 	    @thisselect[0] = "MAX($alias_primary)";
-	    $thisgroupby = 'GROUP BY b.bookmark_id';
+	    $thisgroupby = 'GROUP BY b.article';
 	  }
 
 	  my $sql = new SQL::Abstract;
@@ -786,18 +797,18 @@ sub _search {
 	      die "num option \"$num\" is not numeric"     unless $num   =~ /^\d+$/;
 	      $sql_options{limit} = "LIMIT $start, $num";
 	    }
-	    if ($thisselect =~ /\b(ub|u|b|t|g)\./) {
-	      $sql_options{join_ub} = $privacywhere;
-	      $sql_options{bind_ub} = \@privacybind;
+	    if ($thisselect =~ /\b(ua|u|a|b|t|g)\./) {
+	      $sql_options{join_ua} = $privacywhere;
+	      $sql_options{bind_ua} = \@privacybind;
 	    }
-	    if ($thisselect =~ /\bub2\./) {
-	      (my $ub2_privacywhere = $privacywhere) =~ s/ub\./ub2\./g;
-	      $sql_options{join_ub2} = $ub2_privacywhere;
-	      $sql_options{bind_ub2} = \@privacybind;
+	    if ($thisselect =~ /\bua2\./) {
+	      (my $ua2_privacywhere = $privacywhere) =~ s/ua\./ua2\./g;
+	      $sql_options{join_ua2} = $ua2_privacywhere;
+	      $sql_options{bind_ua2} = \@privacybind;
 	    }
-	    if ($thisselect =~ /\bub3\./) {
-	      $sql_options{join_ub3} = 'ub3.user = ?';
-	      $sql_options{bind_ub3} = [$activeuser ? $activeuser->user_id : 0];
+	    if ($thisselect =~ /\bua3\./) {
+	      $sql_options{join_ua3} = 'ua3.user = ?';
+	      $sql_options{bind_ua3} = [$activeuser ? $activeuser->user_id : 0];
 	    }
 	    if ($thisselect =~ /\bt4\./) {
 	      $sql_options{join_t4} = 't4.name = ?';
@@ -820,7 +831,7 @@ sub _search {
 	      $or_item_set = Bibliotech::DBI::Set->new;
 	    }
 	    else {
-	      die $@;
+	      die "$@\nSQL is:\n----------\n$sql\n----------\n\n".Dumper(\%sql_options, \@sql_execute);
 	    }
 	  }
 	  else {
@@ -830,33 +841,30 @@ sub _search {
 
 	  if ($use_limit_shortcut) {
 	    eval {
-	      my $distinct = 'ub.user_bookmark_id';
-	      if ($thisgroupby =~ /^GROUP BY ub\.(\w+)/ or
+	      my $distinct = 'ua.user_article_id';
+	      if ($thisgroupby =~ /^GROUP BY ua\.(\w+)/ or
+		  $thisgroupby =~ /^GROUP BY a\.(article)_id/ or
 		  $thisgroupby =~ /^GROUP BY b\.(bookmark)_id/ or
 		  $thisgroupby =~ /^GROUP BY u\.(user)_id/) {
-		$distinct = 'ub.'.$1;
+		$distinct = 'ua.'.$1;
 	      }
 	      my $count_sql;
 	      my @count_bind;
 	      my $special_additions = @freematch || $options{where} || $options{having};
 	      if (!$self->command->filters_used and !$special_additions) {
-		$count_sql = "SELECT COUNT(DISTINCT $distinct) FROM user_bookmark ub WHERE $privacywhere";
+		$count_sql = "SELECT COUNT(DISTINCT $distinct) FROM user_article ua WHERE $privacywhere";
 		@count_bind = @privacybind;
 	      }
-	      #elsif ($key eq 'DATE' and !$special_additions) {
-	        #$count_sql = "SELECT COUNT(DISTINCT $distinct) FROM user_bookmark ub WHERE $where AND $privacywhere";
-	        #@count_bind = (@wbind, @privacybind);
-	      #}
-	      elsif ($key eq 'BOOKMARK' and !$special_additions) {
-		$count_sql = "SELECT COUNT(DISTINCT $distinct) FROM user_bookmark ub LEFT JOIN bookmark b ON (ub.bookmark=b.bookmark_id) WHERE $where AND $privacywhere";
+	      elsif ($key eq 'ARTICLE' and !$special_additions) {
+		$count_sql = "SELECT COUNT(DISTINCT $distinct) FROM user_article ua LEFT JOIN article a ON (ua.article=a.article_id) WHERE $where AND $privacywhere";
 		@count_bind = (@wbind, @privacybind);
 	      }
 	      else {
 		%sql_options = (count => 1,
 				class => $class,
 				select => ["COUNT(DISTINCT $distinct)"],
-				join_ub => $privacywhere,
-				bind_ub => \@privacybind,
+				join_ua => $privacywhere,
+				bind_ua => \@privacybind,
 				where => $where,
 				wbind => \@wbind,
 				freematch => \@freematch);
@@ -911,7 +919,7 @@ sub _search {
 
     my $gpos;
     for (my $i = $#select; $i >= 0; $i--) {
-      if ($select[$i] =~ /ub_is_geotagged/) {
+      if ($select[$i] =~ /ua_is_geotagged/) {
 	$gpos = $i;
 	last;
       }
@@ -962,37 +970,15 @@ sub _search {
   return wantarray ? @{$final_set} : $final_set;
 }
 
-sub users {
-  shift->_search(class => 'Bibliotech::User', @_);
-}
-
-sub gangs {
-  shift->_search(class => 'Bibliotech::Gang', @_);
-}
-
-sub bookmarks {
-  shift->_search(class => 'Bibliotech::Bookmark', @_);
-}
-
-sub tags {
-  shift->_search(class => 'Bibliotech::Tag', @_);
-}
-
-sub user_bookmarks {
-  shift->_search(class => 'Bibliotech::User_Bookmark', @_);
-}
-
-sub recent {
-  shift->user_bookmarks(@_);
-}
-
-sub popular {
-  shift->user_bookmarks(sort => 'COUNT(DISTINCT ub.user)', @_);
-}
-
-sub home {
-  shift->user_bookmarks(@_);
-}
+sub users         { shift->_search(class => 'Bibliotech::User', @_); }
+sub tags          { shift->_search(class => 'Bibliotech::Tag', @_); }
+sub gangs         { shift->_search(class => 'Bibliotech::Gang', @_); }
+sub bookmarks     { shift->_search(class => 'Bibliotech::Bookmark', @_); }
+sub articles      { shift->_search(class => 'Bibliotech::Article', @_); }
+sub user_articles { shift->_search(class => 'Bibliotech::User_Article', @_); }
+sub recent        { shift->user_articles(@_); }
+sub popular       { shift->user_articles(sort => 'COUNT(DISTINCT ua.user)', @_); }
+sub home          { shift->user_articles(@_); }
 
 1;
 __END__

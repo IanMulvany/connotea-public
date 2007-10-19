@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More tests => 117;
+use Test::More tests => 120;
 use Test::Exception;
 use strict;
 use warnings;
@@ -32,6 +32,7 @@ BEGIN {
 			      'remove_et_al',
 			      'parse_author',
 			      'split_author_names')) or exit;
+  use_ok('Bibliotech::DBI');
 };
 
 is(clean_whitespace(' front'), 'front', 'clean_whitespace front');

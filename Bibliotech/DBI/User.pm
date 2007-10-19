@@ -8,14 +8,14 @@ __PACKAGE__->table('user');
 __PACKAGE__->columns(Primary => qw/user_id/);
 __PACKAGE__->columns(Essential => qw/username openurl_resolver openurl_name updated/);
 __PACKAGE__->columns(Others => qw/password active firstname lastname email verifycode author captcha_karma library_comment reminder_email last_deletion quarantined created/);
-__PACKAGE__->columns(TEMP => qw/gangs_packed user_bookmarks_count_packed/);
+__PACKAGE__->columns(TEMP => qw/gangs_packed user_articles_count_packed/);
 __PACKAGE__->force_utf8_columns(qw/username firstname lastname/);
 __PACKAGE__->datetime_column('created', 'before_create');
 __PACKAGE__->datetime_column('updated', 'before_update');
 __PACKAGE__->datetime_column('last_deletion');
 __PACKAGE__->datetime_column('reminder_email');
-__PACKAGE__->has_many(user_bookmarks_raw => 'Bibliotech::User_Bookmark');
-__PACKAGE__->has_many(bookmarks => ['Bibliotech::User_Bookmark' => 'bookmark']);
+__PACKAGE__->has_many(user_articles_raw => 'Bibliotech::User_Article');
+__PACKAGE__->has_many(articles => ['Bibliotech::User_Article' => 'article']);
 __PACKAGE__->has_many(user_gangs => 'Bibliotech::User_Gang');
 __PACKAGE__->has_many(gangs_without_ownership => ['Bibliotech::User_Gang' => 'gang']);
 __PACKAGE__->has_a(author => 'Bibliotech::Author');
@@ -72,40 +72,40 @@ sub update {
 }
 
 # run through Bibliotech::Query to get privacy control, and later, maybe caching
-sub user_bookmarks {
+sub user_articles {
   my $self = shift;
   my $q = new Bibliotech::Query;
   $q->set_user($self);
   $q->activeuser($Bibliotech::Apache::USER);
-  return $q->user_bookmarks;
+  return $q->user_articles;
 }
 
-# call count_user_bookmarks() and the privacy parameter is handled for you
-__PACKAGE__->set_sql(count_user_bookmarks_need_privacy => <<'');
+# call count_user_articles() and the privacy parameter is handled for you
+__PACKAGE__->set_sql(count_user_articles_need_privacy => <<'');
 SELECT 	 COUNT(*)
-FROM     __TABLE(Bibliotech::User_Bookmark=ub)__
-WHERE    ub.user = ? AND %s
+FROM     __TABLE(Bibliotech::User_Article=ua)__
+WHERE    ua.user = ? AND %s
 
-sub count_user_bookmarks {
+sub count_user_articles {
   my $self = shift;
-  my $packed = $self->user_bookmarks_count_packed;
+  my $packed = $self->user_articles_count_packed;
   return $packed if defined $packed;
   my ($privacywhere, @privacybind) = Bibliotech::Query->privacywhere($Bibliotech::Apache::USER);
-  my $sth = $self->sql_count_user_bookmarks_need_privacy($privacywhere);
+  my $sth = $self->sql_count_user_articles_need_privacy($privacywhere);
   $sth->execute($self, @privacybind);
   my ($count) = $sth->fetchrow_array;
   $sth->finish;
   return $count;
 }
 
-__PACKAGE__->set_sql(count_user_bookmarks => <<'');
+__PACKAGE__->set_sql(count_user_articles => <<'');
 SELECT 	 COUNT(*)
-FROM     __TABLE(Bibliotech::User_Bookmark=ub)__
-WHERE    ub.user = ?
+FROM     __TABLE(Bibliotech::User_Article=ua)__
+WHERE    ua.user = ?
 
 sub is_library_empty {
   my $self = shift;
-  my $sth = $self->sql_count_user_bookmarks;
+  my $sth = $self->sql_count_user_articles;
   $sth->execute($self);
   my ($count) = $sth->fetchrow_array;
   $sth->finish;
@@ -114,12 +114,12 @@ sub is_library_empty {
 
 __PACKAGE__->set_sql(count_tags_no_privacy => <<'');
 SELECT 	 COUNT(DISTINCT t.tag_id)
-FROM     __TABLE(Bibliotech::User_Bookmark=ub)__,
-         __TABLE(Bibliotech::User_Bookmark_Tag=ubt)__,
+FROM     __TABLE(Bibliotech::User_Article=ua)__,
+         __TABLE(Bibliotech::User_Article_Tag=uat)__,
          __TABLE(Bibliotech::Tag=t)__
-WHERE    ub.user = ?
-AND      __JOIN(ub ubt)__
-AND      __JOIN(ubt t)__
+WHERE    ua.user = ?
+AND      __JOIN(ua uat)__
+AND      __JOIN(uat t)__
 
 sub count_tags_no_privacy {
   my $self = shift;
@@ -132,9 +132,9 @@ sub count_tags_no_privacy {
 
 __PACKAGE__->set_sql(count_recent_posts_no_privacy => <<'');
 SELECT   COUNT(*)
-FROM     __TABLE(Bibliotech::User_Bookmark=ub)__
-WHERE    ub.user = ?
-AND      ub.created > NOW() - INTERVAL %s
+FROM     __TABLE(Bibliotech::User_Article=ua)__
+WHERE    ua.user = ?
+AND      ua.created > NOW() - INTERVAL %s
 
 sub count_recent_posts_no_privacy {
   my ($self, $window_spec) = @_;
@@ -147,12 +147,14 @@ sub count_recent_posts_no_privacy {
 }
 
 __PACKAGE__->set_sql(count_host_posts_no_privacy => <<'');
-SELECT   COUNT(ub.user_bookmark_id)
-FROM     __TABLE(Bibliotech::User_Bookmark=ub)__,
+SELECT   COUNT(ua.user_article_id)
+FROM     __TABLE(Bibliotech::User_Article=ua)__,
+         __TABLE(Bibliotech::Article=a)__,
          __TABLE(Bibliotech::Bookmark=b)__
-WHERE    ub.user = ?
+WHERE    ua.user = ?
 AND      b.url LIKE CONCAT('http://', ?, '%%')
-AND      __JOIN(ub b)__
+AND      __JOIN(ua a)__
+AND      __JOIN(a b)__
 
 sub count_host_posts_no_privacy {
   my ($self, $host) = @_;
@@ -200,12 +202,12 @@ sub tags_alpha {
 
 __PACKAGE__->set_sql(my_tags_alpha_need_packed => <<'');
 SELECT 	 %s
-FROM     __TABLE(Bibliotech::User_Bookmark=ub)__,
-         __TABLE(Bibliotech::User_Bookmark_Tag=ubt)__,
+FROM     __TABLE(Bibliotech::User_Article=ua)__,
+         __TABLE(Bibliotech::User_Article_Tag=uat)__,
          __TABLE(Bibliotech::Tag=t)__
-WHERE    ub.user = ?
-AND      __JOIN(ub ubt)__
-AND      __JOIN(ubt t)__
+WHERE    ua.user = ?
+AND      __JOIN(ua uat)__
+AND      __JOIN(uat t)__
 GROUP BY t.tag_id
 ORDER BY t.name
 
@@ -241,8 +243,8 @@ sub name {
 __PACKAGE__->set_sql(from_tag => <<'');
 SELECT 	 __ESSENTIAL(c4)__
 FROM     __TABLE(Bibliotech::Tag=c1)__,
-       	 __TABLE(Bibliotech::User_Bookmark_Tag=c2)__,
-       	 __TABLE(Bibliotech::User_Bookmark=c3)__,
+       	 __TABLE(Bibliotech::User_Article_Tag=c2)__,
+       	 __TABLE(Bibliotech::User_Article=c3)__,
    	 __TABLE(Bibliotech::User=c4)__
 WHERE  	 __JOIN(c1 c2)__
 AND    	 __JOIN(c2 c3)__
@@ -256,18 +258,24 @@ sub link_bookmark {
   my $self = shift;
   my $create = 1;
   $create = shift if @_ && !ref($_[0]) && $_[0] eq '0';
-  my @ub;
+  my @ua;
   foreach (@_) {
-    my $bookmark = Bibliotech::Bookmark->new($_, $create);
+    my $b = $_;
+    my $a;
+    ($b, $a) = @{$b} if ref $b eq 'ARRAY';
+    my $bookmark = Bibliotech::Bookmark->new($b, $create);
     next unless $bookmark;
     my $method = $create ? 'find_or_create' : 'search';
-    my ($user_bookmark) = Bibliotech::User_Bookmark->$method({user => $self, bookmark => $bookmark});
-    next unless $user_bookmark;
-    push @ub, $user_bookmark;
+    my $article = $a || Bibliotech::Article->$method({hash => $bookmark->hash});
+    next unless $article;
+    $bookmark->article($article) if not defined $bookmark->article or $bookmark->article->id == 0;
+    my ($user_article) = Bibliotech::User_Article->$method({user => $self, article => $article, bookmark => $bookmark});
+    next unless $user_article;
+    push @ua, $user_article;
     $self->mark_updated;
     $bookmark->mark_updated;
   }
-  return wantarray ? @ub : $ub[0];
+  return wantarray ? @ua : $ua[0];
 }
 
 sub find_bookmark {
@@ -304,11 +312,11 @@ sub last_deletion_now {
 
 __PACKAGE__->set_sql(count_use_of_tag => <<'');
 SELECT 	 COUNT(*)
-FROM   	 __TABLE(Bibliotech::User_Bookmark=ub)__,
-       	 __TABLE(Bibliotech::User_Bookmark_Tag=ubt)__
-WHERE  	 __JOIN(ub ubt)__
-AND    	 ub.user = ?
-AND      ubt.tag = ?
+FROM   	 __TABLE(Bibliotech::User_Article=ua)__,
+       	 __TABLE(Bibliotech::User_Article_Tag=uat)__
+WHERE  	 __JOIN(ua uat)__
+AND    	 ua.user = ?
+AND      uat.tag = ?
 
 sub count_use_of_tag {
   my ($self, $tag) = @_;
@@ -337,8 +345,8 @@ sub openurl_cache_key {
 }
 
 sub count_active {
-  # use user_bookmark table; it's faster
-  Bibliotech::User_Bookmark->sql_single('COUNT(DISTINCT user)')->select_val;
+  # use user_article table; it's faster
+  Bibliotech::User_Article->sql_single('COUNT(DISTINCT user)')->select_val;
 }
 
 # call search_most_active() and the privacy parameter is handled for you
@@ -346,15 +354,15 @@ __PACKAGE__->set_sql(most_active_need_privacy => <<'');
 SELECT   DISTINCT __ESSENTIAL(u)__
 FROM
 (
-SELECT   user, COUNT(bookmark) as cnt
-FROM     __TABLE(Bibliotech::User_Bookmark)__
+SELECT   user, COUNT(article) as cnt
+FROM     __TABLE(Bibliotech::User_Article)__
 GROUP BY user
 ORDER BY cnt DESC
 LIMIT    50
-) as ubi
-         LEFT JOIN __TABLE(Bibliotech::User=u)__ ON (ubi.user = u.user_id)
-	 LEFT JOIN __TABLE(Bibliotech::User_Bookmark=ub)__ ON (__JOIN(u ub)__)
-WHERE    ub.user_bookmark_id IS NOT NULL AND %s
+) as uai
+         LEFT JOIN __TABLE(Bibliotech::User=u)__ ON (uai.user = u.user_id)
+	 LEFT JOIN __TABLE(Bibliotech::User_Article=ua)__ ON (__JOIN(u ua)__)
+WHERE    ua.user_article_id IS NOT NULL AND %s
 LIMIT    25;
 
 sub search_most_active {
@@ -368,20 +376,20 @@ sub search_most_active {
 # call search_most_active_in_window() and the privacy parameter is handled for you
 __PACKAGE__->set_sql(most_active_in_window_need_privacy => <<'');
 SELECT   __ESSENTIAL(u)__,
-         COUNT(ub.user_bookmark_id) as sortvalue
+         COUNT(ua.user_article_id) as sortvalue
 FROM
 (
-SELECT   user_bookmark_id
-FROM     __TABLE(Bibliotech::User_Bookmark)__
+SELECT   user_article_id
+FROM     __TABLE(Bibliotech::User_Article)__
 WHERE    created >= NOW() - INTERVAL %s
 UNION
-SELECT   user_bookmark_id
-FROM     __TABLE(Bibliotech::User_Bookmark)__
+SELECT   user_article_id
+FROM     __TABLE(Bibliotech::User_Article)__
 WHERE    updated >= NOW() - INTERVAL %s
-) AS ubi
-	 LEFT JOIN __TABLE(Bibliotech::User_Bookmark=ub)__ ON (ubi.user_bookmark_id=ub.user_bookmark_id AND %s)
-         LEFT JOIN __TABLE(Bibliotech::User=u)__ ON (__JOIN(ub u)__)
-WHERE    ub.user_bookmark_id IS NOT NULL
+) AS uai
+	 LEFT JOIN __TABLE(Bibliotech::User_Article=ua)__ ON (uai.user_article_id=ua.user_article_id AND %s)
+         LEFT JOIN __TABLE(Bibliotech::User=u)__ ON (__JOIN(ua u)__)
+WHERE    ua.user_article_id IS NOT NULL
 GROUP BY u.user_id
 HAVING   sortvalue > 1
 ORDER BY sortvalue DESC
@@ -399,21 +407,21 @@ sub search_most_active_in_window {
 # select count(user_id) from user
 # where verifycode is null
 # and created BETWEEN NOW()-INTERVAL 365 DAY AND NOW()-INTERVAL 15 DAY
-# and (select count(user) from user_bookmark where user.user_id = user_bookmark.user) = 0
+# and (select count(user) from user_article where user.user_id = user_article.user) = 0
 #
-__PACKAGE__->set_sql(no_bookmarks_posted => <<'');
+__PACKAGE__->set_sql(no_articles_posted => <<'');
 SELECT 	 __ESSENTIAL(u)__
 FROM     __TABLE(Bibliotech::User=u)__
 WHERE  	 u.verifycode IS NULL
 AND      u.reminder_email IS NULL
 AND    	 u.created BETWEEN NOW()-INTERVAL 365 DAY AND NOW()-INTERVAL 15 DAY
-AND      (SELECT   COUNT(ub.user)
-          FROM      __TABLE(Bibliotech::User_Bookmark=ub)__
-          WHERE    u.user_id = ub.user) = 0
+AND      (SELECT   COUNT(ua.user)
+          FROM      __TABLE(Bibliotech::User_Article=ua)__
+          WHERE    u.user_id = ua.user) = 0
 ORDER BY u.created
 LIMIT 100
 
-__PACKAGE__->set_sql(test_no_bookmarks_posted => <<'');
+__PACKAGE__->set_sql(test_no_articles_posted => <<'');
 SELECT 	 __ESSENTIAL(u)__
 FROM     __TABLE(Bibliotech::User=u)__
 WHERE    u.username = 'martin'
@@ -421,9 +429,9 @@ WHERE    u.username = 'martin'
 # no privacy because it's admin
 my $user_table_columns = join(', ', map { 'u.'.$_ } Bibliotech::User->columns);
 __PACKAGE__->set_sql(by_admin => <<"");
-SELECT 	 $user_table_columns, COUNT(DISTINCT ub.user_bookmark_id) as user_bookmarks_count_packed
+SELECT 	 $user_table_columns, COUNT(DISTINCT ua.user_article_id) as user_articles_count_packed
 FROM     __TABLE(Bibliotech::User=u)__
-         LEFT JOIN __TABLE(Bibliotech::User_Bookmark=ub)__ ON (__JOIN(u ub)__)
+         LEFT JOIN __TABLE(Bibliotech::User_Article=ua)__ ON (__JOIN(u ua)__)
          LEFT JOIN __TABLE(Bibliotech::User_Gang=ug)__ ON (__JOIN(u ug)__)
          LEFT JOIN __TABLE(Bibliotech::Gang=g)__ ON (__JOIN(ug g)__)
 %s
@@ -433,7 +441,6 @@ ORDER BY u.user_id
 
 # delete user but first unlink any first_user references
 sub delete {
-  #warn 'delete user';
   my $self = shift;
 
   my $iter = Bibliotech::Bookmark->search(first_user => $self);
@@ -445,71 +452,71 @@ sub delete {
   $self->SUPER::delete(@_);
 }
 
-sub map_all_user_bookmarks {
+sub map_all_user_articles {
   my ($self, $action) = @_;
 
   $Bibliotech::Apache::USER = $self;
   $Bibliotech::Apache::USER_ID = $self->user_id;
 
   my @errors;
-  my $iter = $self->user_bookmarks;
-  while (my $user_bookmark = $iter->next) {
-    my $id = $user_bookmark->id;
+  my $iter = $self->user_articles;
+  while (my $user_article = $iter->next) {
+    my $id = $user_article->id;
     eval {
-      $action->($user_bookmark);
+      $action->($user_article);
     };
-    push @errors, "map_all_user_bookmarks failure on $id: $@" if $@;
+    push @errors, "map_all_user_articles failure on $id: $@" if $@;
   }
   die join("\n", @errors) if @errors;
 }
 
-sub delete_all_user_bookmarks {
+sub delete_all_user_articles {
   my $user = shift;
   eval {
-    $user->map_all_user_bookmarks(sub { shift->delete });
-    $user->count_user_bookmarks == 0 or die 'count_user_bookmarks not zero! (check database errors)';
+    $user->map_all_user_articles(sub { shift->delete });
+    $user->count_user_articles == 0 or die 'count_user_articles not zero! (check database errors)';
   };
-  die "problem in delete_all_user_bookmarks for user $user: $@" if $@;
+  die "problem in delete_all_user_articles for user $user: $@" if $@;
 }
 
-sub private_all_user_bookmarks {
+sub private_all_user_articles {
   my $user = shift;
   eval {
-    $user->map_all_user_bookmarks(sub {
-      my $user_bookmark = shift;
-      $user_bookmark->private(1);
-      $user_bookmark->private_gang(undef);
-      $user_bookmark->private_until(undef);
-      $user_bookmark->mark_updated;
+    $user->map_all_user_articles(sub {
+      my $user_article = shift;
+      $user_article->private(1);
+      $user_article->private_gang(undef);
+      $user_article->private_until(undef);
+      $user_article->mark_updated;
     });
   };
-  die "problem in private_all_user_bookmarks for user $user: $@" if $@;
+  die "problem in private_all_user_articles for user $user: $@" if $@;
 }
 
-__PACKAGE__->set_sql(quarantine_all_user_bookmarks => <<'');
-UPDATE __TABLE(Bibliotech::User_Bookmark)__
+__PACKAGE__->set_sql(quarantine_all_user_articles => <<'');
+UPDATE __TABLE(Bibliotech::User_Article)__
 SET    quarantined = NOW(),
        def_public = 0,
        updated = NOW()
 WHERE  user = ?
 
-sub quarantine_all_user_bookmarks {
+sub quarantine_all_user_articles {
   my $user = shift;
-  my $sth = $user->sql_quarantine_all_user_bookmarks;
+  my $sth = $user->sql_quarantine_all_user_articles;
   $sth->execute($user);
   $sth->finish;
 }
 
-__PACKAGE__->set_sql(unquarantine_all_user_bookmarks => <<'');
-UPDATE __TABLE(Bibliotech::User_Bookmark)__
+__PACKAGE__->set_sql(unquarantine_all_user_articles => <<'');
+UPDATE __TABLE(Bibliotech::User_Article)__
 SET    quarantined = NULL,
        def_public = IF(private = 0 AND private_gang IS NULL AND private_until IS NULL, 1, 0),
        updated = NOW()
 WHERE  user = ?
 
-sub unquarantine_all_user_bookmarks {
+sub unquarantine_all_user_articles {
   my $user = shift;
-  my $sth = $user->sql_unquarantine_all_user_bookmarks;
+  my $sth = $user->sql_unquarantine_all_user_articles;
   $sth->execute($user);
   $sth->finish;
 }
@@ -526,11 +533,11 @@ sub delete_wiki_node {
   }
 }
 
-sub deactivate_handle_user_bookmarks {
+sub deactivate_handle_user_articles {
   my ($self, $reason_code) = @_;
-  $self->delete_all_user_bookmarks       if $reason_code eq 'resignation';
-  $self->quarantine_all_user_bookmarks   if $reason_code eq 'spammer';
-  $self->unquarantine_all_user_bookmarks if $reason_code eq 'undo-spammer' or
+  $self->delete_all_user_articles       if $reason_code eq 'resignation';
+  $self->quarantine_all_user_articles   if $reason_code eq 'spammer';
+  $self->unquarantine_all_user_articles if $reason_code eq 'undo-spammer' or
                                             $reason_code eq 'no-quarantine';
 }
 
@@ -577,7 +584,7 @@ sub deactivate {
   $dbh->do('SET AUTOCOMMIT=0');
   eval {
     $self->deactivate_verify_germane($reason_code);
-    $self->deactivate_handle_user_bookmarks($reason_code);
+    $self->deactivate_handle_user_articles($reason_code);
     $self->deactivate_delete_wiki_node($reason_code, $bibliotech);
     $self->deactivate_notify_user($reason_code, $bibliotech);
     $self->deactivate_update_record($reason_code);

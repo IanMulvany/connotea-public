@@ -19,7 +19,7 @@ __PACKAGE__->table('bookmark');
 __PACKAGE__->columns(Primary => qw/bookmark_id/);
 __PACKAGE__->columns(Essential => qw/url hash updated citation/);
 __PACKAGE__->columns(Others => qw/first_user created/);
-__PACKAGE__->columns(TEMP => qw/x_adding x_for_user_bookmark user_bookmark_count_packed tags_packed document/);
+__PACKAGE__->columns(TEMP => qw/x_adding x_for_user_article user_article_count_packed tags_packed document/);
 __PACKAGE__->datetime_column('created', 'before_create');
 __PACKAGE__->datetime_column('updated', 'before_update');
 __PACKAGE__->add_trigger('before_create' => \&set_correct_hash);
@@ -27,8 +27,8 @@ __PACKAGE__->has_a(url => 'URI');
 __PACKAGE__->has_a(first_user => 'Bibliotech::User');
 __PACKAGE__->has_a(citation => 'Bibliotech::Citation');
 __PACKAGE__->has_a(article => 'Bibliotech::Article');
-__PACKAGE__->has_many(user_bookmarks_raw => 'Bibliotech::User_Bookmark');
-__PACKAGE__->has_many(users => ['Bibliotech::User_Bookmark' => 'user']);
+__PACKAGE__->has_many(user_articles_raw => 'Bibliotech::User_Article');
+__PACKAGE__->has_many(users => ['Bibliotech::User_Article' => 'user']);
 __PACKAGE__->might_have(details => 'Bibliotech::Bookmark_Details' => qw/title/);
 
 __PACKAGE__->set_sql(url_case_sensitive => <<'');
@@ -70,8 +70,8 @@ sub packed_select {
   my $self = shift;
   my $alias = $self->my_alias;
   return (map("$alias.$_", $self->_essential),
-	  'COUNT(DISTINCT ub2.user_bookmark_id) as user_bookmark_count_packed',
-	  Bibliotech::DBI::packing_groupconcat('Bibliotech::Tag', 't2', 'tags_packed', 'ubt2.created'),
+	  'COUNT(DISTINCT ua2.user_article_id) as user_article_count_packed',
+	  Bibliotech::DBI::packing_groupconcat('Bibliotech::Tag', 't2', 'tags_packed', 'uat2.created'),
 	  );
 }
 
@@ -106,16 +106,15 @@ sub normalize_option_to_simple_uri_object {
 }
 
 sub count_active {
-  # use user_bookmark table; it's faster
-  Bibliotech::User_Bookmark->sql_single('COUNT(DISTINCT bookmark)')->select_val;
+  # use user_article table; it's faster
+  Bibliotech::User_Article->sql_single('COUNT(DISTINCT bookmark)')->select_val;
 }
 
 sub delete {
-  #warn 'delete bookmark';
   my $self = shift;
   my $citation = $self->citation;
   $self->SUPER::delete(@_);
-  $citation->delete if $citation and $citation->bookmarks_or_user_bookmarks_count == 0;
+  $citation->delete if $citation and $citation->bookmarks_or_user_articles_count == 0;
 }
 
 sub authors {
@@ -133,32 +132,32 @@ sub author_list {
 # adding means that the bookmark is being added at this very moment so a full display is not appropriate
 # behaviour of 'adding' property:
 # 0 = regular bookmark
-# 1 = suppress most supplemental links (edit, copy, remove) and privacy note       (this level used on add form)
+# 1 = suppress most supplemental links (edit, copy, remove) and privacy note      (this level used on add form)
 # 2 = suppress 'info' supplemental link
-# 3 = show quotes around tags with spaces in Bibliotech::User_Bookmark->postedby() (this level used on upload form)
-# 4 = will not be added, suppress posted by                                        (this level used on upload form)
+# 3 = show quotes around tags with spaces in Bibliotech::User_Article->postedby() (this level used on upload form)
+# 4 = will not be added, suppress posted by                                       (this level used on upload form)
 sub adding {
   my $self = shift;
   $self->remove_from_object_index if @_;
   return $self->x_adding(@_);
 }
 
-sub for_user_bookmark {
+sub for_user_article {
   my $self = shift;
   $self->remove_from_object_index if @_;
-  return $self->x_for_user_bookmark(@_);
+  return $self->x_for_user_article(@_);
 }
 
 sub cite {
   my ($self, $ignore_user_data) = @_;
   unless ($ignore_user_data) {
     my $user_citation;
-    my $for_user_bookmark = $self->for_user_bookmark;
+    my $for_user_article = $self->for_user_article;
     # deletion test added when profiling code in Bibliotech::Query was
-    # requesting a description of deleted user_bookmark rows
-    return if UNIVERSAL::isa($for_user_bookmark, 'Class::DBI::Object::Has::Been::Deleted');
-    if ($for_user_bookmark) {
-      if ($user_citation = $for_user_bookmark->citation) {
+    # requesting a description of deleted user_article rows
+    return if UNIVERSAL::isa($for_user_article, 'Class::DBI::Object::Has::Been::Deleted');
+    if ($for_user_article) {
+      if ($user_citation = $for_user_article->citation) {
 	return $user_citation;
       }
     }
@@ -167,12 +166,12 @@ sub cite {
 }
 
 # run through Bibliotech::Query to get privacy control, and later, maybe caching
-sub user_bookmarks {
+sub user_articles {
   my $self = shift;
   my $q = new Bibliotech::Query;
   $q->set_bookmark($self);
   $q->activeuser($Bibliotech::Apache::USER);
-  return $q->user_bookmarks;
+  return $q->user_articles;
 }
 
 sub unique {
@@ -254,7 +253,7 @@ sub onclick_snippet {
   my ($self, $bibliotech) = @_;
   return Bibliotech::Clicks::CGI::onclick_bibliotech($bibliotech, $self->url);
 }
-
+use Data::Dumper;
 sub html_content {
   my ($self, $bibliotech, $class, $verbose, $main) = @_;
   my $cgi = $bibliotech->cgi;
@@ -331,11 +330,11 @@ sub html_content {
 sub label_title {
   my ($self, $disregard_user_data) = @_;
   unless ($disregard_user_data) {
-    if (my $for_user_bookmark = $self->for_user_bookmark) {
-      if (my $user_title = $for_user_bookmark->title) {
+    if (my $for_user_article = $self->for_user_article) {
+      if (my $user_title = $for_user_article->title) {
 	return $user_title;
       }
-      if (my $user_citation = $for_user_bookmark->citation) {
+      if (my $user_citation = $for_user_article->citation) {
 	if (my $user_citation_title = $user_citation->title) {
 	  return $user_citation_title;
 	}
@@ -374,18 +373,18 @@ sub supplemental_links {
     if (!$adding) {
       if (my $request = $bibliotech->request) {
 	if (my $user_id = $request->user) {
-	  my $for_my_user_bookmark = 0;
-	  my $for_user_bookmark = $self->for_user_bookmark;
-	  if ($for_user_bookmark) {
-	    if ($user_id == $for_user_bookmark->user->user_id) {
+	  my $for_my_user_article = 0;
+	  my $for_user_article = $self->for_user_article;
+	  if ($for_user_article) {
+	    if ($user_id == $for_user_article->user->user_id) {
 	      $supplemental{'edit'} = $bibliotech->location.'edit?uri='.$hash;
-	      $supplemental{'remove'} =  $bibliotech->location.'remove?uri='.$hash;
-	      $for_my_user_bookmark = 1;
+	      $supplemental{'remove'} = $bibliotech->location.'remove?uri='.$hash;
+	      $for_my_user_article = 1;
 	    }
 	  }
-	  if (!$for_my_user_bookmark and !$self->is_linked_by($user_id)) {
+	  if (!$for_my_user_article and !$self->is_linked_by($user_id)) {
 	    $supplemental{'copy'} = $bibliotech->location.'add?uri='.$hash;
-	    $supplemental{'copy'} .= '&from='.$for_user_bookmark->user->username if $for_user_bookmark;
+	    $supplemental{'copy'} .= '&from='.$for_user_article->user->username if $for_user_article;
 	  }
 	}
       }
@@ -402,24 +401,33 @@ sub tags_raw {
   Bibliotech::Tag->search_from_bookmark(shift->bookmark_id);
 }
 
+__PACKAGE__->set_sql(from_article => <<'');
+SELECT 	 __ESSENTIAL__
+FROM     __TABLE__
+WHERE  	 article = ?
+
 __PACKAGE__->set_sql(from_tag => <<'');
-SELECT 	 __ESSENTIAL(c4)__
-FROM     __TABLE(Bibliotech::Tag=c1)__,
-       	 __TABLE(Bibliotech::User_Bookmark_Tag=c2)__,
-       	 __TABLE(Bibliotech::User_Bookmark=c3)__,
-   	 __TABLE(Bibliotech::Bookmark=c4)__
-WHERE  	 __JOIN(c1 c2)__
-AND    	 __JOIN(c2 c3)__
-AND    	 __JOIN(c3 c4)__
-AND    	 c1.tag_id = ?
-GROUP BY c4.bookmark_id
-ORDER BY c4.url
+SELECT 	 __ESSENTIAL(b)__
+FROM     __TABLE(Bibliotech::Tag=t)__,
+       	 __TABLE(Bibliotech::User_Article_Tag=uat)__,
+       	 __TABLE(Bibliotech::User_Article=ua)__,
+       	 __TABLE(Bibliotech::Article=a)__,
+   	 __TABLE(Bibliotech::Bookmark=b)__
+WHERE  	 __JOIN(t uat)__
+AND    	 __JOIN(uat ua)__
+AND    	 __JOIN(ua a)__
+AND    	 __JOIN(a b)__
+AND    	 t.tag_id = ?
+GROUP BY b.bookmark_id
+ORDER BY b.url
 
 __PACKAGE__->set_sql(used => <<'');
-SELECT 	 __ESSENTIAL(b)__, COUNT(ub.user_bookmark_id) as cnt
-FROM     __TABLE(Bibliotech::User_Bookmark=ub)__,
+SELECT 	 __ESSENTIAL(b)__, COUNT(ua.user_article_id) as cnt
+FROM     __TABLE(Bibliotech::User_Article=ua)__,
+         __TABLE(Bibliotech::Article=a)__,
    	 __TABLE(Bibliotech::Bookmark=b)__
-WHERE  	 __JOIN(ub b)__
+WHERE  	 __JOIN(ua a)__,
+AND      __JOIN(a b)__
 %s
 GROUP BY b.bookmark_id
 ORDER BY cnt DESC, b.created DESC
@@ -427,44 +435,45 @@ ORDER BY cnt DESC, b.created DESC
 __PACKAGE__->set_sql(where => <<'');
 SELECT 	 __ESSENTIAL(b)__
 FROM     __TABLE(Bibliotech::Bookmark=b)__
-         LEFT JOIN __TABLE(Bibliotech::User_Bookmark=ub)__ ON (__JOIN(b ub)__)
+         LEFT JOIN __TABLE(Bibliotech::Article=a)__ ON (__JOIN(b a)__)
+         LEFT JOIN __TABLE(Bibliotech::User_Article=ua)__ ON (__JOIN(a ua)__)
 WHERE  	 %s
 ORDER BY b.created, b.url
 
-# call count_user_bookmarks() and the privacy parameter is handled for you
-__PACKAGE__->set_sql(count_user_bookmarks_need_privacy => <<'');
+# call count_user_articles() and the privacy parameter is handled for you
+__PACKAGE__->set_sql(count_user_articles_need_privacy => <<'');
 SELECT 	 COUNT(*)
-FROM     __TABLE(Bibliotech::User_Bookmark=ub)__
-WHERE    ub.bookmark = ? AND %s
+FROM     __TABLE(Bibliotech::User_Article=ua)__
+WHERE    ua.bookmark = ? AND %s
 
-sub count_user_bookmarks {
+sub count_user_articles {
   my $self = shift;
-  my $packed = $self->user_bookmark_count_packed;
+  my $packed = $self->user_article_count_packed;
   return $packed if defined $packed;
   my ($privacywhere, @privacybind) = Bibliotech::Query->privacywhere($Bibliotech::Apache::USER);
-  my $sth = $self->sql_count_user_bookmarks_need_privacy($privacywhere);
+  my $sth = $self->sql_count_user_articles_need_privacy($privacywhere);
   $sth->execute($self, @privacybind);
   my ($count) = $sth->fetchrow_array;
   $sth->finish;
   return $count;
 }
 
-__PACKAGE__->set_sql(count_user_bookmarks_no_privacy => <<'');
+__PACKAGE__->set_sql(count_user_articles_no_privacy => <<'');
 SELECT 	 COUNT(*)
-FROM     __TABLE(Bibliotech::User_Bookmark)__
+FROM     __TABLE(Bibliotech::User_Article)__
 WHERE    bookmark = ?
 
-sub count_user_bookmarks_no_privacy {
+sub count_user_articles_no_privacy {
   my $self = shift;
-  my $sth = $self->sql_count_user_bookmarks_no_privacy;
+  my $sth = $self->sql_count_user_articles_no_privacy;
   $sth->execute($self);
   my ($count) = $sth->fetchrow_array;
   $sth->finish;
   return $count;
 }
 
-sub user_bookmark_comments {
-  return Bibliotech::User_Bookmark_Comment->search_from_bookmark(shift->bookmark_id);
+sub user_article_comments {
+  return Bibliotech::User_Article_Comment->search_from_bookmark(shift->bookmark_id);
 }
 
 sub comments {
@@ -475,17 +484,14 @@ sub is_linked_by {
   my ($self, $user) = @_;
   return undef unless defined $user;
   my $user_id = UNIVERSAL::isa($user, 'Bibliotech::User') ? $user->user_id : $user;
-  #warn 'testing whether '.$self->url.' is linked by '.$user_id;
-  if (my $for_user_bookmark = $self->for_user_bookmark) {
-    if (defined (my $packed = $for_user_bookmark->bookmark_is_linked_by_current_user)) {
+  if (my $for_user_article = $self->for_user_article) {
+    if (defined (my $packed = $for_user_article->article_is_linked_by_current_user)) {
       if ($packed->[0] == $user_id) {
-	#warn 'returning packed answer: '.$packed->[1];
 	return $packed->[1];
       }
     }
   }
-  my ($link) = Bibliotech::User_Bookmark->search_from_bookmark_for_user($self->bookmark_id, $user_id);
-  #warn 'returning link check: '.$link;
+  my ($link) = Bibliotech::User_Article->search_from_article_for_user($self->article->article_id, $user_id);
   return $link;
 }
 
@@ -519,15 +525,15 @@ sub txt_content {
 }
 
 sub ris_content {
-  my ($self, $bibliotech, $verbose, $for_user_bookmark) = @_;
+  my ($self, $bibliotech, $verbose, $for_user_article) = @_;
   my %ris;
   $ris{TI} = $self->label_title;
   $ris{UR} = $self->url->as_string;
   if ($verbose) {
-    my $multi = defined $for_user_bookmark ? $for_user_bookmark : $self;
+    my $multi = defined $for_user_article ? $for_user_article : $self;
     $ris{KW} = [map { $_->name }            $multi->tags];
-    $ris{U1} = [map { $_->plain_content(1) } $multi->user_bookmark_comments];
-    $ris{N2} = $for_user_bookmark->description if defined $for_user_bookmark;
+    $ris{U1} = [map { $_->plain_content(1) } $multi->user_article_comments];
+    $ris{N2} = $for_user_article->description if defined $for_user_article;
   }
   if (my $citation = $self->cite) {
     $ris{TY} = $citation->inferred_ris_type;

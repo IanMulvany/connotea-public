@@ -186,13 +186,13 @@ sub html_content {
 			$cgi->submit(-id => 'cancelbuttontop', -class => 'buttonctl', -name => 'button', -value => 'Cancel'));
 	my $count = 0;
 	while (my $result = $results->fetch) {
-	  my $user_bookmark = $result->user_bookmark;
+	  my $user_article = $result->user_article;
 	  my $warning = $result->warning;
 	  my $error = $result->error;
 	  $count++;
 	  my $ok_to_include = $error ? 0 : 1;
 	  my $uri;
-	  $uri = $user_bookmark->bookmark->url if $user_bookmark;
+	  $uri = $user_article->bookmark->url if $user_article;
 	  my @div;
 	  my @header;
 	  push @header, $cgi->span({class => 'iconscheckbox'},
@@ -206,12 +206,12 @@ sub html_content {
 	  push @div, $cgi->div({class => 'icons'}, @header) if @header;
 	  push @div, $cgi->div({class => 'actionmsg'}, $warning) if $warning;
 	  push @div, $cgi->div({class => 'errormsg'}, $error) if $error;
-	  if ($user_bookmark) {
-	    my $bookmark = $user_bookmark->bookmark;
+	  if ($user_article) {
+	    my $bookmark = $user_article->bookmark;
 	    $bookmark->adding($ok_to_include ? 3 : 4);  # indicate that we're "adding"
 	    my $html;
-	    if ($bookmark->url ne 'NO_URI' or $user_bookmark->citation or $bookmark->citation) {
-	      $html = $user_bookmark->html_content($bibliotech, 'upload_result', $verbose, $main);
+	    if ($bookmark->url ne 'NO_URI' or $user_article->citation or $bookmark->citation) {
+	      $html = $user_article->html_content($bibliotech, 'upload_result', $verbose, $main);
 	    }
 	    push @div, $cgi->div({class => 'upload_bookmark'}, $html) if $html;
 	    push @div, $cgi->br, $cgi->br;
@@ -231,9 +231,8 @@ sub html_content {
 	$o .= $cgi->end_form;
       }
     };
-    if (my $e = $@) {
-      die $e if $e =~ / at .* line /;
-      $validationmsg = $e;
+    if ($@) {
+      $validationmsg = $@;
     }
     else {
       die 'Location: '.$bibliotech->location."library\n" if $button eq 'Confirm';
@@ -242,7 +241,9 @@ sub html_content {
     }
   }
   elsif ($button eq 'Cancel') {
-    die 'Location: '.$bibliotech->location."upload\n";  # just redirect because nothing written in first pass
+    # nothing to do because no user_bookmark's are created on first pass
+    # go back to upload form
+    die 'Location: '.$bibliotech->location."upload\n";
   }
 
   my $o = $self->tt('compupload',

@@ -2,7 +2,7 @@
 
 # Test script that checks low-level database access.
 
-use Test::More tests => 27;
+use Test::More tests => 28;
 use strict;
 use warnings;
 
@@ -18,13 +18,11 @@ do {
   my $sth = $dbh->prepare('show tables');
   ok(defined $sth, 'statement prepare for show tables');
   $sth->execute;
-  my %table;
-  while (my ($name) = $sth->fetchrow_array) {
-    $table{$name} = 1;
-  }
+  my %table = map { $_->[0] => 1; } @{$sth->fetchall_arrayref};
   foreach (qw/author bookmark bookmark_details citation citation_author comment gang journal tag
-            user user_bookmark user_bookmark_comment user_bookmark_details user_gang user_tag_annotation/) {
-    ok($table{$_}, $_.' table exists');
+              article user user_article user_article_comment user_article_details
+              user_gang user_tag_annotation/) {
+    ok($table{$_}, $_.' table exists ('.$Bibliotech::DBI::DBI_CONNECT.')');
   }
 };
 
