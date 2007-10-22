@@ -33,7 +33,7 @@ sub html_content {
   my $cached = $self->memcache_check(class  => __PACKAGE__,
 				     method => 'html_content');
   if (defined $cached) {
-    $self->discover_main_title($cached);
+    $self->discover_main_title($cached->content);
     return $cached;
   }
   my $o = $self->html_content_calc($class, $verbose, $main);
