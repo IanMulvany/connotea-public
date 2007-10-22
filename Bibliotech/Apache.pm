@@ -56,7 +56,6 @@ our %QUICK;
 # "by_apache" in this case means not by this handler by by the normal Apache file handler
 sub is_filename_handled_by_apache {
   local $_ = shift;      # full local pathname, e.g. /var/www/html/bibliotech/file.ext
-  return 0 if /\.css$/;  # we need to run CSS through our TT
   return 1 if -e && -f;  # Apache should handle existing files
   return 0;
 }
@@ -141,14 +140,9 @@ sub handler {
   $self->canonical_path($canonical_path);
 
   my $load;
-  if ($r->filename !~ /\.css$/) {
-    $MEMCACHE->add(LOAD => 0);                           # add does nothing if it already exists
-    $load = $MEMCACHE->incr('LOAD');                     # incr only works on existing values, hence the add
-    $pool->cleanup_register(\&cleanup_decr, $MEMCACHE);  # immediately register the mechanism to perform a decr
-  }
-  else {
-    $load = $MEMCACHE->get('LOAD') || 0;
-  }
+  $MEMCACHE->add(LOAD => 0);                           # add does nothing if it already exists
+  $load = $MEMCACHE->incr('LOAD');                     # incr only works on existing values, hence the add
+  $pool->cleanup_register(\&cleanup_decr, $MEMCACHE);  # immediately register the mechanism to perform a decr
   $self->load($load);
 
   my $dbtime   = Bibliotech::DBI::db_get_last_updated();
@@ -408,13 +402,10 @@ sub query_handler {
 
   return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'service paused')
       if Bibliotech::Throttle::do_service_paused($self);
-
-  unless ($r->filename =~ /\.css$/) {
-    return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'bot throttle')
-	if Bibliotech::Throttle::do_bot_throttle($self);
-    return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'dynamic throttle')
-	if Bibliotech::Throttle::do_dynamic_throttle($self);
-  }
+  return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'bot throttle')
+      if Bibliotech::Throttle::do_bot_throttle($self);
+  return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'dynamic throttle')
+      if Bibliotech::Throttle::do_dynamic_throttle($self);
 
   my $cgi = Bibliotech::CGI->new or die 'cannot create Bibliotech::CGI object';
   if (my $cgi_error = $cgi->cgi_error) {
@@ -526,12 +517,10 @@ sub query_handler {
   #return code_for_handler_return($final_rc);
 }
 
-# helper routine to determine extension and type
+# helper routine, provide format and result and an HTTP status code, extension, and MIME type are added
 sub get_extension_and_type {
   my ($self, $fmt, $result) = @_;
-  # return ($output, $rc, $extension, $mime_type)
-  return ($result, OK, '.html', $self->command->page_or_inc_filename =~ /\.css$/ ? CSS_MIME_TYPE : HTML_MIME_TYPE)
-      if $fmt eq 'html';
+  return ($result, OK, '.html', HTML_MIME_TYPE)    if $fmt eq 'html';
   return ($result, OK, '.rss',  RSS_MIME_TYPE)     if $fmt eq 'rss';
   return ($result, OK, '.ris',  RIS_MIME_TYPE)     if $fmt eq 'ris';
   return ($result, OK, '.kml',  GEO_MIME_TYPE)     if $fmt eq 'geo';
