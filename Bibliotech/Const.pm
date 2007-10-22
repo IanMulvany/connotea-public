@@ -19,9 +19,24 @@ our @EXPORT = qw(HTML_MIME_TYPE
 		 TEXT_MIME_TYPE
 		 GEO_MIME_TYPE
 		 CSS_MIME_TYPE
+		 JAVASCRIPT_MIME_TYPE
 		 BIBTEX_MIME_TYPE
 		 ENDNOTE_MIME_TYPE
 		 MODS_MIME_TYPE
+                 WORD_MIME_TYPE
+                 HTML_EXTENSION
+                 XML_EXTENSION
+                 RDF_EXTENSION
+                 RSS_EXTENSION
+                 RIS_EXTENSION
+                 TEXT_EXTENSION
+                 GEO_EXTENSION
+                 CSS_EXTENSION
+                 JAVASCRIPT_EXTENSION
+                 BIBTEX_EXTENSION
+                 ENDNOTE_EXTENSION
+                 MODS_EXTENSION
+                 WORD_EXTENSION
 		 URI_TERM
 		 URI_TERM_CAPITALIZED
 		 URI_TERM_PROMPT);
@@ -35,9 +50,25 @@ use constant RIS_MIME_TYPE          => 'application/x-research-info-systems';
 use constant TEXT_MIME_TYPE         => 'text/plain';
 use constant GEO_MIME_TYPE          => 'application/vnd.google-earth.kml+xml';
 use constant CSS_MIME_TYPE          => 'text/css';
+use constant JAVASCRIPT_MIME_TYPE   => 'application/x-javascript';
 use constant BIBTEX_MIME_TYPE       => 'application/x-bibtex';
 use constant ENDNOTE_MIME_TYPE      => 'application/x-bibliographic';
 use constant MODS_MIME_TYPE         => 'application/xml';
+use constant WORD_MIME_TYPE  	    => 'application/xml';
+
+use constant HTML_EXTENSION 	    => '.html';
+use constant XML_EXTENSION  	    => '.xml';
+use constant RDF_EXTENSION  	    => '.rdf';
+use constant RSS_EXTENSION  	    => '.rss';
+use constant RIS_EXTENSION          => '.ris';
+use constant TEXT_EXTENSION         => '.txt';
+use constant GEO_EXTENSION          => '.kml';
+use constant CSS_EXTENSION          => '.css';
+use constant JAVASCRIPT_EXTENSION   => '.js';
+use constant BIBTEX_EXTENSION       => '.bib';
+use constant ENDNOTE_EXTENSION      => '.end';
+use constant MODS_EXTENSION         => '.xml';
+use constant WORD_EXTENSION  	    => '.xml';
 
 use constant URI_TERM               => 'bookmark';
 use constant URI_TERM_CAPITALIZED   => 'Bookmark';

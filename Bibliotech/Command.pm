@@ -28,9 +28,14 @@ sub page_or_inc {
 }
 
 sub page_or_inc_filename {
+  my $self = shift;
+  return $self->inc_filename || $self->page;
+}
+
+sub inc_filename {
   my $page = shift->page;
   return $page->[1] if ref $page;
-  return $page;
+  return;
 }
 
 sub is_popup {

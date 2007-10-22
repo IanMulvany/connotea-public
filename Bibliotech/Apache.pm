@@ -47,6 +47,8 @@ our $EXPLAIN_HTTP_CODES           = Bibliotech::Config->get('EXPLAIN_HTTP_CODES'
 our $OUTPUTS_ALTERNATION          = '('.join('|',@Bibliotech::Parser::OUTPUTS).')';
 our $LOG                          = Bibliotech::Log->new;
 our $MEMCACHE                     = Bibliotech::Cache->new({log => $LOG});
+our $HANDLE_STATIC_FILES	  = Bibliotech::Config->get('HANDLE_STATIC_FILES') || [];
+$HANDLE_STATIC_FILES = [$HANDLE_STATIC_FILES] unless ref $HANDLE_STATIC_FILES;
 
 our $USER_ID;
 our $USER;
@@ -57,6 +59,14 @@ our %QUICK;
 sub is_filename_handled_by_apache {
   local $_ = shift;      # full local pathname, e.g. /var/www/html/bibliotech/file.ext
   return 1 if -e && -f;  # Apache should handle existing files
+  return 0;
+}
+
+# helper routine to decide if this file, although normally handled by Apache, should be processed here
+# useful for adding template directives in Javascript or CSS files
+sub is_filename_forced_handled {
+  my $filename = shift;  # full local pathname, e.g. /var/www/html/bibliotech/file.ext
+  return 1 if grep { $filename =~ m|\Q$_\E$| } @{$HANDLE_STATIC_FILES};
   return 0;
 }
 
@@ -80,7 +90,7 @@ sub handler {
 			$filename =~ s/\Q$PREPATH\E$// if $PREPATH;
 			$filename.$r->path_info; };
   return explainable_http_code(undef, DECLINED, 'Apache can handle static files', $r)
-      if is_filename_handled_by_apache($staticfile);
+      if is_filename_handled_by_apache($staticfile) and !is_filename_forced_handled($staticfile);
 
   $staticfile = decode_utf8($staticfile) || decode_utf8(encode_utf8($staticfile)) || $staticfile;
   my $self = bless Bibliotech->new({request => $r, log => $LOG}), __PACKAGE__;
@@ -402,10 +412,12 @@ sub query_handler {
 
   return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'service paused')
       if Bibliotech::Throttle::do_service_paused($self);
-  return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'bot throttle')
-      if Bibliotech::Throttle::do_bot_throttle($self);
-  return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'dynamic throttle')
-      if Bibliotech::Throttle::do_dynamic_throttle($self);
+  if ($page ne 'inc') {
+    return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'bot throttle')
+	if Bibliotech::Throttle::do_bot_throttle($self);
+    return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'dynamic throttle')
+	if Bibliotech::Throttle::do_dynamic_throttle($self);
+  }
 
   my $cgi = Bibliotech::CGI->new or die 'cannot create Bibliotech::CGI object';
   if (my $cgi_error = $cgi->cgi_error) {
@@ -479,8 +491,14 @@ sub query_handler {
     die $e;
   }
 
-  my ($o, $final_rc, $extension, $mime_type) = $self->get_extension_and_type($fmt, $result);
-  return $self->explainable_http_code($final_rc, 'get_extension_and_type says not found') if $final_rc == NOT_FOUND;
+  my ($o, $final_rc, $extension, $mime_type) = _get_extension_and_type
+      ($fmt,
+       $page ne 'data' ? ($result, OK)
+                       : (Bibliotech::Page->new({bibliotech => $self})->tt_content_for_web_api($result),
+			  $result->code),
+       $command->inc_filename);
+  return $self->explainable_http_code($final_rc, 'get_extension_and_type says not found')
+      if $final_rc == NOT_FOUND;
 
   my $download = $cgi->param('download') || '';
   if ($download eq 'file') {
@@ -517,26 +535,31 @@ sub query_handler {
   #return code_for_handler_return($final_rc);
 }
 
-# helper routine, provide format and result and an HTTP status code, extension, and MIME type are added
-sub get_extension_and_type {
-  my ($self, $fmt, $result) = @_;
-  return ($result, OK, '.html', HTML_MIME_TYPE)    if $fmt eq 'html';
-  return ($result, OK, '.rss',  RSS_MIME_TYPE)     if $fmt eq 'rss';
-  return ($result, OK, '.ris',  RIS_MIME_TYPE)     if $fmt eq 'ris';
-  return ($result, OK, '.kml',  GEO_MIME_TYPE)     if $fmt eq 'geo';
-  return ($result, OK, '.html', HTML_MIME_TYPE)    if $fmt eq 'tt';
-  return ($result, OK, '.bib',  BIBTEX_MIME_TYPE)  if $fmt eq 'bib';
-  return ($result, OK, '.end',  ENDNOTE_MIME_TYPE) if $fmt eq 'end';
-  return ($result, OK, '.xml',  MODS_MIME_TYPE)    if $fmt eq 'mods';
-  return ($result, OK, '.txt',  TEXT_MIME_TYPE)    if $fmt eq 'txt';
-  return ($result, OK, '.txt',  TEXT_MIME_TYPE)    if $fmt eq 'plain';
-  return ($result, OK, '.xml',  XML_MIME_TYPE)     if $fmt eq 'word';
-  if ($fmt eq 'data') {
-    my $rc = $result->code;
-    my $page = Bibliotech::Page->new({bibliotech => $self});
-    return ($page->tt_content_for_web_api($result), $rc, '.rdf', RDF_MIME_TYPE);
+# helper routine: provide format, result, and HTTP status code and get back same plus extension and type
+# in the case that the format is not known you'll get back appropriate 404
+sub _get_extension_and_type {
+  my ($fmt, $result, $rc, $inc_filename) = @_;
+  return ($result, $rc, HTML_EXTENSION,    HTML_MIME_TYPE)    if $fmt eq 'html' and !$inc_filename;
+  return ($result, $rc, RSS_EXTENSION,     RSS_MIME_TYPE)     if $fmt eq 'rss';
+  return ($result, $rc, RIS_EXTENSION,     RIS_MIME_TYPE)     if $fmt eq 'ris';
+  return ($result, $rc, GEO_EXTENSION,     GEO_MIME_TYPE)     if $fmt eq 'geo';
+  return ($result, $rc, HTML_EXTENSION,    HTML_MIME_TYPE)    if $fmt eq 'tt';
+  return ($result, $rc, BIBTEX_EXTENSION,  BIBTEX_MIME_TYPE)  if $fmt eq 'bib';
+  return ($result, $rc, ENDNOTE_EXTENSION, ENDNOTE_MIME_TYPE) if $fmt eq 'end';
+  return ($result, $rc, MODS_EXTENSION,    MODS_MIME_TYPE)    if $fmt eq 'mods';
+  return ($result, $rc, TEXT_EXTENSION,    TEXT_MIME_TYPE)    if $fmt eq 'txt';
+  return ($result, $rc, TEXT_EXTENSION,    TEXT_MIME_TYPE)    if $fmt eq 'plain';
+  return ($result, $rc, WORD_EXTENSION,    WORD_MIME_TYPE)    if $fmt eq 'word';
+  return ($result, $rc, RDF_EXTENSION,     RDF_MIME_TYPE)     if $fmt eq 'data';
+  if ($fmt eq 'html' and $inc_filename) {
+    my ($ext) = $inc_filename =~ /(\.\w{1,5})$/;
+    if ($ext) {
+      return ($result, $rc, $ext, CSS_MIME_TYPE)        if $ext eq '.css';
+      return ($result, $rc, $ext, JAVASCRIPT_MIME_TYPE) if $ext eq '.js';
+      return ($result, $rc, $ext, TEXT_MIME_TYPE)       if $ext eq '.txt';
+    }
+    return ($result, $rc, $ext, HTML_MIME_TYPE);
   }
-  #die "Format \"$fmt\" allowed by parser but not programmed in response handler";
   return (undef, NOT_FOUND, undef, undef);
 }
 
