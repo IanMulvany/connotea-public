@@ -32,7 +32,10 @@ sub html_content {
   my ($self, $class, $verbose, $main) = @_;
   my $cached = $self->memcache_check(class  => __PACKAGE__,
 				     method => 'html_content');
-  return $cached if defined $cached;
+  if (defined $cached) {
+    $self->discover_main_title($cached);
+    return $cached;
+  }
   my $o = $self->html_content_calc($class, $verbose, $main);
   return $self->memcache_save($o);
 }
