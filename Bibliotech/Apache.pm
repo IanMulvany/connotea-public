@@ -52,13 +52,16 @@ our $USER_ID;
 our $USER;
 our %QUICK;
 
+# helper routine to decide if this is a simple file to serve off the filesystem (graphics, etc.)
+# "by_apache" in this case means not by this handler by by the normal Apache file handler
 sub is_filename_handled_by_apache {
-  local $_ = shift;
+  local $_ = shift;      # full local pathname, e.g. /var/www/html/bibliotech/file.ext
   return 0 if /\.css$/;  # we need to run CSS through our TT
   return 1 if -e && -f;  # Apache should handle existing files
   return 0;
 }
 
+# under normal operations just return a status code, but can be set to display a message instead
 sub explainable_http_code {
   my ($self, $code, $reason, $r) = @_;
   return $code unless $EXPLAIN_HTTP_CODES;
@@ -217,11 +220,13 @@ sub handler {
   return code_for_handler_return($code);
 }
 
+# registered as a cleanup handler to decrement the load variable
 sub cleanup_decr {
   shift->decr('LOAD');  # parameter is $MEMCACHE object
   return OK;
 }
 
+# registered as a cleanup handler to remove temporary cached values
 sub cleanup_quick {
   my $items = shift;
   ${$items->[0]} = undef;  # parameter is $USER_ID
@@ -230,6 +235,7 @@ sub cleanup_quick {
   return OK;
 }
 
+# accept a user object and return a canonical library URL
 sub library_location {
   my ($self, $user, $override_ref) = @_;
   die 'no user' unless defined $user;
@@ -239,6 +245,14 @@ sub library_location {
 					%{$override_ref||{}}});
 }
 
+# accept a user object and return a canonical wiki profile URL
+sub profile_location {
+  my ($self, $user) = @_;
+  die 'no user' unless defined $user;
+  return $self->location.'wiki/User:'.$user->username;
+}
+
+# handle the /library URI which redirects to their library or the login page
 sub library_handler {
   my ($self, $override_ref) = @_;
   my $user = $self->user;
@@ -258,16 +272,12 @@ sub library_handler {
   return REDIRECT;
 }
 
+# handle the /library/export URI which redirects to their library export page or the login page
 sub library_export_handler {
   shift->library_handler({page => [set => 'export']});
 }
 
-sub profile_location {
-  my ($self, $user) = @_;
-  die 'no user' unless defined $user;
-  return $self->location.'wiki/User:'.$user->username;
-}
-
+# handle the /profile URI which redirects to their wiki profile page
 sub profile_handler {
   my $self = shift;
   my $user = $self->user;
@@ -287,6 +297,7 @@ sub profile_handler {
   return REDIRECT;
 }
 
+# display an error in an HTML page
 sub exception_handler_html {
   my ($self, $text) = @_;
   my $page = Bibliotech::Page->new({bibliotech => $self});
@@ -310,6 +321,7 @@ sub exception_handler_html {
   return OK;
 }
 
+# display an error as a text dump
 sub exception_handler_text {
   my ($self, $text, $r) = @_;
   $r = $self->request unless defined $r;
@@ -320,6 +332,7 @@ sub exception_handler_text {
   return OK;
 }
 
+# handle an error bubbled up
 sub exception_handler {
   my ($self, $text) = @_;
   eval {
@@ -333,6 +346,7 @@ sub exception_handler {
   return SERVER_ERROR;
 }
 
+# accept verb, output format, and page keyword and return the perl classname to handle it
 sub page_class {
   my $self   = shift;
   my $verb   = shift or die 'no verb';
@@ -349,6 +363,7 @@ sub page_class {
   return "Bibliotech::Page::${page}";
 }
 
+# same as page_class() but handle unimplemented Web API actions
 sub page_class_or_not_implemented {
   my $class = shift->page_class(@_);
   return $class unless $class =~ /Bibliotech::WebAPI::/;
@@ -356,6 +371,7 @@ sub page_class_or_not_implemented {
   return 'Bibliotech::WebAPI::Action::NotImplemented';
 }
 
+# handler for most hits, the queries
 sub query_handler {
   my $self    = shift;
   my $r       = $self->request;
@@ -510,6 +526,7 @@ sub query_handler {
   #return code_for_handler_return($final_rc);
 }
 
+# helper routine to determine extension and type
 sub get_extension_and_type {
   my ($self, $fmt, $result) = @_;
   # return ($output, $rc, $extension, $mime_type)
@@ -534,6 +551,7 @@ sub get_extension_and_type {
   return (undef, NOT_FOUND, undef, undef);
 }
 
+# herlp routine to determine a MIME type for viewing
 sub viewable_mime_type {
   my $type = shift;
   return $type if $type =~ m|^text/|;
@@ -541,10 +559,12 @@ sub viewable_mime_type {
   return 'text/plain';
 }
 
+# called for /sabotage URI for debugging
 sub sabotage_handler {
   die "Hello, this is an exception generated intentionally to test exceptions.\n";
 }
 
+# handler for /click to register a hit on a trackable link
 sub click_handler {
   my $self = shift;
   my $cgi  = $self->cgi || Bibliotech::CGI->new;
@@ -565,18 +585,21 @@ sub click_handler {
   return REDIRECT;
 }
 
+# helper routine that accepts an HTTP status code and returns it, or 200 for 0
 sub code_for_r_status {
   my $num = pop;
   return HTTP_OK if $num == OK;
   return $num;
 }
 
+# helper routine that accepts an HTTP status code and returns it, or 0 for 200
 sub code_for_handler_return {
   my $num = pop;
   return OK if $num == HTTP_OK;
   return $num;
 }
 
+# handler for WebCite, just for citation
 sub citation_handler {
   Bibliotech::WebCite::handler(shift->request);
 }
