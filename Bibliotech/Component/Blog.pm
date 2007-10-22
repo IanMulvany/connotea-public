@@ -11,11 +11,21 @@ package Bibliotech::Component::Blog;
 use strict;
 use base 'Bibliotech::Component';
 use XML::Feed;
+use Bibliotech::Util;
 
 our $FEED_URL = URI->new(__PACKAGE__->cfg('FEED_URL') || 'file:///tmp/blog.xml');
 
-sub last_updated_basis {
-  'NOW';
+sub last_updated {
+  # since this comes from the network we cannot supply the
+  # last_updated timestamp without fetching it so just for the sake of
+  # 304'ing we are just going to say it was updated within the last 15
+  # minutes if we fetched the blog within the last 15 minutes
+  my $self   = shift;
+  my $key    = Bibliotech::Cache::Key->new(class => __PACKAGE__, method => 'html_content');
+  my $cached = $self->bibliotech->memcache->get($key);
+  my $time   = defined $cached ? $cached->last_updated : undef;
+  return $time if defined $time and $time > Bibliotech::Util::time() - 900;
+  return 'NOW';
 }
 
 sub lazy_update {
@@ -30,8 +40,7 @@ sub get_feed {
 
 sub html_content {
   my ($self, $class, $verbose, $main) = @_;
-  my $cached = $self->memcache_check(class  => __PACKAGE__,
-				     method => 'html_content');
+  my $cached = $self->memcache_check(class  => __PACKAGE__, method => 'html_content');
   if (defined $cached) {
     $self->discover_main_title($cached->content);
     return $cached;
