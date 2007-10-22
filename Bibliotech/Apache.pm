@@ -432,35 +432,25 @@ sub query_handler {
     ($num <= 1000 or $fmt eq 'data') or die "Sorry the maximum num setting is 1000.\n";
     my $func = $fmt.'_content';
     my $getresult = sub { $result = $pageobj->$func; };
-    if ($r->user or             # don't use cache - their browser and our 304's should be sufficient
-	$verb ne 'GET' or       # cannot cache POST's
-	$page eq 'error' or     # cannot cache errors
-	$debug                  # let debug flag override cache as well
+    if ($r->user or          # don't use cache - their browser and our 304's should be sufficient
+	$verb ne 'GET' or    # cannot cache POST's
+	$page eq 'error' or  # cannot cache errors
+	$debug               # let debug flag override cache as well
 	) {
       $getresult->();
     }
     else {
       # visitor - use cache
-      # we don't include a user field, if you move this out of the USER_ID if/then block, add one
       my $cache_key = Bibliotech::Cache::Key->new($self,
 						  class => __PACKAGE__,
 						  method => 'query_handler',
 						  path => undef);
-      my $lazy_update;
-      if ($FRESH_VISITOR_LAZY_UPDATE) {
-	if (my $referer = $r->header_in('Referer')) {
-	  my $location = $self->location;
-	  $lazy_update = $FRESH_VISITOR_LAZY_UPDATE if $referer !~ /^$location/;
-	}
-	else {
-	  $lazy_update = $FRESH_VISITOR_LAZY_UPDATE;
-	}
-      }
       my $memcache = $self->memcache;
-      if (my $cache_entry = $memcache->get_with_last_updated($cache_key,
-							     $last_updated_without_login,
-							     $lazy_update,
-							     1)) {
+      if (my $cache_entry = $memcache->get_with_last_updated
+	  ($cache_key,
+	   $last_updated_without_login,
+	   $self->is_navigating_inside_site ? undef : $FRESH_VISITOR_LAZY_UPDATE,
+	   1)) {
 	$result = $cache_entry;
       }
       else {
@@ -563,7 +553,15 @@ sub _get_extension_and_type {
   return (undef, NOT_FOUND, undef, undef);
 }
 
-# herlp routine to determine a MIME type for viewing
+sub is_navigating_inside_site {
+  my $self     = shift;
+  my $referer  = $self->request->header_in('Referer') or return;
+  my $location = $self->location;
+  return 1 if $referer =~ /^\Q$location\E/;
+  return;
+}
+
+# helper routine to determine a MIME type for viewing
 sub viewable_mime_type {
   my $type = shift;
   return $type if $type =~ m|^text/|;
