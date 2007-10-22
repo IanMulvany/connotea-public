@@ -390,7 +390,7 @@ sub tt_functions_for_html_content {
        },
        css_link => sub {
 	 return join("\n",
-		     map { "<link rel=\"stylesheet\" type=\"text/css\" href=\"$_\" />" }
+		     map { "<link rel=\"stylesheet\" type=\"text/css\" media=\"screen\" href=\"$_\" />" }
 		     map { $bibliotech->location.$_ }
 		     map { ref $_ ? @{$_} : ($_) }
 		     ($bibliotech->command->page_or_inc eq 'home' ? $HOME_CSS_FILE : $GLOBAL_CSS_FILE)
