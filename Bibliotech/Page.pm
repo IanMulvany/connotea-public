@@ -690,6 +690,7 @@ sub tt_general_vars_calc {
 	  link               => $bibliotech->link,
 	  sitename           => $bibliotech->sitename,
 	  siteemail          => $bibliotech->siteemail,
+	  codename           => do { local $_ = $bibliotech->sitename; s/\W//g; $_; },
 	  user               => $bibliotech->user,
 	  do {
 	    my $browser;
