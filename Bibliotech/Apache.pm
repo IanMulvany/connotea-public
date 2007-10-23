@@ -483,9 +483,9 @@ sub query_handler {
 
   my ($o, $final_rc, $extension, $mime_type) = _get_extension_and_type
       ($fmt,
-       $page ne 'data' ? ($result, OK)
-                       : (Bibliotech::Page->new({bibliotech => $self})->tt_content_for_web_api($result),
-			  $result->code),
+       $fmt ne 'data' ? ($result, OK)
+                      : (Bibliotech::Page->new({bibliotech => $self})->tt_content_for_web_api($result),
+			 $result->code),
        $command->inc_filename);
   return $self->explainable_http_code($final_rc, 'get_extension_and_type says not found')
       if $final_rc == NOT_FOUND;
