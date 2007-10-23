@@ -111,7 +111,7 @@ a.editlink  	    { color: #4A6DCE;}
 a.owner             { color: #233155; font-size: 10px; }
 a.listofrecent      { font-weight: bold }
 a.listoftags, a.listofusers, a.listofgangpeers, a.listofgangs, a.listofactivetags, a.listofactiveusers   {display: block; color: #386584; font-size:100%; margin: 5px 0 0 5px; padding-left: 5px; text-indent: -5px; line-height: 1.6em; text-decoration:none;}
-a.listoftags:visted, a.listofusers:visted, a.listofgangpeers:visted, a.listofgangs:visted, a.listofactivetags:visted, a.listofactiveusers:visted   {text-decoration:none; color:#7A92A3;}
+a.listoftags:visited, a.listofusers:visited, a.listofgangpeers:visited, a.listofgangs:visited, a.listofactivetags:visited, a.listofactiveusers:visited   {text-decoration:none; color:#7A92A3;}
 .helpicon           { border: 0px; padding: 2px; }
 .journal 	    { font-style: italic }
 .volume  	    { font-weight: bold }
@@ -253,7 +253,7 @@ form                { margin-bottom: 0px }
 #sideusers 	    { width: 190px }
 .note               { margin: 8px 0px 8px 0px; padding: 6px; font-size: 13px; font-weight: bold; width: 90% }
 .errormsg           { margin: 8px 0px 8px 0px; padding: 6px; font-size: 13px; font-weight: bold; color: red; border: 1px solid red; background: #EEEEEE; width: 90% }
-.actionmsg          { margin: 8px 0px 8px 0px; padding: 6px; font-size: 13px; font-weigth: bold; color: blue; border: 1px solid blue; background: #EEEEEE; width: 90% }
+.actionmsg          { margin: 8px 0px 8px 0px; padding: 6px; font-size: 13px; font-weight: bold; color: blue; border: 1px solid blue; background: #EEEEEE; width: 90% }
 .tagexample         { font-style: italic }
 .warnremove         { color: red; font-weight: bold }
 .aboutremove        { margin-bottom: 10px }
