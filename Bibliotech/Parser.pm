@@ -58,8 +58,8 @@ page : 'library/export' | 'library' | 'profile'
      | 'adminstats'
      | 'adminrenameuser'
      | 'admin'
-     | filename_part <reject: $item[1] !~ /\.css$/> { [none => $item[1]] }
-     | filename_part                                { [inc  => $item[1]] }
+     | filename_part <reject: $item[1] !~ /\.(?:css|js|txt)$/> { [none => $item[1]] }
+     | filename_part                                           { [inc  => $item[1]] }
 
 # not actually used but just to remind people that there's the wiki too
 all_pages : page | 'wiki'
