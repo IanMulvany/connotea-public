@@ -12,6 +12,7 @@ use RDF::Core::Statement;
 use RDF::Core::Model;
 use Bibliotech::RDF::Core::Storage::Memory;
 use Bibliotech::RDF::Core::Model::Serializer;
+use Bibliotech::DBI::Unwritten::CitationConcat;
 use utf8;
 # if Bibliotech::Clicks is loaded it will change the behavior of html_content() to add a click counter onclick handler
 
@@ -114,7 +115,7 @@ sub delete {
   my $self = shift;
   my $citation = $self->citation;
   $self->SUPER::delete(@_);
-  $citation->delete if $citation and $citation->bookmarks_or_user_articles_count == 0;
+  $citation->delete if $citation and $citation->bookmarks_or_user_articles_or_articles_count == 0;
 }
 
 sub authors {
@@ -684,6 +685,13 @@ sub get_network_response {
 sub get_network_title {
   my ($self, $bibliotech) = @_;
   return ($self->get_network_document($bibliotech))[2];
+}
+
+# when a citation is added to a bookmark, give an opportunity to go to the article and write a new concatenated citation
+sub citation_added {
+  my $bookmark = shift;
+  my $article = $bookmark->article or return;
+  Bibliotech::Unwritten::CitationConcat::add_article_citation($article);
 }
 
 1;

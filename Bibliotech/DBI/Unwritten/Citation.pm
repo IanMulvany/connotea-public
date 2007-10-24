@@ -18,26 +18,35 @@ sub link_author {
 		 ]);
 }
 
+sub _write_accept {
+  my ($obj, $testaction, $linkaction) = @_;
+  return unless defined $obj;
+  return $obj if $obj->id;
+  return if defined $testaction and !$testaction->($obj);
+  return $linkaction->($obj);
+}
+
 sub write {
   my ($self, $bookmark_or_user_article) = @_;
 
-  my $journal_mem = $self->journal;
-  my $journal;
-  if (defined $journal_mem) {
-    if ($journal_mem->name || $journal_mem->medline_ta) {
-      $journal = transfer Bibliotech::Journal ($journal_mem);
-    }
-  }
-  my $citation = transfer Bibliotech::Citation ($self, {journal => $journal});
+  my $journal  = _write_accept($self->journal,
+			       sub { $_[0]->name || $_[0]->medline_ta },
+			       sub { transfer Bibliotech::Journal (shift) });
+  my $citation = _write_accept($self,
+			       undef,
+			       sub { transfer Bibliotech::Citation ($self, {journal => $journal}) });
   my $i = 0;
   foreach my $author_mem ($self->authors) {
-    my $author = transfer Bibliotech::Author ($author_mem);
-    $citation->link_author([++$i => $author]);  # that's not link_author() in this class... it's in Bibliotech::Citation
+    my $author = _write_accept($author_mem,
+			       undef,
+			       sub { transfer Bibliotech::Author ($author_mem) });
+    $citation->link_author([++$i => $author]);  # that's not link_author() in this class... it's in Bibliotech::Citation:
   }
 
   if ($bookmark_or_user_article) {
     $bookmark_or_user_article->citation($citation);
     $bookmark_or_user_article->update;
+    $bookmark_or_user_article->citation_added if $bookmark_or_user_article->can('citation_added');
   }
 
   return $citation;

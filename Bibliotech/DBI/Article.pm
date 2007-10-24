@@ -4,11 +4,12 @@ use base 'Bibliotech::DBI';
 
 __PACKAGE__->table('article');
 __PACKAGE__->columns(Primary => qw/article_id/);
-__PACKAGE__->columns(Essential => qw/hash/);
+__PACKAGE__->columns(Essential => qw/hash citation/);
 __PACKAGE__->columns(Others => qw/created updated/);
 __PACKAGE__->columns(TEMP => qw/x_adding x_for_user_article user_article_count_packed tags_packed/);
 __PACKAGE__->datetime_column('created', 'before_create');
 __PACKAGE__->datetime_column('updated', 'before_update');
+__PACKAGE__->has_a(citation => 'Bibliotech::Citation');
 __PACKAGE__->has_many(user_articles => 'Bibliotech::User_Article');
 
 sub my_alias {
@@ -135,6 +136,10 @@ sub user_article_comments {
 
 sub comments {
   return Bibliotech::Comment->search_from_article(shift->id);
+}
+
+sub citations {
+  return Bibliotech::Citation->search_from_article(shift->id);
 }
 
 1;

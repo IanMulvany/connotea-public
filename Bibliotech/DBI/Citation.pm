@@ -29,22 +29,23 @@ sub first_author {
   (shift->authors)[0];
 }
 
-sub bookmarks_or_user_articles {
+sub bookmarks_or_user_articles_or_articles {
   my $self = shift;
   return (Bibliotech::Bookmark->search(citation => $self),
+	  Bibliotech::Article->search(citation => $self),
 	  Bibliotech::User_Article->search(citation => $self));
 }
 
-sub bookmarks_or_user_articles_count {
-  my @bookmarks_or_user_articles = shift->bookmarks_or_user_articles;
-  return scalar @bookmarks_or_user_articles;
+sub bookmarks_or_user_articles_or_articles_count {
+  my @count = shift->bookmarks_or_user_articles_or_articles;
+  return scalar @count;
 }
 
 sub delete {
   my $self = shift;
-  foreach my $bookmark_or_user_article ($self->bookmarks_or_user_articles) {
-    $bookmark_or_user_article->citation(undef);
-    $bookmark_or_user_article->mark_updated;
+  foreach my $entity ($self->bookmarks_or_user_articles_or_articles) {
+    $entity->citation(undef);
+    $entity->mark_updated;
   }
   return $self->SUPER::delete(@_);
 };
@@ -445,6 +446,13 @@ sub is_only_title_eq {
   return 0 if grep($self->$_, keys %columns);
   return 1;
 }
+
+__PACKAGE__->set_sql(from_article => <<'');
+SELECT   __ESSENTIAL(c)__
+FROM     __TABLE(Bibliotech::Bookmark=b)__
+         LEFT JOIN __TABLE(Bibliotech::Citation=c)__ ON (__JOIN(b c)__)
+WHERE    b.article = ?
+AND      c.citation_id IS NOT NULL
 
 1;
 __END__
