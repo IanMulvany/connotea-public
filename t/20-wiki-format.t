@@ -2,7 +2,7 @@
 
 # Test script that compares wiki formatter input to known output.
 
-use Test::More tests => 83;
+use Test::More tests => 84;
 use Test::Exception;
 use strict;
 use warnings;
@@ -129,6 +129,11 @@ this is a [TestWikiWord|curiosity].
 EOI
 <p>this is a <a href="/wiki/TestWikiWord">curiosity</a>.</p>
 EOO
+
+
+is(wformat("Some Japanese - \x{30a6}\x{30a7}\x{30d6}, some French - Conf\x{e9}rence Europ\x{e9}enne\n"),
+        "<p>Some Japanese - \x{30a6}\x{30a7}\x{30d6}, some French - Conf\x{e9}rence Europ\x{e9}enne</p>\n",
+   'not wikiword because of wide chars');
 
 is(wformat(<<'EOI'), <<'EOO', 'explicit_link');
 this is a link to [http://www.nature.com/|Nature].

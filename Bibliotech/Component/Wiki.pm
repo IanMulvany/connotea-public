@@ -1023,7 +1023,8 @@ node_prefix            	: /(User|Bookmark|Tag|Group|Generate|System)/
 
 wikiword_link          	: wikiword
                        	  { $thisparser->{wikilink}->($item[1]) }
-wikiword               	: /(?:[A-Z][a-z0-9][\w:\-]+){2,}/
+#wikiword               	: /(?:[A-Z][a-z0-9][\w:\-]+){2,}/
+wikiword               	: /(?:[[:upper:]][[:lower:][:digit][\w:\-]+){2,}/
 prefixed_wikiword_link 	: prefixed_wikiword
                        	  { $thisparser->{wikilink}->($item[1]) }
 prefixed_wikiword      	: node_prefix ':' prefixed_wikiword_node
