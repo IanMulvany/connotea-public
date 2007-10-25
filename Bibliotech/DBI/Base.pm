@@ -615,7 +615,7 @@ sub sql_joined_dynamic {
   if ($table{ct2}) {
     push @tableorder, 'ct2';
     delete $table{ct2};
-    $forceback{ct2} = 'b';
+    $forceback{ct2} = 'a';
   }
   if ($table{cta2}) {
     push @tableorder, 'cta2';
