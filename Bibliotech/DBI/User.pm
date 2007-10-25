@@ -266,7 +266,7 @@ sub link_bookmark {
     my $bookmark = Bibliotech::Bookmark->new($b, $create);
     next unless $bookmark;
     my $method = $create ? 'find_or_create' : 'search';
-    my $article = $a || Bibliotech::Article->$method({hash => $bookmark->hash});
+    my $article = $a || (Bibliotech::Article->$method({hash => $bookmark->hash}))[0];
     next unless $article;
     $bookmark->article($article) if not defined $bookmark->article or $bookmark->article->id == 0;
     my ($user_article) = Bibliotech::User_Article->$method({user => $self, article => $article, bookmark => $bookmark});
