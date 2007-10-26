@@ -1,6 +1,7 @@
 package Bibliotech::Article;
 use strict;
 use base 'Bibliotech::DBI';
+use Bibliotech::DBI::Unwritten::CitationConcat;
 
 __PACKAGE__->table('article');
 __PACKAGE__->columns(Primary => qw/article_id/);
@@ -140,6 +141,11 @@ sub comments {
 
 sub citations {
   return Bibliotech::Citation->search_from_article(shift->id);
+}
+
+# when a citation is added, write a new concatenated citation
+sub reconcat_citations {
+  Bibliotech::Unwritten::CitationConcat::add_article_citation(shift);
 }
 
 1;

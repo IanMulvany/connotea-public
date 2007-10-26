@@ -171,13 +171,6 @@ sub acceptable_existing {
   return;
 }
 
-sub article_citation {
-  my $article = shift;
-  my @citations = $article->citations or return;
-  my $unwritten_citation = concat(@citations) or return;
-  return $unwritten_citation;
-}
-
 # handle written and unwritten article and written and unwritten citation
 sub _for_article_use_this_citation {
   my ($article, $citation) = @_;
@@ -200,8 +193,9 @@ sub _for_article_use_this_citation {
 
 sub add_article_citation {
   my $article    = shift;
-  my $new        = article_citation($article) or return $article;
-  my $acceptable = acceptable_existing($new, $article->citation, $article->citations);
+  my @citations  = $article->citations;
+  my $new        = concat(@citations) or return $article;
+  my $acceptable = acceptable_existing($new, $article->citation, @citations);
   return _for_article_use_this_citation($article, (defined $acceptable ? $acceptable : $new));
 }
 

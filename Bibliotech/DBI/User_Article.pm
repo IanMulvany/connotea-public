@@ -207,6 +207,7 @@ sub tags {
 sub delete {
   my $self     = shift;
   my $user     = $self->user;
+  my $bookmark = $self->bookmark;
   my $article  = $self->article;
   my $citation = $self->citation;
   my @tags     = $self->tags;
@@ -216,16 +217,22 @@ sub delete {
 
   $self->SUPER::delete(@_);
 
+  $bookmark->delete if $bookmark->user_articles_raw->count == 0;
+
   my $article_count = $article->user_articles->count;
 
-  $article->delete unless $article_count;
-  $citation->delete if $citation and !$citation->articles_or_user_articles_count;
+  $article->delete if $article_count == 0;
+
+  $citation->delete if $citation and $citation->bookmarks_or_user_articles_or_articles_count == 0;
 
   foreach my $tag (@tags) {
     $tag->delete unless $tag->user_articles->count;
   }
 
-  $article->mark_updated if $article_count;
+  if ($article_count > 0) {
+    $article->mark_updated;
+    $article->reconcat_citations;
+  }
 
   $user->last_deletion_now;
   $user->mark_updated;

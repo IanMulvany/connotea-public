@@ -306,6 +306,7 @@ sub change {
 	die 'no article object' unless defined $article;
 	$bookmark->article($article);
 	$bookmark->update;
+	$article->reconcat_citations;
 	my ($existing) = Bibliotech::User_Article->search(user => $user, article => $article);
 	if (defined $existing) {
 	  # switch to the new bookmark

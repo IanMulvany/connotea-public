@@ -46,7 +46,6 @@ sub write {
   if ($bookmark_or_user_article) {
     $bookmark_or_user_article->citation($citation);
     $bookmark_or_user_article->update;
-    $bookmark_or_user_article->citation_added if $bookmark_or_user_article->can('citation_added');
   }
 
   return $citation;
