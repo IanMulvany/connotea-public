@@ -118,9 +118,10 @@ sub html_content {
       }
 
       if ($button eq 'Upload') {
-	my $fh = $cgi->upload('file');
+	my $fh = $cgi->upload('file') or die "Expected an uploaded file but none could be opened.\n";
 	{ local $/ = undef; $doc = <$fh>; }
 	close $fh;
+	defined($doc) && length($doc) or die "Expected an uploaded file but an empty one was received.\n";
 	$memcache->set($doc_cache_key => $doc, 86400);
 	$memcache->set($captcha_cache_key => 0, 86400);
 	$button = '_display';
@@ -222,8 +223,9 @@ sub html_content {
 	$o .= $cgi->end_form;
       }
     };
-    if ($@) {
-      $validationmsg = $@;
+    if (my $e = $@) {
+      die $e if $e =~ / at .* line /;
+      $validationmsg = $e;
     }
     else {
       die 'Location: '.$bibliotech->location."library\n" if $button eq 'Confirm';
