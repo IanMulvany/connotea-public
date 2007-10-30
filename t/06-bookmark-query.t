@@ -308,13 +308,9 @@ jim -> msnbc.com [microsoft,news]
 joe -> space.com [space news]
 bill -> slashdot.org [tech,geek,news]
 
-SKIP: {
-skip 'freematch does not work for entities other than user_bookmarks', 1;
 test(mc([freematch => 'cnn']),
      'bookmarks', <<'', '/bookmarks?q=cnn');
 cnn.com
-
-};
 
 test(mc([date => ['2006-01-02','Bibliotech::Date']]),
      'user_bookmarks', <<'', '/recent/date/2006-01-02');

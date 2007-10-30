@@ -361,65 +361,65 @@ WHERE    a_s.lastname = ? AND cta_s.citation_author_id IS NOT NULL AND c_s.citat
 UNION
 SELECT   ubd_s.user_bookmark_id, 50 as score
 FROM     ${search_database}user_bookmark_details ubd_s
-WHERE    MATCH(ubd_s.title) AGAINST (?)
+WHERE    MATCH(ubd_s.title) AGAINST (? IN BOOLEAN MODE)
 UNION
 SELECT   ub.user_bookmark_id, 50 as score
 FROM     ${search_database}bookmark_details bd_s
          LEFT JOIN bookmark b_s ON (bd_s.bookmark_id=b_s.bookmark_id)
          LEFT JOIN user_bookmark ub ON (b_s.bookmark_id=ub.bookmark)
-WHERE    MATCH(bd_s.title) AGAINST (?) AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(bd_s.title) AGAINST (? IN BOOLEAN MODE) AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   ub.user_bookmark_id, 49 as score
 FROM     ${search_database}citation c_s
          LEFT JOIN bookmark b_s ON (b_s.citation=c_s.citation_id)
          LEFT JOIN user_bookmark ub ON (ub.bookmark=b_s.bookmark_id)
-WHERE    MATCH(c_s.title) AGAINST (?) AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(c_s.title) AGAINST (? IN BOOLEAN MODE) AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   ub.user_bookmark_id, 49 as score
 FROM     ${search_database}citation c_s
          LEFT JOIN user_bookmark ub ON (ub.citation=c_s.citation_id)
-WHERE    MATCH(c_s.title) AGAINST (?) AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(c_s.title) AGAINST (? IN BOOLEAN MODE) AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   ub.user_bookmark_id, 48 as score
 FROM     ${search_database}journal j_s
          LEFT JOIN citation c_s ON (c_s.journal=j_s.journal_id)
          LEFT JOIN bookmark b_s ON (b_s.citation=c_s.citation_id)
          LEFT JOIN user_bookmark ub ON (ub.bookmark=b_s.bookmark_id)
-WHERE    MATCH(j_s.name) AGAINST (?) AND c_s.citation_id IS NOT NULL AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(j_s.name) AGAINST (? IN BOOLEAN MODE) AND c_s.citation_id IS NOT NULL AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   ub.user_bookmark_id, 48 as score
 FROM     ${search_database}journal j_s
          LEFT JOIN citation c_s ON (c_s.journal=j_s.journal_id)
          LEFT JOIN user_bookmark ub ON (ub.citation=c_s.citation_id)
-WHERE    MATCH(j_s.name) AGAINST (?) AND c_s.citation_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(j_s.name) AGAINST (? IN BOOLEAN MODE) AND c_s.citation_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   ub.user_bookmark_id, 48 as score
 FROM     ${search_database}journal j_s
          LEFT JOIN citation c_s ON (c_s.journal=j_s.journal_id)
          LEFT JOIN bookmark b_s ON (b_s.citation=c_s.citation_id)
          LEFT JOIN user_bookmark ub ON (ub.bookmark=b_s.bookmark_id)
-WHERE    MATCH(j_s.medline_ta) AGAINST (?) AND c_s.citation_id IS NOT NULL AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(j_s.medline_ta) AGAINST (? IN BOOLEAN MODE) AND c_s.citation_id IS NOT NULL AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   ub.user_bookmark_id, 48 as score
 FROM     ${search_database}journal j_s
          LEFT JOIN citation c_s ON (c_s.journal=j_s.journal_id)
          LEFT JOIN user_bookmark ub ON (ub.citation=c_s.citation_id)
-WHERE    MATCH(j_s.medline_ta) AGAINST (?) AND c_s.citation_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(j_s.medline_ta) AGAINST (? IN BOOLEAN MODE) AND c_s.citation_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   ub.user_bookmark_id, 47 as score
 FROM     ${search_database}bookmark b_s
          LEFT JOIN user_bookmark ub ON (b_s.bookmark_id=ub.bookmark)
-WHERE    MATCH(b_s.url) AGAINST (?) AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(b_s.url) AGAINST (? IN BOOLEAN MODE) AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   ubd_s.user_bookmark_id, 45 as score
 FROM     ${search_database}user_bookmark_details ubd_s
-WHERE    MATCH(ubd_s.description) AGAINST (?)
+WHERE    MATCH(ubd_s.description) AGAINST (? IN BOOLEAN MODE)
 UNION
 SELECT   ub.user_bookmark_id, 44 as score
 FROM     ${search_database}comment c_s
          LEFT JOIN user_bookmark_comment ubc_s ON (c_s.comment_id=ubc_s.comment)
          LEFT JOIN user_bookmark ub ON (ubc_s.user_bookmark=ub.user_bookmark_id)
-WHERE    MATCH(c_s.entry) AGAINST (?) AND ubc_s.user_bookmark_comment_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(c_s.entry) AGAINST (? IN BOOLEAN MODE) AND ubc_s.user_bookmark_comment_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   ub.user_bookmark_id, 43 as score
 FROM     ${search_database}author a_s
@@ -427,7 +427,7 @@ FROM     ${search_database}author a_s
          LEFT JOIN citation c_s ON (c_s.citation_id=cta_s.citation)
          LEFT JOIN bookmark b_s ON (b_s.citation=c_s.citation_id)
          LEFT JOIN user_bookmark ub ON (ub.bookmark=b_s.bookmark_id)
-WHERE    MATCH(a_s.lastname, a_s.forename, a_s.firstname) AGAINST (?) AND cta_s.citation_author_id IS NOT NULL AND c_s.citation_id IS NOT NULL AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(a_s.lastname, a_s.forename, a_s.firstname) AGAINST (? IN BOOLEAN MODE) AND cta_s.citation_author_id IS NOT NULL AND c_s.citation_id IS NOT NULL AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   ub.user_bookmark_id, 43 as score
 FROM     ${search_database}author a_s
@@ -435,7 +435,7 @@ FROM     ${search_database}author a_s
          LEFT JOIN citation c_s ON (c_s.citation_id=cta_s.citation)
          LEFT JOIN bookmark b_s ON (b_s.citation=c_s.citation_id)
          LEFT JOIN user_bookmark ub ON (ub.citation=c_s.citation_id)
-WHERE    MATCH(a_s.lastname, a_s.forename, a_s.firstname) AGAINST (?) AND cta_s.citation_author_id IS NOT NULL AND c_s.citation_id IS NOT NULL AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(a_s.lastname, a_s.forename, a_s.firstname) AGAINST (? IN BOOLEAN MODE) AND cta_s.citation_author_id IS NOT NULL AND c_s.citation_id IS NOT NULL AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   ubt_s.user_bookmark as user_bookmark_id, 20 as score
 FROM     tag t_s
@@ -445,7 +445,7 @@ UNION
 SELECT   ubt_s.user_bookmark as user_bookmark_id, 20 as score
 FROM     ${search_database}tag t_s
          LEFT JOIN user_bookmark_tag ubt_s ON (ubt_s.tag=t_s.tag_id)
-WHERE    MATCH(t_s.name) AGAINST (?) AND ubt_s.user_bookmark_tag_id IS NOT NULL
+WHERE    MATCH(t_s.name) AGAINST (? IN BOOLEAN MODE) AND ubt_s.user_bookmark_tag_id IS NOT NULL
 EOS
   return ($sql, [($term) x 25]);  # the number of question marks above
 }
@@ -497,11 +497,14 @@ EOS
   return ($sql, \@bind);
 }
 
+sub _debug_pure_dump {
+  $Data::Dumper::Purity = 1;
+  die Dumper(@_);
+}
+
 sub sql_joined_dynamic {
   my $self = shift;
   my %options = @_;
-  #$Data::Dumper::Purity = 1;
-  #warn Dumper(\%options);
   our (@classlist, %class, %alias);
   unless (@classlist) {
     # some repeat, that's ok
@@ -556,7 +559,7 @@ sub sql_joined_dynamic {
 	       g => ['ug', 'u', 'ub']);
   my $to_ub = $to_ub{$firsttable} or die "do not know how to get from $firsttable to ub";
   push @tableorder, @{$to_ub}, '*';
-  if ($tableorder[0] eq 'ub') {
+  if ($tableorder[0] eq 'ub' and $options{class} eq 'Bibliotech::User_Bookmark') {
     unshift @tableorder, 'ubp';
   }
   foreach (@tableorder) {
@@ -694,7 +697,8 @@ sub sql_joined_dynamic {
     my ($joining_class, $joining_instance_alias, $previous_class, $previous_instance_alias,
 	$previous_class_key, $joining_class_key) = @_;
     my $joining_table = eval { return $joining_class->table.' '.$joining_instance_alias; };
-    die "($joining_class,$joining_instance_alias,$previous_class,$previous_instance_alias,$previous_class_key,$joining_class_key) $@" if $@;
+    die _debug_pure_dump({options => \%options, error => $@}) if $@;
+    #die "($joining_class,$joining_instance_alias,$previous_class,$previous_instance_alias,$previous_class_key,$joining_class_key) $@" if $@;
     return $joining_table unless $previous_class and $previous_instance_alias;
     unless ($previous_class_key) {
       ($previous_class_key, $joining_class_key) = $find_matching_keys->($joining_class,
@@ -845,15 +849,30 @@ sub sql_joined_dynamic {
     $order_by = "ORDER BY sortvalue $sortdir";
   }
   else {
-    push @joins, [undef, undef, $class{$tableorder[0]}, $tableorder[0]];
-    shift @tableorder;
+    # entities other than user_bookmark:
 
-    # add protective clause to avoid NULL user_bookmark_id's when ub is joined with privacy
-    # usually when starting with a tag
-    if (grep { $_ eq 'ub' } @tableorder[1..$#tableorder]) {
-      $where .= ' AND ub.user_bookmark_id IS NOT NULL';  # this IS NOT NULL part is for privacy
+    if ($options{freematch} and @{$options{freematch}}) {
+      my ($freematch_sql, $freematch_bind) = $self->freematch_all_terms(@{$options{freematch}});
+      if ($options{class} eq 'Bibliotech::Bookmark') {
+	push @joins, ["($freematch_sql ORDER BY sortvalue) as fm", [@{$freematch_bind||[]}], 'Bibliotech::User_Bookmark', 'fm'];
+	push @joins, ['LEFT JOIN user_bookmark ubj ON (fm.user_bookmark_id=ubj.user_bookmark_id)', undef, 'Bibliotech::User_Bookmark', 'ubj'];
+	push @joins, ['LEFT JOIN bookmark b ON (ubj.bookmark=b.bookmark_id)', undef, 'Bibliotech::Bookmark', 'b'];
+	shift @tableorder if $tableorder[0] eq 'b';
+      }
+      else {
+	die "Currently no support for search on entities other than posts or bookmarks.\n";
+      }
     }
-    #warn Dumper({non_ub_joins => \@joins, tableorder => \@tableorder});
+    else {
+      push @joins, [undef, undef, $class{$tableorder[0]}, $tableorder[0]];
+      shift @tableorder;
+
+      # add protective clause to avoid NULL user_bookmark_id's when ub is joined with privacy
+      # usually when starting with a tag
+      if (grep { $_ eq 'ub' } @tableorder[1..$#tableorder]) {
+	$where .= ' AND ub.user_bookmark_id IS NOT NULL';  # this IS NOT NULL part is for privacy
+      }
+    }
   }
 
   #warn Dumper({main_joins => \@joins, tableorder => \@tableorder});
