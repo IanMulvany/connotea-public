@@ -248,6 +248,8 @@ CREATE TABLE `user_article_comment` (
   CONSTRAINT `user_article_comment_user_article_fk` FOREIGN KEY (`user_article`) REFERENCES `user_article` (`user_article_id`)
 ) ENGINE=InnoDB;
 
+-- the above are for InnoDB - need to work out MyISAM version for searach db, with FULLTEXT indexes
+
 -- transfer of old user_bookmark data:
 insert into article select bookmark_id as article_id, hash, created, updated from bookmark;
 update bookmark set article=bookmark_id;
