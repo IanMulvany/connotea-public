@@ -6,6 +6,7 @@ use Bibliotech::DBI;
 
 my $dbh = Bibliotech::DBI->db_Main();
 
+check_for_upgraded_tables();
 print localtime()."\n";
 reassign_related_bookmarks();
 print localtime()."\n";
@@ -13,6 +14,12 @@ delete_transient_articles();
 print localtime()."\n";
 reconcat_multi_articles();
 print localtime()."\n";
+
+sub check_for_upgraded_tables {
+  my $tables = $dbh->selectcol_arrayref('show tables');
+  my $found = grep { $_ eq 'article' } @{$tables};
+  die "article table does not exit, bailing\n" unless $found;
+}
 
 sub reassign_related_bookmarks {
   foreach my $id ('pubmed', 'doi', 'asin') {
