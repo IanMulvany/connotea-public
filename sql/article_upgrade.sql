@@ -1,3 +1,5 @@
+-- still need constraints
+
 -- Since 1.8:
 
 set FOREIGN_KEY_CHECKS = 0;
@@ -7,6 +9,7 @@ USE connotea_search;
 CREATE TABLE `article` (
   `article_id` int(7) unsigned NOT NULL auto_increment,
   `hash` varchar(32) NOT NULL default '',
+  `citation` int(7) unsigned default NULL,
   `created` datetime NOT NULL default '0000-00-00 00:00:00',
   `updated` datetime default NULL,
   PRIMARY KEY  (`article_id`),
@@ -18,6 +21,7 @@ USE connotea;
 CREATE TABLE IF NOT EXISTS `article` (
   `article_id` int(7) unsigned NOT NULL auto_increment,
   `hash` varchar(32) NOT NULL default '',
+  `citation` int(7) unsigned default NULL,
   `created` datetime NOT NULL default '0000-00-00 00:00:00',
   `updated` datetime default NULL,
   PRIMARY KEY  (`article_id`),

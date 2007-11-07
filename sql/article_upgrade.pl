@@ -6,11 +6,11 @@ use Bibliotech::DBI;
 
 my $dbh = Bibliotech::DBI->db_Main();
 
-check_for_upgraded_tables();
-print localtime()."\n";
-reassign_related_bookmarks();
-print localtime()."\n";
-delete_transient_articles();
+#check_for_upgraded_tables();
+#print localtime()."\n";
+#reassign_related_bookmarks();
+#print localtime()."\n";
+#delete_transient_articles();
 print localtime()."\n";
 reconcat_multi_articles();
 print localtime()."\n";
@@ -30,12 +30,12 @@ sub reassign_related_bookmarks {
 }
 
 sub delete_transient_articles_sql {
-  'delete from article a where (select count(*) from bookmark b where b.article = a.article_id) < 1';
+  'delete from article where (select count(*) from bookmark where article = article_id) = 0 and (select count(*) from user_article where article = article_id) = 0';
 }
 
 sub delete_transient_articles {
   print "deleting transient article rows...\n";
-  $dbh->do(transient_articles_sql());
+  $dbh->do(delete_transient_articles_sql());
 }
 
 sub reconcat_multi_articles_sql {
@@ -47,7 +47,9 @@ sub reconcat_multi_articles {
   $sth->execute;
   while (my ($multi_article) = $sth->fetchrow_array) {
     print "reconcat $multi_article\n";
-    Bibliotech::Article->retrieve($multi_article)->reconcat_citations;
+    my $article = Bibliotech::Article->retrieve($multi_article);
+    eval { $article->reconcat_citations; };
+    warn $@ if $@;  # do not terminate, because these will probably be isolated problems
   }
 }
 
