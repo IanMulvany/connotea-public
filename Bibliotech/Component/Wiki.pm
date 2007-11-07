@@ -63,7 +63,7 @@ sub exists_wiki_page_for_object {
   my ($self, $obj) = @_;
   my $node = $self->wiki_node_name_for_object($obj);
   my $wiki = $self->wiki_obj;
-  return $node if $wiki->node_exists($node);
+  return $node if $wiki->node_exists("$node");
   return;
 }
 
@@ -359,8 +359,8 @@ sub retrieve_node {
       $current{current_checksum} = $current{checksum};
       return %current;
     }
-    my %current = $wiki->retrieve_node($node);
-    my %asked   = $version ? $wiki->retrieve_node(name => $node, version => $version)
+    my %current = $wiki->retrieve_node("$node");
+    my %asked   = $version ? $wiki->retrieve_node(name => "$node", version => $version)
 	                   : %current;
     $asked{is_current} = $current{version} == $asked{version} ? 1 : 0;
     $asked{current_version} = $current{version};
@@ -478,12 +478,12 @@ sub generate_node_list {
 sub versions_of_node {
   my ($self, $wiki, $node) = @_;
 
-  my %node = $wiki->retrieve_node($node);
+  my %node = $wiki->retrieve_node("$node");
   my $current = $node{version};
 
   my @versions;
   foreach my $version (1 .. $current) {
-    push @versions, {$wiki->retrieve_node(name => $node, version => $version)};
+    push @versions, {$wiki->retrieve_node(name => "$node", version => $version)};
   }
 
   return wantarray ? @versions : \@versions;
