@@ -10,7 +10,6 @@ $sth->execute;
 print $sth->rows." bookmarks\n";
 while (my ($bookmark_id) = $sth->fetchrow_array) {
   print "del $bookmark_id\n";
-  my $bookmark = Bibliotech::Bookmark->retrieve($bookmark_id);
-  eval { $bookmark->delete; };
+  eval { Bibliotech::Bookmark->retrieve($bookmark_id)->delete; };
   warn $@ if $@;
 }
