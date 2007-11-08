@@ -1,5 +1,3 @@
--- still need constraints
-
 -- Since 1.8:
 
 set FOREIGN_KEY_CHECKS = 0;
@@ -25,11 +23,14 @@ CREATE TABLE IF NOT EXISTS `article` (
   `created` datetime NOT NULL default '0000-00-00 00:00:00',
   `updated` datetime default NULL,
   PRIMARY KEY  (`article_id`),
-  KEY `hash_idx` (`hash`)
+  KEY `hash_idx` (`hash`),
+  CONSTRAINT `citation_fk` FOREIGN KEY (`citation`) REFERENCES `citation` (`citation_id`)
 ) ENGINE=InnoDB;
 
-alter table bookmark add column article int(7) unsigned NOT NULL after hash;
-alter table bookmark add constraint article_fk foreign key (article) references article (article_id);
+alter table bookmark add column article int(7) unsigned default NULL after hash
+      	             add key article_idx (article)
+                     add constraint article_fk foreign key (article) references article (article_id)
+                     change column url url varchar(400) NOT NULL default '';
 
 USE connotea_search;
 
@@ -175,6 +176,6 @@ insert into user_article_details select user_bookmark_id as user_article_id, tit
 drop table user_bookmark_details;
 insert into user_article_comment select user_bookmark_comment_id as user_article_comment_id, user_bookmark as user_article, comment, created from user_bookmark_comment;
 drop table user_bookmark_comment;
---- data should work now, just won't be combined
+--- data should work now, just won't be combined; run article_upgrade.pl to complete
 
 set FOREIGN_KEY_CHECKS = 1;

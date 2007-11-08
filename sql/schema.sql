@@ -25,10 +25,12 @@ DROP TABLE IF EXISTS `article`;
 CREATE TABLE `article` (
   `article_id` int(7) unsigned NOT NULL auto_increment,
   `hash` varchar(32) NOT NULL default '',
+  `citation` int(7) unsigned default NULL,
   `created` datetime NOT NULL default '0000-00-00 00:00:00',
   `updated` datetime default NULL,
   PRIMARY KEY  (`article_id`),
-  KEY `hash_idx` (`hash`)
+  KEY `hash_idx` (`hash`),
+  CONSTRAINT `citation_fk` FOREIGN KEY (`citation`) REFERENCES `citation` (`citation_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --

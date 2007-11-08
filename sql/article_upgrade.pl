@@ -6,11 +6,11 @@ use Bibliotech::DBI;
 
 my $dbh = Bibliotech::DBI->db_Main();
 
-#check_for_upgraded_tables();
-#print localtime()."\n";
-#reassign_related_bookmarks();
-#print localtime()."\n";
-#delete_transient_articles();
+check_for_upgraded_tables();
+print localtime()."\n";
+reassign_related_bookmarks();
+print localtime()."\n";
+delete_transient_articles();
 print localtime()."\n";
 reconcat_multi_articles();
 print localtime()."\n";
