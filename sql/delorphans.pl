@@ -9,7 +9,9 @@ my $sth = $dbh->prepare('select bookmark_id from bookmark b left join user_bookm
 $sth->execute;
 print $sth->rows." bookmarks\n";
 while (my ($bookmark_id) = $sth->fetchrow_array) {
-  print "del $bookmark_id\n";
-  eval { Bibliotech::Bookmark->retrieve($bookmark_id)->delete; };
+  print "del $bookmark_id ";
+  eval { my $bookmark = Bibliotech::Bookmark->retrieve($bookmark_id);
+	 print $bookmark->url."\n";
+	 $bookmark->delete; };
   warn $@ if $@;
 }
