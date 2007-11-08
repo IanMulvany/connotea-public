@@ -14,9 +14,10 @@ print $sth->rows." bookmarks\n";
 while (my ($bookmark_id) = $sth->fetchrow_array) {
   exit 1 if $INTFLAG;
   print "del $bookmark_id ";
-  eval { my $bookmark = Bibliotech::Bookmark->retrieve($bookmark_id);
-	 print $bookmark->url."\n";
-	 #$bookmark->delete;
+  eval {
+    my $bookmark = Bibliotech::Bookmark->retrieve($bookmark_id);
+    print $bookmark->url."\n";
+    $bookmark->delete;
   };
   warn $@ if $@;
 }
