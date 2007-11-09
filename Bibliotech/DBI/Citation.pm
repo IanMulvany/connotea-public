@@ -200,7 +200,8 @@ sub best_standardized_identifier {
 sub standardized_uri {
   my ($self, $column, $prefix) = @_;
   die 'no prefix' unless $prefix;
-  my $id = $self->$column or return undef;
+  my $accessor = $column.'_clean';
+  my $id = $self->$accessor or return undef;
   my $escaped = uri_escape($id, "^A-Za-z0-9\-_.!~*'()/"); # standard, plus added forward slash to exclusion
   return URI->new($prefix.$escaped);
 }
@@ -210,12 +211,29 @@ sub pubmed_uri {
 			  'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=pubmed&dopt=Abstract&list_uids=');
 }
 
+sub pubmed_clean {
+  local $_ = shift->pubmed or return;
+  s/\D//g;
+  return $_;
+}
+
 sub doi_uri {
   shift->standardized_uri(doi => 'http://dx.doi.org/');
 }
 
+sub doi_clean {
+  shift->doi;
+}
+
 sub asin_uri {
   shift->standardized_uri(asin => 'http://www.amazon.com/exec/obidos/ASIN/');
+}
+
+sub asin_clean {
+  local $_ = shift->asin or return;
+  s/\(.*$//;  # some (Print) ... (Online) markers, we just use first
+  s/[ \-]//g;
+  return $_;
 }
 
 sub is_openurl_uri_possible {
