@@ -24,6 +24,8 @@
 <a href="[% location %]bookmarklets">Bookmarklets</a>
 </div>
 
+[% INCLUDE special.tt %]
+
 <div id="normal">
 [% content %]
 </div>

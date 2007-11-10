@@ -21,6 +21,7 @@ use Bibliotech::Parser;
 use Bibliotech::WebAPI;
 use Bibliotech::CGI;
 use Bibliotech::Throttle;
+use Bibliotech::ReadOnly;
 use Bibliotech::Clicks;
 use Bibliotech::WebCite;
 use Bibliotech::Profile;
@@ -375,6 +376,12 @@ sub page_class_or_not_implemented {
   return 'Bibliotech::WebAPI::Action::NotImplemented';
 }
 
+sub read_only_block {
+  my $self = shift;
+  my $page = $self->command->page_or_inc;
+  
+}
+
 # handler for most hits, the queries
 sub query_handler {
   my $self    = shift;
@@ -385,6 +392,9 @@ sub query_handler {
   my $fmt     = $command->output;
 
   die "unknown format requested: $fmt\n" unless $fmt =~ /^$OUTPUTS_ALTERNATION$/;
+
+  return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'service read-only and potential-write action requested')
+      if Bibliotech::ReadOnly::do_service_read_only($self);
 
   return $self->explainable_http_code(HTTP_SERVICE_UNAVAILABLE, 'service paused (early)')
       if Bibliotech::Throttle::do_service_paused_early($self);

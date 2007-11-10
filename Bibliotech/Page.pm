@@ -28,6 +28,8 @@ use Bibliotech::Profile;
 use Bibliotech::Cookie;
 use Bibliotech::Bookmarklets;
 use Bibliotech::BibUtils qw(ris2bib xml2bib ris2end ris2xml ris2word);
+use Bibliotech::Throttle;
+use Bibliotech::ReadOnly;
 
 our $TEMPLATE_ROOT    = Bibliotech::Config->get('TEMPLATE_ROOT');
 our $EXPORT_MAX_COUNT = Bibliotech::Config->get('EXPORT_MAX_COUNT') || 1000;
@@ -692,6 +694,8 @@ sub tt_general_vars_calc {
 	  siteemail          => $bibliotech->siteemail,
 	  codename           => do { local $_ = $bibliotech->sitename; s/\W//g; $_; },
 	  user               => $bibliotech->user,
+	  service_paused     => &Bibliotech::Throttle::is_service_paused_at_all,
+	  service_read_only  => &Bibliotech::ReadOnly::is_service_read_only_at_all,
 	  do {
 	    my $browser;
 	    my $get_done = 0;

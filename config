@@ -130,6 +130,12 @@ GENERAL {
   # pausing to fix a bug in these areas
   #SERVICE_PAUSED_EARLY = false
 
+  # make web services read-only
+  #SERVICE_READ_ONLY = true
+  # takes IP addresses - no wildcards or ranges allowed, must be
+  # explicit addresses
+  #SERVICE_NEVER_READ_ONLY_FOR = [ '192.168.1.10', '192.168.1.11' ]
+
   # let visitors with a foreign/blank Referer see slightly old data if
   # we are not current in the cache
   #FRESH_VISITOR_LAZY_UPDATE = 180
