@@ -329,9 +329,11 @@ sub tt {
 	{Bibliotech::Page::tt_general_vars_calc(undef, $bibliotech, $command)},
 	component_general_vars =>
 	{component                => $self,
-	 sticky                   => sub { my $name = shift or return '';
+	 sticky                   => sub { my ($name, $default) = @_;
+					   $default = '' unless defined $default;
+					   return $default unless $name;
 					   my $value = $self->cleanparam($cgi->param($name));
-					   return '' unless defined $value;
+					   return $default unless defined $value;
 					   my $ref = ref $value or return $escaped->($value);
 					   my $str = "$value";
 					   die "sticky() tried to stringify param $name but got $str: ".Dumper($value)

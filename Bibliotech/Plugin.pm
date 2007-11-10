@@ -112,6 +112,19 @@ sub selection {
   return wantarray ? (\@modules, \%modules) : \%modules;
 }
 
+# return a list suitable for use in TT templates
+sub selection_tt {
+  my ($modules_list, $modules_hash) = shift->selection;
+  return [map { Bibliotech::Plugin::Found->new({shortclass => $_, name => $modules_hash->{$_}}) } @{$modules_list}];
+}
+
+
+package Bibliotech::Plugin::Found;
+use base 'Class::Accessor::Fast';
+
+__PACKAGE__->mk_accessors(qw/shortclass name/);
+
+
 package Bibliotech::Plugin::CitationSource;
 use strict;
 use base 'Bibliotech::Plugin';

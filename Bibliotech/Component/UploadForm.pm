@@ -14,6 +14,7 @@ use HTML::Sanitizer;
 use List::MoreUtils qw/any/;
 use Bibliotech::Util;
 use Bibliotech::Captcha;
+use Bibliotech::Plugin;
 
 sub last_updated_basis {
   ('DBI', 'LOGIN');
@@ -109,7 +110,14 @@ sub html_content {
 	  my $type = $cgi->param('type');
 	  push_out_header_to_impatient_browser($bibliotech->request);
 	  ################ IMPORT THE FILE
-	  my $results = $bibliotech->import_file($user, $type, $doc, \@selections, \@tags, $use_keywords, 0, $captcha_status == 2 ? 1 : 0);
+	  my $results = $bibliotech->import_file($user,
+						 $type,
+						 $doc,
+						 \@selections,
+						 \@tags,
+						 $use_keywords,
+						 0,
+						 $captcha_status == 2 ? 1 : 0);
 	  my @errors = grep($_, map($_->error, @{$results}));
 	  die join("\n", @errors) if @errors;
 	  $memcache->delete($doc_cache_key);
@@ -234,50 +242,12 @@ sub html_content {
     }
   }
   elsif ($button eq 'Cancel') {
-    # nothing to do because no user_bookmark's are created on first pass
-    # go back to upload form
-    die 'Location: '.$bibliotech->location."upload\n";
+    die 'Location: '.$bibliotech->location."upload\n";  # just redirect because nothing written in first pass
   }
 
-  my $o = $cgi->h1('File Upload');
-  $o .= $cgi->start_multipart_form(-method => 'POST', -action => $bibliotech->location.'upload', -name => 'upload');
-  $o .= $cgi->div({class => 'errormsg'}, $validationmsg) if $validationmsg;
-  $o .= $cgi->p({class => 'welcome'}, 'Using this form you can import a number of references or links to your library in one batch. See the ' . $cgi->a({href => $bibliotech->location.'guide#importris'}, 'site guide') . ' for more information.'); 
-  $o .= $cgi->p({class => 'welcome'},
-		'Please specify the path to a file to import from your local system. All records will be imported with the citation data contained therein, unless the URL is recognised by Connotea.  In that case, we will use the citation data made available by the relevant publisher. Articles will be tagged with keywords from the file or your own choice of tags depending on your selection below. You will be given the opportunity to confirm the action before any articles are added to your library.');
-  $o .= $cgi->p({class => 'welcome'}, 'Please note that your file may take a couple minutes to upload and process.');
-  $o .= $cgi->br;
-  my ($modules_list, $modules_names_hash) = Bibliotech::Plugin::Import->selection;
-  $o .= $cgi->table
-      ($cgi->Tr
-       ([$cgi->td(['Local file:',
-		   $cgi->filefield(-id => 'filebox', -class => 'textctl', -name => 'file', -size => 60)]),
-	 $cgi->td(['Type:', $cgi->popup_menu(-id => 'type',
-					     -name => 'type',
-					     -values => ['', @{$modules_list}],
-					     -labels => {'' => 'Autodetect', %{$modules_names_hash}})]),
-	 $cgi->td({valign => 'top'},
-		  ['Tagging logic:',
-		   $cgi->span
-		   ($cgi->radio_group
-		    (-name => 'kw',
-		     -values => ['kw_or_tag','kw_and_tag','kw','tag'],
-		     -default => 'kw_or_tag',
-		     -linebreak => 'true',
-		     -labels => {kw_or_tag => 'Use keywords from file, or use default tag(s) if no keywords included',
-				 kw_and_tag => 'Use keywords from file plus default tag(s) together',
-				 kw => 'Use keywords from file only, and skip entries without any keywords',
-				 tag => 'Use default tag(s) only, and ignore keywords in file'}))]),
-	 $cgi->td({valign => 'top'},
-		  ['Default tag(s):',
-		   $cgi->textfield(-id => 'tagbox', -class => 'textctl', -name => 'tag', -size => 70,
-				   -default => 'uploaded')]),
-	 $cgi->td(['',
-		   $cgi->submit(-id => 'uploadbutton', -class => 'buttonctl', -name => 'button', -value => 'Upload')])
-	 ]));
-  $o .= $cgi->end_form;
-
-  $self->discover_main_title($o);
+  my $o = $self->tt('compupload',
+		    {modules => Bibliotech::Plugin::Import->selection_tt},
+		    $self->validation_exception(undef, $validationmsg));
 
   my $javascript_first_empty = $self->firstempty($cgi, 'upload', qw/file tag/);
 
