@@ -27,9 +27,9 @@ CREATE TABLE IF NOT EXISTS `article` (
   CONSTRAINT `citation_fk` FOREIGN KEY (`citation`) REFERENCES `citation` (`citation_id`)
 ) ENGINE=InnoDB;
 
-alter table bookmark add column article int(7) unsigned default NULL after hash
-      	             add key article_idx (article)
-                     add constraint article_fk foreign key (article) references article (article_id)
+alter table bookmark add column article int(7) unsigned default NULL after hash,
+      	             add key article_idx (article),
+                     add constraint article_fk foreign key (article) references article (article_id),
                      change column url url varchar(400) NOT NULL default '';
 
 USE connotea_search;
@@ -166,7 +166,7 @@ CREATE TABLE `user_article_comment` (
 ) ENGINE=InnoDB;
 
 -- transfer of old user_bookmark data:
-insert into article select bookmark_id as article_id, hash, created, updated from bookmark;
+insert into article select bookmark_id as article_id, hash, citation, created, updated from bookmark;
 update bookmark set article=bookmark_id;
 insert into user_article select user_bookmark_id as user_article_id, user, bookmark as article, bookmark, citation, user_is_author, def_public, private, private_gang, private_until, quarantined, created, updated from user_bookmark;
 drop table user_bookmark;

@@ -194,9 +194,9 @@ CREATE TABLE IF NOT EXISTS `article` (
   CONSTRAINT `citation_fk` FOREIGN KEY (`citation`) REFERENCES `citation` (`citation_id`)
 ) ENGINE=InnoDB;
 
-alter table bookmark add column article int(7) unsigned default NULL after hash
-      	             add key article_idx (article)
-                     add constraint article_fk foreign key (article) references article (article_id)
+alter table bookmark add column article int(7) unsigned default NULL after hash,
+      	             add key article_idx (article),
+                     add constraint article_fk foreign key (article) references article (article_id),
                      change column url url varchar(400) NOT NULL default '';
 
 USE bibliotech_search;
