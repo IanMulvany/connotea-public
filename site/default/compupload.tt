@@ -37,7 +37,7 @@
       <td><select name="type" id="type">
           [% SET type_value = sticky('type') %]
 	  <option value="">Autodetect</option>
-	  [% FOREACH module in modules %]
+	  [% FOREACH module IN modules %]
 	  <option [% IF type_value == module.shortclass %] selected="selected"[% END %]value="[% module.shortclass %]">[% module.name %]</option>
 	  [% END %]
       </select></td>
@@ -46,10 +46,11 @@
       <td valign="top">Tagging logic:</td>
       <td valign="top">
 	<span>
-	  <label><input type="radio" name="kw" value="kw_or_tag" checked="checked" />Use keywords from file, or use default tag(s) if no keywords included</label><br />
-	  <label><input type="radio" name="kw" value="kw_and_tag" />Use keywords from file plus default tag(s) together</label><br />
-	  <label><input type="radio" name="kw" value="kw" />Use keywords from file only, and skip entries without any keywords</label><br />
-	  <label><input type="radio" name="kw" value="tag" />Use default tag(s) only, and ignore keywords in file</label><br /></span>
+          [% SET kw_value = sticky('kw','kw_or_tag') %]
+	  <label><input type="radio" name="kw" value="kw_or_tag"[% IF kw_value == "kw_or_tag" %] checked="checked"[% END %] />Use keywords from file, or use default tag(s) if no keywords included</label><br />
+	  <label><input type="radio" name="kw" value="kw_and_tag"[% IF kw_value == "kw_and_tag" %] checked="checked"[% END %] />Use keywords from file plus default tag(s) together</label><br />
+	  <label><input type="radio" name="kw" value="kw"[% IF kw_value == "kw" %] checked="checked"[% END %] />Use keywords from file only, and skip entries without any keywords</label><br />
+	  <label><input type="radio" name="kw" value="tag"[% IF kw_value == "tag" %] checked="checked"[% END %] />Use default tag(s) only, and ignore keywords in file</label><br /></span>
       </td>
     </tr>
     <tr>
