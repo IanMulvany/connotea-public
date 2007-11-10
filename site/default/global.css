@@ -452,3 +452,10 @@ HEADER
 #se-landing .right {width:48%; float:right;}
 #se-landing .right .se-subhead {font-weight:bold; font-size:120%;}
 #se-landing .right ul li {margin-bottom:5px;}
+
+div#service_readonly {
+  text-align: center;
+  padding: 3px;
+  background: #EEEEEE;
+}
+
