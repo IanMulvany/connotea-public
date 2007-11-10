@@ -115,7 +115,20 @@ sub selection {
 # return a list suitable for use in TT templates
 sub selection_tt {
   my ($modules_list, $modules_hash) = shift->selection;
-  return [map { Bibliotech::Plugin::Found->new({shortclass => $_, name => $modules_hash->{$_}}) } @{$modules_list}];
+  return Bibliotech::Plugin::FoundList->new(map { Bibliotech::Plugin::Found->new({shortclass => $_, name => $modules_hash->{$_}}) } @{$modules_list});
+}
+
+
+package Bibliotech::Plugin::FoundList;
+
+sub new {
+  my $class = shift;
+  bless [@_], $class;
+}
+
+sub as_list {
+  my $self = shift;
+  return $self;
 }
 
 
