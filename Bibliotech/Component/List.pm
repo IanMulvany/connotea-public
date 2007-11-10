@@ -1276,9 +1276,9 @@ sub html_content {
   my $make_add_link = sub {
     # uses $popup, $activeuser, and $cgi from outer sub
     # optionally pass in a $bookmark, otherwise uses $uri from outer sub
-    my $bookmark = shift;
-    return undef if !defined($bookmark) and Bibliotech::Bookmark::is_hash_format($uri);
-    my $new_uri = defined $bookmark ? $bookmark->hash : $uri;
+    my $article = shift;
+    return undef if !defined($article) and Bibliotech::Bookmark::is_hash_format($uri);
+    my $new_uri = defined $article ? $article->hash : $uri;
     my $comments = 'comments'.($popup ? 'popup' : '');
     my ($href, $text);
     if (defined $activeuser) {
@@ -1298,11 +1298,11 @@ sub html_content {
 
   my @output;
   push @output, $cgi->h1($self->heading_dynamic($main)) unless $just_comments;
-  my @bookmarks = $self->list(main => $main || 0);
-  if (@bookmarks) {
-    foreach my $bookmark (@bookmarks) {
-      push @output, $cgi->div(scalar $bookmark->html_content($bibliotech, $class, 1, $main)) unless $just_comments;
-      if (my @user_article_comments = $bookmark->user_article_comments) {
+  my @articles = $self->list(main => $main || 0);
+  if (@articles) {
+    foreach my $article (@articles) {
+      push @output, $cgi->div(scalar $article->html_content($bibliotech, $class, 1, $main)) unless $just_comments;
+      if (my @user_article_comments = $article->user_article_comments) {
 	foreach my $user_article_comment (@user_article_comments) {
 	  my $user_article = $user_article_comment->user_article;
 	  my $user = $user_article->user;
@@ -1319,11 +1319,11 @@ sub html_content {
 	push @output, $cgi->p('There are currently no comments for this '.URI_TERM.'.');
       }
       unless ($just_comments) {
-	# if logged in, show AddCommentForm if user has the bookmark linked, or an add link; if not logged in, just show add link
-	if ($bookmark->is_linked_by($activeuser)) {  # the fact that $activeuser may be undef is ok
+	# if logged in, show AddCommentForm if user has the article linked, or an add link; if not logged in, just show add link
+	if ($article->is_linked_by($activeuser)) {  # the fact that $activeuser may be undef is ok
 	  my $save_uri = $cgi->param('uri');
 	  my $save_continue = $cgi->param('continue');
-	  $cgi->param(uri => $bookmark->hash);
+	  $cgi->param(uri => $article->hash);
 	  $cgi->param('continue' => 'comments'.($popup ? 'popup' : ''));
 	  my $addcomment_component = Bibliotech::Component::AddCommentForm->new({bibliotech => $bibliotech});
 	  push @output, $addcomment_component->html_content($class.'addcomment', 0, 0)->content;
@@ -1331,7 +1331,7 @@ sub html_content {
 	  $save_continue ? $cgi->param('continue' => $save_continue) : $cgi->Delete('continue');
 	}
 	else {
-	  push @output, $cgi->p($make_add_link->($bookmark));
+	  push @output, $cgi->p($make_add_link->($article));
 	}
       }
     }
