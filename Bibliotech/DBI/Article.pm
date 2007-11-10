@@ -148,5 +148,20 @@ sub reconcat_citations {
   Bibliotech::Unwritten::CitationConcat::add_article_citation(shift);
 }
 
+sub is_linked_by {
+  my ($self, $user) = @_;
+  return undef unless defined $user;
+  my $user_id = UNIVERSAL::isa($user, 'Bibliotech::User') ? $user->user_id : $user;
+  if (my $for_user_article = $self->for_user_article) {
+    if (defined (my $packed = $for_user_article->article_is_linked_by_current_user)) {
+      if ($packed->[0] == $user_id) {
+	return $packed->[1];
+      }
+    }
+  }
+  my ($link) = Bibliotech::User_Article->search_from_article_for_user($self->article_id, $user_id);
+  return $link;
+}
+
 1;
 __END__
