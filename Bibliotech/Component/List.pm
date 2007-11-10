@@ -1301,7 +1301,7 @@ sub html_content {
   my @articles = $self->list(main => $main || 0);
   if (@articles) {
     foreach my $article (@articles) {
-      push @output, $cgi->div(scalar $article->html_content($bibliotech, $class, 1, $main)) unless $just_comments;
+      push @output, $cgi->div(scalar $article->some_title) unless $just_comments;
       if (my @user_article_comments = $article->user_article_comments) {
 	foreach my $user_article_comment (@user_article_comments) {
 	  my $user_article = $user_article_comment->user_article;

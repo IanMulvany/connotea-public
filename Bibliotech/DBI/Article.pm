@@ -163,5 +163,25 @@ sub is_linked_by {
   return $link;
 }
 
+sub some_title {
+  my $self = shift;
+  if (my $citation = $self->citation) {
+    if (my $title = $citation->title) {
+      return $title;
+    }
+  }
+  foreach my $bookmark ($self->bookmarks) {
+    if (my $citation = $bookmark->citation) {
+      if (my $title = $citation->title) {
+	return $title;
+      }
+    }
+    if (my $title = $bookmark->title) {
+      return $title;
+    }
+  }
+  return;
+}
+
 1;
 __END__
