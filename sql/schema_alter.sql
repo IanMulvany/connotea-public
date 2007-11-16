@@ -237,7 +237,9 @@ CREATE TABLE `user_article_details` (
   `description` text,
   PRIMARY KEY  (`user_article_id`),
   KEY `title_idx` (`title`(100)),
-  KEY `combo_idx` (`user_article_id`,`title`(100))
+  KEY `combo_idx` (`user_article_id`,`title`(100)),
+  FULLTEXT INDEX `title_ft` (`title`),
+  FULLTEXT INDEX `description_ft` (`description`)
 ) ENGINE=MyISAM;
 
 CREATE TABLE `user_article_tag` (
@@ -263,7 +265,7 @@ CREATE TABLE `user_article_comment` (
 
 USE bibliotech;
 
-CREATE TABLE `user_article` (
+CREATE TABLE IF NOT EXISTS `user_article` (
   `user_article_id` int(7) unsigned NOT NULL auto_increment,
   `user` int(7) unsigned NOT NULL default '0',
   `article` int(7) unsigned NOT NULL default '0',
@@ -297,7 +299,7 @@ CREATE TABLE `user_article` (
   CONSTRAINT `user_article_user_fk` FOREIGN KEY (`user`) REFERENCES `user` (`user_id`)
 ) ENGINE=InnoDB;
 
-CREATE TABLE `user_article_details` (
+CREATE TABLE IF NOT EXISTS `user_article_details` (
   `user_article_id` int(7) unsigned NOT NULL default '0',
   `title` text,
   `description` text,
@@ -307,7 +309,7 @@ CREATE TABLE `user_article_details` (
   CONSTRAINT `user_article_details_user_article_fk` FOREIGN KEY (`user_article_id`) REFERENCES `user_article` (`user_article_id`)
 ) ENGINE=InnoDB;
 
-CREATE TABLE `user_article_tag` (
+CREATE TABLE IF NOT EXISTS `user_article_tag` (
   `user_article_tag_id` int(7) unsigned NOT NULL auto_increment,
   `user_article` int(7) unsigned NOT NULL default '0',
   `tag` int(7) unsigned NOT NULL default '0',
@@ -320,7 +322,7 @@ CREATE TABLE `user_article_tag` (
   CONSTRAINT `user_article_tag_user_article_fk` FOREIGN KEY (`user_article`) REFERENCES `user_article` (`user_article_id`)
 ) ENGINE=InnoDB;
 
-CREATE TABLE `user_article_comment` (
+CREATE TABLE IF NOT EXISTS `user_article_comment` (
   `user_article_comment_id` int(7) unsigned NOT NULL auto_increment,
   `user_article` int(7) unsigned NOT NULL default '0',
   `comment` int(7) unsigned NOT NULL default '0',
