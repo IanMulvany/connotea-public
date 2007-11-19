@@ -746,6 +746,8 @@ sub call_action_with_cgi_params {
   $fields{group} ||= undef;
 
   if ($action eq 'add' or $action eq 'edit') {
+    $fields{tags} or
+        die "You must provide at least one tag. A tag can be any descriptive word about this article.\n";
     my @tags = $bibliotech->parser->tag_list($fields{tags}) or
 	die "Missing tags, malformed tags, or use of a reserved keyword as a tag.\n";
     $fields{tags} = \@tags;
