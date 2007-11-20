@@ -60,20 +60,7 @@ CREATE TABLE `author` (
   KEY `email_idx` (`email`),
   KEY `author_user_fk` (`user`),
   CONSTRAINT `author_user_fk` FOREIGN KEY (`user`) REFERENCES `user` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
---
--- Table structure for table `article`
---
-
-DROP TABLE IF EXISTS `article`;
-CREATE TABLE `article` (
-  `article_id` int(7) unsigned NOT NULL auto_increment,
-  `hash` varchar(32) NOT NULL default '',
-  `created` datetime NOT NULL default '0000-00-00 00:00:00',
-  `updated` datetime default NULL,
-  PRIMARY KEY  (`article_id`),
-  KEY `hash_idx` (`hash`)
+  -- SEARCH: FULLTEXT INDEX `name_ft` (`firstname`, `forename`, `lastname`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -97,6 +84,7 @@ CREATE TABLE `bookmark` (
   KEY `first_user_idx` (`first_user`),
   CONSTRAINT `bookmark_citation_fk` FOREIGN KEY (`citation`) REFERENCES `citation` (`citation_id`),
   CONSTRAINT `bookmark_first_user_fk` FOREIGN KEY (`first_user`) REFERENCES `user` (`user_id`)
+  -- SEARCH: FULLTEXT INDEX `url_ft` (`url`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -112,6 +100,7 @@ CREATE TABLE `bookmark_details` (
   KEY `title_idx` (`title`(100)),
   KEY `combo_idx` (`bookmark_id`,`title`(100)),
   CONSTRAINT `bookmark_details_bookmark_id_fk` FOREIGN KEY (`bookmark_id`) REFERENCES `bookmark` (`bookmark_id`)
+  -- SEARCH: FULLTEXT INDEX `title_ft` (`title`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -150,6 +139,7 @@ CREATE TABLE `citation` (
   KEY `user_supplied_idx` (`user_supplied`),
   KEY `cs_module_idx` (`cs_module`),
   CONSTRAINT `citation_journal_fk` FOREIGN KEY (`journal`) REFERENCES `journal` (`journal_id`)
+  -- SEARCH: FULLTEXT INDEX `title_ft` (`title`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -183,6 +173,7 @@ CREATE TABLE `comment` (
   `updated` datetime NOT NULL default '0000-00-00 00:00:00',
   PRIMARY KEY  (`comment_id`),
   KEY `combo_idx` (`comment_id`,`created`)
+  -- SEARCH: FULLTEXT INDEX `entry_ft` (`entry`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -202,6 +193,8 @@ CREATE TABLE `gang` (
   UNIQUE KEY `name_idx` (`name`),
   KEY `private_idx` (`private`),
   KEY `combo_idx` (`gang_id`,`name`,`owner`)
+  -- SEARCH: FULLTEXT INDEX `name_ft` (`name`)
+  -- SEARCH: FULLTEXT INDEX `description_ft` (`description`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -225,6 +218,8 @@ CREATE TABLE `journal` (
   KEY `medline_ta_idx` (`medline_ta`),
   KEY `name_combo_idx` (`journal_id`,`name`,`medline_ta`),
   KEY `issn_combo_idx` (`journal_id`,`issn`)
+  -- SEARCH: FULLTEXT INDEX `name_ft` (`name`)
+  -- SEARCH: FULLTEXT INDEX `medline_ta_ft` (`medline_ta`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -240,6 +235,7 @@ CREATE TABLE `tag` (
   PRIMARY KEY  (`tag_id`),
   UNIQUE KEY `name_idx` (`name`),
   KEY `combo_idx` (`tag_id`,`name`)
+  -- SEARCH: FULLTEXT INDEX `name_ft` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -347,8 +343,10 @@ CREATE TABLE `user_article_details` (
   `description` text,
   PRIMARY KEY  (`user_article_id`),
   KEY `title_idx` (`title`(100)),
-  KEY `combo_idx` (`user_bookmark_id`,`title`(100)),
-  CONSTRAINT `user_bookmark_details_user_bookmark_fk` FOREIGN KEY (`user_bookmark_id`) REFERENCES `user_bookmark` (`user_bookmark_id`)
+  KEY `combo_idx` (`user_article_id`,`title`(100)),
+  CONSTRAINT `user_article_details_user_article_fk` FOREIGN KEY (`user_article_id`) REFERENCES `user_article` (`user_article_id`)
+  -- SEARCH: FULLTEXT INDEX `title_ft` (`title`)
+  -- SEARCH: FULLTEXT INDEX `description_ft` (`description`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --

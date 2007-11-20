@@ -188,7 +188,10 @@ AND      updated <= NOW() - INTERVAL %s
        	 LEFT JOIN __TABLE(Bibliotech::User_Article_Tag=uat)__ ON (__JOIN(ua uat)__)
          LEFT JOIN __TABLE(Bibliotech::Tag=t)__ ON (__JOIN(uat t)__)
 GROUP BY t.tag_id
-HAVING   filtered_count > filtered_user_count AND filtered_count >= ? AND filtered_user_count >= ? AND filtered_bookmark_count >= ?
+HAVING   filtered_count > filtered_user_count
+AND      filtered_count >= ?
+AND      filtered_user_count >= ?
+AND      filtered_bookmark_count >= ?
 ORDER BY filtered_count DESC
 LIMIT    %s
 ) AS ti

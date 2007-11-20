@@ -831,7 +831,7 @@ sub _search {
 	      $or_item_set = Bibliotech::DBI::Set->new;
 	    }
 	    else {
-	      die "$@\nSQL is:\n----------\n$sql\n----------\n\n".Dumper(\%sql_options, \@sql_execute);
+	      die $@;
 	    }
 	  }
 	  else {

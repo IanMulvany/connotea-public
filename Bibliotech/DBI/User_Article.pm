@@ -109,13 +109,12 @@ sub packed_select {
        Bibliotech::DBI::packing_groupconcat('Bibliotech::Author', undef, '_ct_authors_packed', 'cta.displayorder'),
        Bibliotech::DBI::packing_essentials('Bibliotech::Citation', 'ct2'),
        Bibliotech::DBI::packing_essentials('Bibliotech::Journal', 'j2'),
-       Bibliotech::DBI::packing_essentials('Bibliotech::Citation_Author', 'cta2'),
-       Bibliotech::DBI::packing_groupconcat('Bibliotech::Author', 'a2', '_ct2_authors_packed', 'cta2.displayorder'),
-       Bibliotech::DBI::packing_groupconcat('Bibliotech::Tag', 't2', '_ub_tags_packed', 'ubt2.created'),
-       'COUNT(DISTINCT ub2.user_bookmark_id) as _ub_user_bookmarks_count',
-       'COUNT(DISTINCT c2.comment_id) as _ub_comments_count',
-       'COUNT(DISTINCT ub3.user_bookmark_id) as _ub_bookmark_is_linked_by_current_user',
-       'COUNT(DISTINCT t4.tag_id) as _ub_is_geotagged');
+       Bibliotech::DBI::packing_groupconcat('Bibliotech::Author', 'au2', '_ct2_authors_packed', 'cta2.displayorder'),
+       Bibliotech::DBI::packing_groupconcat('Bibliotech::Tag', 't2', '_ua_tags_packed', 'uat2.created'),
+       'COUNT(DISTINCT ua2.user_article_id) as _ua_user_articles_count',
+       'COUNT(DISTINCT c2.comment_id) as _ua_comments_count',
+       'COUNT(DISTINCT ua3.user_article_id) as _ua_article_is_linked_by_current_user',
+       'COUNT(DISTINCT t4.tag_id) as _ua_is_geotagged');
   return @{dclone(\@PACKED_SELECT)};
 }
 

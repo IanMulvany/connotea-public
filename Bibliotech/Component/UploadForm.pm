@@ -241,9 +241,7 @@ sub html_content {
     }
   }
   elsif ($button eq 'Cancel') {
-    # nothing to do because no user_bookmark's are created on first pass
-    # go back to upload form
-    die 'Location: '.$bibliotech->location."upload\n";
+    die 'Location: '.$bibliotech->location."upload\n";  # just redirect because nothing written in first pass
   }
 
   my $o = $self->tt('compupload',
