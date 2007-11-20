@@ -34,9 +34,16 @@ our %tx;
 our %done;
 our %struct;
 
-die USAGE() unless @ARGV;
+# MAIN:
+die USAGE() if @ARGV < 7;
 db_disconnect(run_actions_in_sequence(start_at_user(make_connections(@ARGV), [follow_list()])));
 exit 0;
+
+sub USAGE {
+  "usage: recoveruser b_connect b_username b_password l_connect l_username l_password connotea_user\n".
+  "Where b_ fields are for the backup database (the source), and l_ for live (the target).\n".
+  "b/l_connect strings may be just a database name or a full DBI module string (host, port, etc).\n";
+}
 
 # cascading out from the user record, this list explains how to
 # discover and select related rows in the backup database
@@ -111,9 +118,7 @@ sub run_actions_in_sequence {
       }
       delete $by_table{$current};
     }
-    else {
-      warn "run has nothing to do for $current\n";
-    }
+    else { warn "run has nothing to do for $current\n"; }
   };
   eval { $run->($_) foreach ('begin', sequence_list(), 'commit'); };
   if ($@) { warn "caught error\n", $@; $run->('rollback'); }
@@ -122,41 +127,43 @@ sub run_actions_in_sequence {
 
 # reading the backup database, create closures that when executed will
 # update the live database
+# returns a list, each element is an arrayref: [table name, code ref]
 sub copy_actions {
   my ($dbh_backup, $dbh_live, $table, $primary_field, $primary_value, $follow_table) = @_;
-  return (do { print "checking $table $primary_value\n";
-	       my ($check_primary_field, $check_primary_value) = translate_values($table, $primary_field, $primary_value);
-	       my ($count) = $dbh_live->selectrow_array
-		   (join(' ', 'select count(*) from', $table, 'where', $check_primary_field, '= ?'),
-		    undef, $check_primary_value);
-	       $count = 1 if $count == 0 and check_for_readded($dbh_backup, $dbh_live, $table, $primary_field, $primary_value);
-	       $count == 0 && !done_record($table, $primary_value);
-	  } ? do {
-	    mark_done_record($table, $primary_value);
-	    [$table,
-	     sub {
-	       my $sth1 = $dbh_backup->prepare(join(' ', 'select * from', $table, 'where', $primary_field, '= ?'));
-	       $sth1->execute($primary_value);
-	       if ($sth1->rows > 0) {
-		 my %data = translate_values($table, %{$sth1->fetchrow_hashref});
-		 my @fields = limit_to_live_fields($dbh_live, $table, keys %data);
-		 my $sth2 = $dbh_live->prepare(join('', ('insert into ', $table, ' (', join(', ', @fields), ') ',
-							 'values (', join(', ', map('?', @fields)), ')')));
-		 eval { $sth2->execute(map($data{$_}, @fields)); };
-		 die "error with table $table [".join(', ',map($_.'='.$data{$_}, @fields))."]: $@" if $@;
-		 print "copied $table $primary_value\n";
-	       }
-	     }];
-	  }
-	  : (),
-	  # recursion to related tables using follow list - calls back into copy_actions():
-	  map {
-	    my (undef, $next_table, $next_primary_field, $next_select) = @{$_};
-	    map { copy_actions($dbh_backup, $dbh_live, $next_table, $next_primary_field, $_, $follow_table);
-	        } (grep { $_ } @{$dbh_backup->selectcol_arrayref($next_select, undef, $primary_value)});
-	  } (grep { $_->[0] eq $table } @{$follow_table}));
+  (do { print "checking $table $primary_value\n";
+	my ($check_primary_field, $check_primary_value) = translate_values($table, $primary_field, $primary_value);
+	my ($count) = $dbh_live->selectrow_array
+	    (join(' ', 'select count(*) from', $table, 'where', $check_primary_field, '= ?'),
+	     undef, $check_primary_value);
+	$count = 1 if $count == 0 and check_for_readded($dbh_backup, $dbh_live, $table, $primary_field, $primary_value);
+	$count == 0 && !done_record($table, $primary_value);
+   } ? do {
+     mark_done_record($table, $primary_value);
+     [$table,
+      sub {
+	my $sth1 = $dbh_backup->prepare(join(' ', 'select * from', $table, 'where', $primary_field, '= ?'));
+	$sth1->execute($primary_value);
+	if ($sth1->rows > 0) {
+	  my %data = translate_values($table, %{$sth1->fetchrow_hashref});
+	  my @fields = limit_to_live_fields($dbh_live, $table, keys %data);
+	  my $sth2 = $dbh_live->prepare(join('', ('insert into ', $table, ' (', join(', ', @fields), ') ',
+						  'values (', join(', ', map('?', @fields)), ')')));
+	  eval { $sth2->execute(map($data{$_}, @fields)); };
+	  die "error with table $table [".join(', ',map($_.'='.$data{$_}, @fields))."]: $@" if $@;
+	  print "copied $table $primary_value\n";
+	}
+      }];
+   }
+   : (),
+   # recursion to related tables using follow list - calls back into copy_actions():
+   map {
+     my (undef, $next_table, $next_primary_field, $next_select) = @{$_};
+     map { copy_actions($dbh_backup, $dbh_live, $next_table, $next_primary_field, $_, $follow_table);
+     } (grep { $_ } @{$dbh_backup->selectcol_arrayref($next_select, undef, $primary_value)});
+   } (grep { $_->[0] eq $table } @{$follow_table}));
 }
 
+# return the copy action required to finish off the user copy
 sub reset_actions {
   my ($dbh_live, $user_id) = @_;
   ['user',
@@ -235,11 +242,14 @@ sub fields_for {
 
 sub _fields_for {
   my ($dbh, $table) = @_;
-  my $sth = $dbh->prepare(join(' ', 'select * from', $table, 'limit 1'));
-  $sth->execute;
-  my @fields = keys %{$sth->fetchrow_hashref};
-  $sth->finish;
+  my @fields = @{$dbh->selectcol_arrayref(join(' ', 'show fields from', $table))};
   return wantarray ? @fields : \@fields;
+}
+
+sub _ensure_dbi_prefix_on_connect {
+  local $_ = shift;
+  return 'dbi:mysql:'.$_ unless m/^dbi:\w+:/i;
+  return $_;
 }
 
 sub make_connections {
@@ -247,9 +257,13 @@ sub make_connections {
       $live_connect,   $live_username,   $live_password,
       $connotea_username) = @_;
   print "Connecting to backup...\n";
-  my $dbh_backup = DBI->connect($backup_connect, $backup_username, $backup_password, dbopts()) or die $DBI::errstr;
+  my $dbh_backup = DBI->connect(_ensure_dbi_prefix_on_connect($backup_connect),
+				$backup_username => $backup_password,
+				dbopts()) or die $DBI::errstr;
   print "Connecting to live...\n";
-  my $dbh_live   = DBI->connect($live_connect,   $live_username,   $live_password,   dbopts()) or die $DBI::errstr;
+  my $dbh_live   = DBI->connect(_ensure_dbi_prefix_on_connect($live_connect),
+				$live_username => $live_password,
+				dbopts()) or die $DBI::errstr;
   my ($user_id) = $dbh_backup->selectrow_array('select user_id from user where username = ? OR email = ?',
 					       undef, $connotea_username, $connotea_username);
   die "username $connotea_username not found in backup database\n" unless $user_id;
@@ -281,9 +295,4 @@ sub _transaction_cmd {
 
 sub db_disconnect {
   $_->disconnect foreach (@_);
-}
-
-sub USAGE {
-  "usage: recoveruser b_connect b_username b_password l_connect l_username l_password connotea_user\n".
-  "Where b_ fields are for the backup database and l_ for live.\n";
 }
