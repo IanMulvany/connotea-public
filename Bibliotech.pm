@@ -620,21 +620,6 @@ sub pull_citation_save {
   return $bookmark;
 }
 
-# $bookmark is an add()'d bookmark
-# $citations_model_ref is the result of a citations() call to a CitationSource module and has
-#   non-saved citation data in it
-# $original_module_str is a string representing a description from the module that got the data
-sub handle_citation_results {
-  my ($self, $bookmark, $citations_model_ref, $original_module_str, $original_module_score) = @_;
-  my $user_supplied = $bookmark->isa('Bibliotech::User_Bookmark') ? 1 : 0;
-  my $citation = Bibliotech::Unwritten::Citation->from_citationsource_result_list($citations_model_ref,
-										  $user_supplied,
-										  $original_module_str,
-										  $original_module_score)
-      or die 'no citation - module: '.$original_module_str.', uri: '.$bookmark->url;
-  return $citation->write($bookmark);
-}
-
 sub validate_user_fields_for_new_user {
   my ($self, $username, $password, $firstname, $lastname, $email, $openurl_resolver, $openurl_name) = @_;
   # ----- username
