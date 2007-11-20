@@ -73,20 +73,32 @@ while (<STDIN>) {
 
 sub show_citation {
   my $result = shift;
-  print 'DOI: ',      $result->identifier('doi')||'', "\n";
-  print 'Title: ',    $result->title||'', "\n";
-  print 'Journal: ',  (defined $result->journal ? $result->journal->name : ''), "\n";
-  print 'Volume: ',   $result->volume||'', "\n";
-  print 'Issue: ',    $result->issue||'', "\n";
-  print 'Page: ',     $result->page||'', "\n";
-  print 'Date: ',     $result->date||'', "\n";
+  print "Data:\n";
+  my $id = $result->identifiers;
+  if (defined $id and %{$id}) {
+    # show all identifiers but show the three main ones in canonical order with canonical labels
+    foreach (grep { $id->{$_->[0]} } (['doi', 'DOI'], ['pubmed', 'PMID'], ['asin', 'ASIN'])) {
+      my ($key, $label) = @{$_};
+      print '  ', $label, ': ', $id->{$key}||'', "\n";
+    }
+    foreach (map { [$_, $_] } grep { !/^(doi|pubmed|asin)$/ } keys %{$id}) {
+      my ($key, $label) = @{$_};
+      print '  ', $label, ' (non-standard): ', $id->{$key}||'', "\n";
+    }
+  }
+  print '  Title: ',    $result->title||'', "\n";
+  print '  Journal: ',  (defined $result->journal ? $result->journal->name||'' : ''), "\n";
+  print '  Volume: ',   $result->volume||'', "\n";
+  print '  Issue: ',    $result->issue||'', "\n";
+  print '  Page: ',     $result->page||'', "\n";
+  print '  Date: ',     $result->date||'', "\n";
   if (my $authors = $result->authors) {
     my @author_str;
     $authors->foreach(sub{ push @author_str, extract_name($_); });
-    print 'Authors (', scalar @author_str, '): ', join(', ', @author_str), "\n";
+    print '  Authors (', scalar @author_str, '): ', join(', ', @author_str), "\n";
   }
   else {
-    print "No Authors", "\n";
+    print "  No Authors", "\n";
   }
   print "\n";
 }
