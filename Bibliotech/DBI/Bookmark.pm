@@ -17,7 +17,7 @@ use utf8;
 
 __PACKAGE__->table('bookmark');
 __PACKAGE__->columns(Primary => qw/bookmark_id/);
-__PACKAGE__->columns(Essential => qw/url hash citation first_user created updated/);
+__PACKAGE__->columns(Essential => qw/url hash article citation first_user created updated/);
 __PACKAGE__->columns(TEMP => qw/x_adding x_for_user_article user_article_count_packed tags_packed document/);
 __PACKAGE__->datetime_column('created', 'before_create');
 __PACKAGE__->datetime_column('updated', 'before_update');
