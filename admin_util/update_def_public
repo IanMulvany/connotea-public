@@ -1,0 +1,15 @@
+#!/usr/bin/perl
+#
+# Copyright 2007 Nature Publishing Group
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# The 'update_def_public' script updates an index periodically.
+
+use strict;
+use Bibliotech;
+
+my $sth = Bibliotech::User_Bookmark->sql_update_def_public_index();
+$sth->execute;
