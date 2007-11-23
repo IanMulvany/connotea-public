@@ -17,6 +17,7 @@ use List::MoreUtils qw/none/;
 # do...      - perform all side effects necessary
 
 our $SERVICE_READ_ONLY 		  = Bibliotech::Config->get('SERVICE_READ_ONLY');
+our $SERVICE_READ_ONLY_SEARCH_TOO = Bibliotech::Config->get('SERVICE_READ_ONLY_SEARCH_TOO');
 our $SERVICE_NEVER_READ_ONLY_FOR  = Bibliotech::Config->get('SERVICE_NEVER_READ_ONLY_FOR');
 
 our @WRITE_PAGES =
@@ -42,6 +43,11 @@ our @WRITE_PAGES =
      'killspammer',
      'adminrenameuser');
 
+our @SEARCH_PAGES =
+    ('search');
+
+our @COMBINED = (@WRITE_PAGES, @SEARCH_PAGES);
+
 sub list_from_undef_scalar_or_arrayref {
   local $_ = shift;
   return () unless defined $_;
@@ -60,7 +66,11 @@ sub _is_service_read_only {
 
 sub is_service_paused {
   my ($page, $remote_ip) = @_;
-  return _is_service_read_only($SERVICE_READ_ONLY, $page, \@WRITE_PAGES, $SERVICE_NEVER_READ_ONLY_FOR, $remote_ip);
+  return _is_service_read_only($SERVICE_READ_ONLY,
+			       $page,
+			       $SERVICE_READ_ONLY_SEARCH_TOO ? \@COMBINED : \@WRITE_PAGES,
+			       $SERVICE_NEVER_READ_ONLY_FOR,
+			       $remote_ip);
 }
 
 sub do_service_read_only {
