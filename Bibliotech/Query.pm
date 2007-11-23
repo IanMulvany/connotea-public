@@ -139,11 +139,8 @@ sub freematch {
 # provide the correct SQL snippet and binding parameters for privacy,
 # given a particular user who is the active user
 sub _privacywhere {
-  my ($user_id, $gang_ids_ref) = @_;
-
-  # short-circuit if we can use def_public index for a visitor
-  # the private_until check is undesirable, we have to have it because it changes with time
-  defined $user_id or return '(ub.def_public = 1 OR ub.private_until <= NOW())';
+  my $user_id      = shift or return 'ub.def_public = 1';  # rest of routine is moot if no user
+  my $gang_ids_ref = shift;
 
   my $PUBLIC  =       '(ua.private = 0 AND ua.private_gang IS NULL)';
   my $MINE    = sub { return unless defined $user_id;
