@@ -302,7 +302,7 @@ sub search_most_active {
 # call search_most_active_in_window() and the privacy parameter is handled for you
 __PACKAGE__->set_sql(most_active_in_window_need_privacy => <<'');
 SELECT   __ESSENTIAL(t)__,
-         COUNT(ub.user_article_id) as sortvalue
+         COUNT(ua.user_article_id) as sortvalue
 FROM
 (
 SELECT   user_article_id
@@ -313,10 +313,10 @@ SELECT   user_article_id
 FROM     __TABLE(Bibliotech::User_Article)__
 WHERE    updated >= NOW() - INTERVAL %s
 ) AS uai
-	 LEFT JOIN __TABLE(Bibliotech::User_Article=ua)__ ON (uai.user_article_id=ub.user_article_id AND %s)
+	 LEFT JOIN __TABLE(Bibliotech::User_Article=ua)__ ON (uai.user_article_id=ua.user_article_id AND %s)
 	 LEFT JOIN __TABLE(Bibliotech::User_Article_Tag=uat)__ ON (__JOIN(uat ua)__)
          LEFT JOIN __TABLE(Bibliotech::Tag=t)__ ON (__JOIN(t uat)__)
-WHERE    ub.user_article_id IS NOT NULL
+WHERE    ua.user_article_id IS NOT NULL
 GROUP BY t.tag_id
 HAVING   sortvalue > 1
 ORDER BY sortvalue DESC
