@@ -447,7 +447,7 @@ FROM     ${search_database}author au_s
          LEFT JOIN citation c_s ON (c_s.citation_id=cta_s.citation)
          LEFT JOIN bookmark b_s ON (b_s.citation=c_s.citation_id)
          LEFT JOIN user_bookmark ub ON (ub.citation=c_s.citation_id)
-WHERE    MATCH(a_s.lastname, a_s.forename, a_s.firstname) AGAINST (? IN BOOLEAN MODE IN BOOLEAN MODE) AND cta_s.citation_author_id IS NOT NULL AND c_s.citation_id IS NOT NULL AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
+WHERE    MATCH(a_s.lastname, a_s.forename, a_s.firstname) AGAINST (? IN BOOLEAN MODE) AND cta_s.citation_author_id IS NOT NULL AND c_s.citation_id IS NOT NULL AND b_s.bookmark_id IS NOT NULL AND ub.user_bookmark_id IS NOT NULL
 UNION
 SELECT   uat_s.user_article as user_article_id, 20 as score
 FROM     tag t_s
