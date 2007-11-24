@@ -703,7 +703,7 @@ sub href_search_global {
 }
 
 __PACKAGE__->set_sql(update_def_public_index => <<'');
-UPDATE user_bookmark
+UPDATE user_article
 SET    def_public = IF(private = 0 AND private_gang IS NULL AND private_until IS NULL AND quarantined IS NULL, 1, 0)
 
 1;
