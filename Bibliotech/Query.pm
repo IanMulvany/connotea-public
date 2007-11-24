@@ -253,7 +253,7 @@ sub _sql_user_date_super_optimized {
 
 sub _sql_user_article_super_optimized {
   my ($user_namepart, $article_namepart) = @_;
-  my $user_id     = $user_namepart->obj_id_or_zero;
+  my $user_id    = $user_namepart->obj_id_or_zero;
   my $article_id = $article_namepart->obj_id_or_zero;
   return "SELECT user_article_id FROM user_article WHERE user = $user_id AND article = $article_id";
 }
@@ -281,9 +281,16 @@ sub _sql_tag_date_super_optimized {
 
 sub _sql_tag_article_super_optimized {
   my ($tag_namepart, $article_namepart) = @_;
-  my $tag_id      = $tag_namepart->obj_id_or_zero;
+  my $tag_id     = $tag_namepart->obj_id_or_zero;
   my $article_id = $article_namepart->obj_id_or_zero;
-  return "SELECT ua.user_article_id FROM user_article ua LEFT JOIN user_article_tag uat ON (ua.user_article_id = uat.user_article) WHERE uat.tag = $tag_id AND ua.article = $article_id";
+  return "SELECT DISTINCT ua.user_article_id FROM user_article_tag uat LEFT JOIN user_article ua ON (ua.user_article_id = uat.user_article) WHERE uat.tag = $tag_id AND ua.article = $article_id";
+}
+
+sub _sql_tag_bookmark_super_optimized {
+  my ($tag_namepart, $bookmark_namepart) = @_;
+  my $tag_id      = $tag_namepart->obj_id_or_zero;
+  my $bookmark_id = $bookmark_namepart->obj_id_or_zero;
+  return "SELECT DISTINCT ua.user_article_id FROM user_article_tag uat LEFT JOIN user_article ua ON (ua.user_article_id = uat.user_article) LEFT JOIN bookmark b ON (b.article = ua.article) WHERE uat.tag = $tag_id AND b.bookmark_id = $bookmark_id";
 }
 
 sub _sql_gang_tag_super_optimized {
@@ -302,7 +309,7 @@ sub _sql_gang_date_super_optimized {
 
 sub _sql_date_article_super_optimized {
   my ($date_namepart, $article_namepart) = @_;
-  my $date        = $date_namepart->obj->mysql_date;
+  my $date       = $date_namepart->obj->mysql_date;
   my $article_id = $article_namepart->obj_id_or_zero;
   return "SELECT user_article_id FROM user_article WHERE article = $article_id AND created BETWEEN \'$date 00:00:00\' AND \'$date 23:59:59\'";
 }
