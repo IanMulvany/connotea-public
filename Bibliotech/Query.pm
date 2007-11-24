@@ -139,7 +139,7 @@ sub freematch {
 # provide the correct SQL snippet and binding parameters for privacy,
 # given a particular user who is the active user
 sub _privacywhere {
-  my $user_id      = shift or return 'ub.def_public = 1';  # rest of routine is moot if no user
+  my $user_id      = shift or return 'ua.def_public = 1';  # rest of routine is moot if no user
   my $gang_ids_ref = shift;
 
   my $PUBLIC  =       '(ua.private = 0 AND ua.private_gang IS NULL)';
