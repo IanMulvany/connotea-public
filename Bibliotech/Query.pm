@@ -258,6 +258,13 @@ sub _sql_user_article_super_optimized {
   return "SELECT user_article_id FROM user_article WHERE user = $user_id AND article = $article_id";
 }
 
+sub _sql_user_bookmark_super_optimized {
+  my ($user_namepart, $bookmark_namepart) = @_;
+  my $user_id     = $user_namepart->obj_id_or_zero;
+  my $bookmark_id = $bookmark_namepart->obj_id_or_zero;
+  return "SELECT user_article_id FROM user_article WHERE user = $user_id AND bookmark = $bookmark_id";
+}
+
 sub _sql_user_gang_super_optimized {
   my ($user_namepart, $gang_namepart) = @_;
   my $user_id = $user_namepart->obj_id_or_zero;
