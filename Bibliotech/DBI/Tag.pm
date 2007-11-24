@@ -163,7 +163,7 @@ __PACKAGE__->set_sql(for_popular_tags_in_window_need_privacy => <<'');
 SELECT   __ESSENTIAL__,
          filtered_count,
          filtered_user_count,
-         filtered_bookmark_count,
+         filtered_article_count,
          rss_date_override
 FROM
 (
@@ -191,7 +191,7 @@ GROUP BY t.tag_id
 HAVING   filtered_count > filtered_user_count
 AND      filtered_count >= ?
 AND      filtered_user_count >= ?
-AND      filtered_bookmark_count >= ?
+AND      filtered_article_count >= ?
 ORDER BY filtered_count DESC
 LIMIT    %s
 ) AS ti

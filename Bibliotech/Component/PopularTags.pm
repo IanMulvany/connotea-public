@@ -47,7 +47,7 @@ sub rss_content {
     my $connotea_ns = ($rss_hashref->{connotea} ||= {});
     $connotea_ns->{postCount}     = $_->filtered_count;
     $connotea_ns->{userCount}     = $_->filtered_user_count;
-    $connotea_ns->{bookmarkCount} = $_->filtered_bookmark_count;
+    $connotea_ns->{bookmarkCount} = $_->filtered_article_count;
     $rss_hashref;
   } $self->list(main => 1);
 }
