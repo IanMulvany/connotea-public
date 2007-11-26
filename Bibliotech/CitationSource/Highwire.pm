@@ -119,10 +119,18 @@ sub citations {
     }
     die "RIS obj false\n" unless $ris;
     die "RIS file contained no data\n" unless $ris->has_data;
-  };    
-  die $@ if $@ =~ /at .* line \d+/;
+  };
+  if (my $e = $@) {
+    die $e if $e =~ /at .* line \d+/;
+    if ($e eq "RIS file contained no data\n") {  # happens a lot
+      $self->warnstr($e);
+    }
+    else {
+      $self->errstr($e);
+    }
+    return undef;
+  }
 
-  $self->errstr($@), return undef if $@;
   return bless [bless $ris, 'Bibliotech::CitationSource::Highwire::Result'], 'Bibliotech::CitationSource::ResultList';
 }
 
@@ -1536,7 +1544,7 @@ package Bibliotech::CitationSource::Highwire::HostTable;
   #Journal of Dairy Science
   'jds.fass.org'               =>          'dairysci',
 
-  #Bulletin de la Société Géologique de France
+  #Bulletin de la SociÃ©tÃ© GÃ©ologique de France
   'bsgf.geoscienceworld.org'               =>          'gssgfbull',
 
   #Economic Inquiry
