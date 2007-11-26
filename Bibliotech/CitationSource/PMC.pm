@@ -120,7 +120,7 @@ sub metadata
 		#return undef;
 	#}
 	if($gr->errors) {
-		$self->errstr('GetRecord Error for ' . $art_id);
+		$self->warnstr('GetRecord Error for ' . $art_id);
 		return undef;
 	}
 
