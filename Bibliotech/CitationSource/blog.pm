@@ -137,6 +137,7 @@ sub citations {
 
   if (my $e = $@) {
     if ($e =~ s/^warnstr: // or                # explicitly delivered
+	$e =~ /file contained zero entries/ or # fairly common
 	$e =~ /^URI in question not found/) {  # fairly common
       $self->warnstr($e);  # Level 1 error
       return undef;
@@ -177,8 +178,7 @@ sub new {
     # Level 1 error
     die "warnstr: $e\n" if $e =~ m/connect: timeout/ or
 	                   $e =~ m/^:\d+: /m or
-			   $e =~ m/not well-formed \(invalid token\)/ or
-			   $e =~ m/file contained zero entries/;
+			   $e =~ m/not well-formed \(invalid token\)/;
 
     # disguise the error so it does not look like a perl error and will thus be emitted in errstr()
     $e =~ s/\bline (\d+)$/line:$1/;
