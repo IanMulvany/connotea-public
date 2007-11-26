@@ -178,7 +178,8 @@ sub new {
     # Level 1 error
     die "warnstr: $e\n" if $e =~ m/connect: timeout/ or
 	                   $e =~ m/^:\d+: /m or
-			   $e =~ m/not well-formed \(invalid token\)/;
+			   $e =~ m/not well-formed \(invalid token\)/ or
+			   $e =~ m/undefined entity at /;
 
     # disguise the error so it does not look like a perl error and will thus be emitted in errstr()
     $e =~ s/\bline (\d+)$/line:$1/;
