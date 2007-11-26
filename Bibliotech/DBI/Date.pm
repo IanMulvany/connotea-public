@@ -12,7 +12,13 @@ our $TIME_ZONE_PROVIDED   = Bibliotech::Config->get('TIME_ZONE_PROVIDED');
 
 sub _as_datetime_constructor {
   my $class = shift;
-  my $dt = DateTime->new(@_);
+  my $dt = eval {
+    DateTime->new(@_);
+  };
+  if (my $e = $@) {
+    my $str = join(',', @_);
+    die "Invalid date/time: $str ($e)\n";
+  }
   return bless $dt, ref $class || $class;
 }
 
@@ -82,22 +88,22 @@ sub _long_parse {
       $hour = int($hour) if defined $hour;
       $minute = int($minute) if defined $minute;
       $second = int($second) if defined $second;
-      my $class = 'DateTime';
       if (defined $year and defined $month and defined $day and defined $hour and defined $minute) {
 	$second = 0 if !defined $second;
       }
       else {
 	$complete = 0;
-	$class .= '::Incomplete';
       }
-      $self = $class->new(year => $year, month => $month, day => $day,
-			  hour => $hour, minute => $minute, second => $second,
-			  time_zone => $tz || $TIME_ZONE_ON_DB_HOST);
-      bless $self, 'Bibliotech::Date::Incomplete' if !$complete;
+      my $constructor_class = 'DateTime'.($complete ? '' : '::Incomplete');
+      $self = $constructor_class->new(year => $year, month  => $month,  day    => $day,
+				      hour => $hour, minute => $minute, second => $second,
+				      time_zone => $tz || $TIME_ZONE_ON_DB_HOST);
+      my $ref_class = (ref $class || $class).($complete ? '' : '::Incomplete');
+      bless $self, $ref_class;
     };
-    if ($@) {
-      die $@ if $@ =~ /cannot determine/i;  # e.g. Cannot determine local time zone
-      die "Invalid date/time: $str ($@)\n" if $create;
+    if (my $e = $@) {
+      die $e if $e =~ /cannot determine/i;  # e.g. Cannot determine local time zone
+      die "Invalid date/time: $str ($e)\n" if $create;
       $self = $class->zero;
     }
   }
