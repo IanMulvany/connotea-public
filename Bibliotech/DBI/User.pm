@@ -266,10 +266,22 @@ sub link_bookmark {
     my $bookmark = Bibliotech::Bookmark->new($b, $create);
     next unless $bookmark;
     my $method = $create ? 'find_or_create' : 'search';
-    my $article = $a || (Bibliotech::Article->$method({hash => $bookmark->hash}))[0];
+    my $article = $a || do { local $_ = $bookmark->article; defined $_ && $_->id != 0 ? $_ : undef }
+                     || (Bibliotech::Article->$method({hash => $bookmark->hash}))[0];
     next unless $article;
     $bookmark->article($article) if not defined $bookmark->article or $bookmark->article->id == 0;
-    my ($user_article) = Bibliotech::User_Article->$method({user => $self, article => $article, bookmark => $bookmark});
+    my $user_article;
+    my ($generic_user_article) = Bibliotech::User_Article->search({user => $self, article => $article});
+    if ($generic_user_article) {
+      $user_article = $generic_user_article;
+      if ($user_article->bookmark->id != $bookmark->id) {
+	$user_article->bookmark($bookmark);
+	$user_article->mark_updated;
+      }
+    }
+    else {
+      ($user_article) = Bibliotech::User_Article->$method({user => $self, article => $article, bookmark => $bookmark});
+    }
     next unless $user_article;
     push @ua, $user_article;
     $self->mark_updated;
