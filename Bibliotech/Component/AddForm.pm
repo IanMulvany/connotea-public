@@ -156,7 +156,7 @@ sub html_content {
 	my $user_article = $user->find_bookmark($bookmark);
 	$bookmark->for_user_article($user_article) if $user_article;
       }
-      if (!$button) {
+      if (!$button or $button eq LOOK_UP_LABEL) {
 	my $user_article = $user->find_bookmark($bookmark);
 	if ($user_article) {
 	  $bookmark->for_user_article($user_article);
@@ -781,8 +781,8 @@ our @citation_field_names = qw/ctitle cjournal cvolume cissue cpages cdate cauth
 
 sub _check_if_citation_edited {
   my $cgi = shift;
-  my $new = sub { $cgi->param(shift())||''; };
-  my $old = sub { $cgi->param(shift().'2')||''; };
+  my $new = sub { local $_ = shift; $cgi->param($_)||''; };
+  my $old = sub { local $_ = shift; $cgi->param($_.'2')||''; };
   return any { $new->($_) ne $old->($_) } @citation_field_names;
 }
 
