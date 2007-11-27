@@ -58,7 +58,7 @@
       </tr>
       <tr>
         <td class="addformlabelcell" id="cissuelabelcell">Issue No.:</td>
-        <td class="addformdatacell" id="cissuedatacell"><input type="text" name="cissue" value="[% sticky('cissue') %]" size="10" class="textctl" id="cissuebox" /><input type="hidden" name="cissue2" value="[% stick('cissue2') %]" /></td>
+        <td class="addformdatacell" id="cissuedatacell"><input type="text" name="cissue" value="[% sticky('cissue') %]" size="10" class="textctl" id="cissuebox" /><input type="hidden" name="cissue2" value="[% sticky('cissue2') %]" /></td>
       </tr>
       <tr>
         <td class="addformlabelcell" id="cpageslabelcell">Pages:</td>
