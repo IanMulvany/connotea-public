@@ -76,7 +76,7 @@ sub form {
 	    $cgi->table($cgi->Tr($cgi->td(['URI:',
 					   $cgi->textfield(-name => 'uri',
 							   -size => 80,
-							   -maxlength => 255)])),
+							   -maxlength => 400)])),
 			$cgi->Tr($cgi->td(['Format:',
 					   $cgi->popup_menu(-name => 'fmt',
 							    -values => [qw/ris mods json/])])),

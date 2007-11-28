@@ -134,8 +134,8 @@ sub preadd_validate_uri {
   $scheme !~ /^(file|mailto|data|chrome|about)$/
       or die "Sorry, ${scheme}: URI\'s are not allowed.\n";
   my $length = length("$uri");
-  $length <= 255                   # this is just for practicality - the database field is this long
-      or die "Sorry, URI\'s over 255 characters long are not supported ".
+  $length <= 400                   # this is just for practicality - the database field is this long
+      or die "Sorry, URI\'s over 400 characters long are not supported ".
              "(URI provided is $length characters long).\n";
   return $uri;
 }
