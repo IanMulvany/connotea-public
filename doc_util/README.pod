@@ -728,34 +728,40 @@ file with the wiki database details.
 
 =head2 APACHE
 
-Everything under the F<html> subdirectory should be placed or linked
-into an Apache-accessible location, and a location handler should be
-added to F<httpd.conf> (or elsewhere in the Apache configuration) such
-as the following one. We recommend F</var/www/html/bibliotech> on most
-systems, so that your site is accessible under
-C<www.yourdomain.com/bibliotech>.
+Everything under the F<site/default> subdirectory should be placed or
+linked into an Apache-accessible location, and a location handler
+should be added to F<httpd.conf> (or elsewhere in the Apache
+configuration) such as the following one.
 
-  PerlOptions +Parent
-  PerlSwitches -I/var/www/perl/...
-  PerlModule Bibliotech::Apache
-  PerlModule Bibliotech::AuthCookie
-  <Location /bibliotech>
-    SetHandler perl-script
-    PerlHandler Bibliotech::Apache
-    PerlAuthenHandler Bibliotech::AuthCookie::authen_handler
-    AuthName Bibliotech
-    AuthType basic
-    require valid-user
-    #ErrorDocument 503 /paused.html
-    ErrorDocument 503 /unavailable.html
-  </Location>
+Update the values to match your IP, domain, and file paths:
 
-The PerlSwitches line should point to the Perl code.
+  <VirtualHost 1.2.3.4:80>
+    ServerName www.yourdomain.com
+    ServerAlias yourdomain.com
+    ServerAdmin you@yourdomain.com
+    DocumentRoot /var/www/perl/connotea_code/site/default
+    PerlOptions +Parent
+    PerlSwitches -I/var/www/perl/connotea_code
+    PerlModule Bibliotech::Apache
+    PerlModule Bibliotech::AuthCookie
+    <Location />
+      SetHandler perl-script
+      PerlHandler Bibliotech::Apache
+      PerlAuthenHandler Bibliotech::AuthCookie::authen_handler
+      AuthName Bibliotech
+      AuthType basic
+      require valid-user
+      #ErrorDocument 503 /paused.html
+      #ErrorDocument 503 /readonly.html
+      ErrorDocument 503 /unavailable.html
+    </Location>
+  </VirtualHost>
 
 The 503 lines allow a custom page to be displayed when your site is
 under heavy load (F<unavailable.html>) or when you deliberately pause
-service (F<paused.html>; you must edit your Apache configuration and
-switch which line is commented for this).
+service (F<paused.html>) or make it read-only (F<readonly.html>); you
+must edit your Apache configuration and switch which line is commented
+for the latter two modes.
 
 
 =head2 MEMCACHED
@@ -793,7 +799,7 @@ short.
 
 =head3 TEMPLATE LOCATION
 
-Templates are located by default in F<html/defaulttemplate>. This is
+Templates are located by default in F<site/default>. This is
 controlled by options in the configuration. It is recommended that
 templates have a F<.tt> extension.
 

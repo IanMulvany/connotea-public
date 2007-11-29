@@ -15,7 +15,7 @@ GENERAL {
 
   # optionally set document root and home page hyperlink, or they can
   # be detected
-  #DOCROOT = '/var/www/perl/connotea_code/html'
+  #DOCROOT = '/var/www/perl/connotea_code/site/default'
   #LOCATION = 'http://www.mydomain.com/'
   # set prepath if location has a component after the domain,
   # e.g. /bibliotech
@@ -286,7 +286,7 @@ COMPONENT ADMINSTATS {
 CAPTCHA {
   #DATA_FOLDER = '/tmp/captcha/data'
   # next line actually defaults to DOCROOT + /captcha
-  #OUTPUT_FOLDER = '/var/www/perl/connotea_code/html/captcha'
+  #OUTPUT_FOLDER = '/var/www/perl/connotea_code/site/default/captcha'
   #OUTPUT_LOCATION = '/captcha/'
 }
 
