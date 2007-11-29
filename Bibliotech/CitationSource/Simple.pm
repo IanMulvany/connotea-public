@@ -141,60 +141,49 @@ sub last_modified_date {
 
 package Bibliotech::CitationSource::Result::Author::Simple;
 use strict;
+use Bibliotech::Util;
 
 sub new
 {
     my ($class, $authorname) = @_;
-    return bless {'authorname' => $authorname}, $class;
+    if (ref $authorname) {
+      return bless {'authorname' => $authorname}, $class;
+    }
+    else {
+      my $unwritten_author_obj = Bibliotech::Util::parse_author($authorname);
+      return bless {'authorname' => undef, 'author' => $unwritten_author_obj}, $class;
+    }
 }
 
-#just the first name
 sub firstname
 {
     my $self = shift;
     return $self->{'authorname'}->{'firstname'} if ref $self->{'authorname'};
-
-    if($self->{'authorname'} =~ m!^(\w+)!)
-    {
-	return $1;
-    }
+    return $self->{'author'}->firstname if ref $self->{'author'};
     return undef;
 }
-#everything up to the last name
+
 sub forename
 {
     my $self = shift;
     return $self->{'authorname'}->{'forename'} if ref $self->{'authorname'};
-
-    if($self->{'authorname'} =~ m!^(.*)\s\w+$!)
-    {
-	return $1;
-    }
+    return $self->{'author'}->forename if ref $self->{'author'};
     return undef
 }
+
 sub initials
 {
     my $self = shift;
     return $self->{'authorname'}->{'initials'} if ref $self->{'authorname'};
-
-    my $initials = '';
-    $initials .= uc(substr($self->firstname, 0, 1)) if $self->firstname;
-    $initials .= uc(substr($self->middlename, 0, 1)) if $self->middlename;
-    $initials .= uc(substr($self->middleinitial, 0, 1)) if ($self->middleinitial && !$self->middlename);
-    
-    return $initials if $initials;
+    return $self->{'author'}->initials if ref $self->{'author'};
     return undef;
 }
+
 sub middlename
 {
     my $self = shift;
     return $self->{'authorname'}->{'middlename'} if ref $self->{'authorname'};
-
-    my @names = split /\s+/, $self->{'authorname'};
-    if(@names == 3 && $names[1] !~ m!\w\.?!)
-    {
-	return $names[1];
-    }
+    return $self->{'author'}->middlename if ref $self->{'author'};
     return undef;
 }
 
@@ -202,12 +191,6 @@ sub middleinitial
 {
     my $self = shift;
     return $self->{'authorname'}->{'middleinitial'} if ref $self->{'authorname'};
-
-    my @names = split /\s+/,$self->{'authorname'};
-    if(@names == 3 && $names[1] =~ m!\w\.?!)
-    {
-	return $names[1];
-    }
     return undef;
 }
 
@@ -215,11 +198,7 @@ sub lastname
 {
     my $self = shift;
     return $self->{'authorname'}->{'lastname'} if ref $self->{'authorname'};
-
-    if($self->{'authorname'} =~ m!^.*\s(\w+)$!)
-    {
-	return $1;
-    }
+    return $self->{'author'}->lastname if ref $self->{'author'};
     return undef;
 }
 
@@ -237,5 +216,5 @@ sub new
 sub name           { return shift->{'name'}; }
 sub issn           { return shift->{'issn'}; }
 
-#true!
 1;
+__END__
