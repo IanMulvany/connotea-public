@@ -229,6 +229,14 @@ GENERAL {
   #IMPORT_MAX_COUNT = 1000
 }
 
+CLICKS {
+  # options regarding click tracking
+  # database connection details
+  DBI_CONNECT = 'dbi:mysql:clicks'
+  DBI_USERNAME = 'user'
+  DBI_PASSWORD = 'secret'
+}
+
 # Some citation modules need credentials or other minor configuration:
 
 CITATION AMAZON {
