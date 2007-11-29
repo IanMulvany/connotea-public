@@ -245,12 +245,6 @@ CITATION HIGHWIRE {
   SCI_PASSWORD = ''
 }
 
-CITATION {
-  #DNS_LISTS = [ sbl.spamhaus.org multi.surbl.org ]
-  #WHITE_LIST = []
-  #SCORE = 2
-}
-
 # Component modules:
 
 COMPONENT BLOG {
