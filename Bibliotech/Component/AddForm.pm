@@ -96,7 +96,7 @@ sub html_content {
 	$need_captcha = 1;
       }
       else {
-	$validationmsg = $@;
+	$validationmsg = $e;
 	$collapse_citation = 0 if $validationmsg =~ /\bcitation\b/i;
       }
     }
@@ -139,7 +139,10 @@ sub html_content {
 	  $cgi->param(uri => ($uri = $new_uri));
 	}
       };
-      $validationmsg = $@ if $@;
+      if (my $e = $@) {
+	die $e if $e =~ / at .* line /;
+	$validationmsg = $e;
+      }
     }
     if ($bookmark) {
       $title = $bookmark->title;
