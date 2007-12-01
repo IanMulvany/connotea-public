@@ -8,7 +8,7 @@
 
 package Bibliotech::UserAgent;
 use strict;
-use base 'LWP::UserAgent';
+use base 'LWPx::ParanoidAgent';
 use Bibliotech::Util;
 
 our $SITE_NAME;
@@ -26,6 +26,7 @@ sub new {
   delete $options{bibliotech};
   my $self = $class->SUPER::new(%options);
   my $sitename = defined $bibliotech ? $bibliotech->sitename : config_site_name();
+  $self->timeout(180);
   $self->agent($sitename.' ');  # trailing space ensures LWP will add version info
   return $self;
 }
