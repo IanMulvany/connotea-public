@@ -3,6 +3,8 @@
 # Should be installed to /etc/bibliotech.conf
 # Commented lines represent default values
 
+# You must restart Apache afted editing the configuration each time
+
 GENERAL {
   # Public service name and contact details
   # - if your base URL will be www.yourdomain.com/somename, SITE_NAME
