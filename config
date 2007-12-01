@@ -40,8 +40,8 @@ GENERAL {
   # memcached server address
   #MEMCACHED_SERVERS = [ '127.0.0.1:11211' ]
 
-  # directory in which your templates will reside
-  TEMPLATE_ROOT = 'defaulttemplate'
+  # leave template root blank in most setups
+  #TEMPLATE_ROOT = ''
 
   # where does Apache create its pid file?
   #PID_FILE = '/var/run/httpd.pid'
