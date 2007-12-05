@@ -22,6 +22,20 @@
       </p>
     </fieldset>
 
+    <fieldset[% IF has_validation_error_for('openid') %] class="haserrors"[% END %]>
+      <legend>OpenID</legend>
+
+      [% IF has_validation_error_for('openid') %]
+      <p class="validation">[% validation_error %]</p>
+      [% END %]
+
+      <p>If you have an OpenID, you may enter your URL below and use the <a href="[% location %]openid">OpenID login page</a>. <a href="[% location %]guide#openid" target="_blank"><img src="[% location %]help_button2.gif" class="helpicon" title="What is this?" alt="?" /></a></p>
+
+      <p><label for="openid"[% IF validation_error_field == "openid" %] class="validation"[% END %]>OpenID</label>
+	<input id="openid" name="openid" size="40" type="text" value="[% sticky('openid') %]" />
+      </p>
+    </fieldset>
+
     <p><span class="cleardiv"><!-- clear --></span>
       <input type="submit" class="submitbutton" name="button" value="update" /></p>
   </form>

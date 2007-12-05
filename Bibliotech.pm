@@ -732,10 +732,11 @@ sub load_user {
   my ($self, $user_id) = @_;
   die "You must specify a userid\n" unless $user_id;
   my $user = Bibliotech::User->retrieve($user_id) or die "cannot find user $user_id\n";
-  return map { $_ => $user->$_; } qw/username password firstname lastname email openurl_resolver openurl_name/;
+  return ((map { $_ => $user->$_; } qw/username password firstname lastname email openurl_resolver openurl_name/),
+	  (openid => do { local $_ = $user->openids->first; defined $_ ? $_->openid : undef; }));
 }
 
-# pass in user_id, password, firstname, lastname, email, openurl_resolver, openurl_name
+# pass in user_id, password, firstname, lastname, email, openurl_resolver, openurl_name, openid
 sub update_user {
   my $self    = shift;
   my $user_id = shift or die "You must specify a userid\n";
@@ -753,6 +754,13 @@ sub update_user {
     $user->$_($new);
   }
   $user->update;
+  Bibliotech::User_Openid->search(user => $user)->delete_all;
+  if (my $openid = shift) {
+    foreach my $single_openid (ref($openid) eq 'ARRAY' ? @{$openid} : ($openid)) {
+      my $uri = UNIVERSAL::isa($single_openid, 'URI') ? $single_openid : URI->new($single_openid);
+      $user->add_to_openids({openid => $uri});
+    }
+  }
   return 1;
 }
 
@@ -877,6 +885,7 @@ sub verify_user {
 
 sub validate_user_can_login {
   my $user = pop;
+  defined $user or die 'no user provided to validate_user_can_login';
   $user->verifycode and die "A verification email has been sent to you. When you receive it, please click the verification hyperlink to activate your account.\n";
   $user->active or die "Sorry, this account has been deactivated.\n";  # generic
 }
@@ -886,6 +895,15 @@ sub allow_login {
   my $user_check = Bibliotech::User->search(username => $username);
   my $user = $user_check->first or die "Unknown username.\n";
   $user->password eq $password or die "Incorrect password.\n";
+  $self->validate_user_can_login($user);
+  return $user;
+}
+
+sub allow_login_openid {
+  my ($self, $openid) = @_;
+  my $user = Bibliotech::User->by_openid($openid) ||
+             Bibliotech::User->create_for_openid($openid);
+  defined $user or die 'no user from create_for_openid';
   $self->validate_user_can_login($user);
   return $user;
 }

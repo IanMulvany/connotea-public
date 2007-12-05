@@ -1479,6 +1479,8 @@ sub json_content {
 
 package Bibliotech::User;
 use base 'Bibliotech::DBI';
+package Bibliotech::User_Openid;
+use base 'Bibliotech::DBI';
 package Bibliotech::Gang;
 use base 'Bibliotech::DBI';
 package Bibliotech::User_Gang;

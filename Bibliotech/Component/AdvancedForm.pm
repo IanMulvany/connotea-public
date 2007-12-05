@@ -28,7 +28,7 @@ sub html_content {
   $bibliotech->last_modified_no_cache;  # tell AOL etc to always reload
 
   # parameter cleaning - need this to keep utf-8 output from messing up on a reload
-  foreach (qw/openurl_resolver openurl_name/) {
+  foreach (qw/openurl_resolver openurl_name openid/) {
     my $value = $self->cleanparam($cgi->param($_));
     $cgi->param($_ => $value) if $value;
   }
@@ -40,12 +40,15 @@ sub html_content {
     eval {
       die $self->validation_exception('', "You cannot update if you are not logged in.\n")
 	  if $button eq 'Update' and !defined($user);
-      my $openurl_resolver = $cgi->param('openurl_resolver');
+      my $openurl_resolver = $cgi->param('openurl_resolver') || undef;
       $openurl_resolver = undef if $openurl_resolver eq 'http://';
-      my $openurl_name = $cgi->param('openurl_name');
+      my $openurl_name = $cgi->param('openurl_name') || undef;
       $self->validate_openurl($openurl_resolver, $openurl_name, sub { $cgi->param(openurl_resolver => $_[0]); });
       $user->openurl_resolver($openurl_resolver);
-      $user->openurl_name($openurl_name);
+      $user->openurl_name($openurl_name) || undef;
+      my $openid = $cgi->param('openid');
+      $self->validate_openid($openid, sub { $cgi->param(openid => $_[0]); });
+      $user->openid($openid);
       $user->mark_updated;
       $o = $self->tt('compadvancedthanks');
     };
@@ -65,7 +68,7 @@ sub html_content {
 
   my $o = $self->tt('compadvanced', undef, $validation);
 
-  my $javascript_first_empty = $self->firstempty($cgi, 'advanced', [qw/openurl_resolver openurl_name/], $validation);
+  my $javascript_first_empty = $self->firstempty($cgi, 'advanced', [qw/openurl_resolver openurl_name openid/], $validation);
 
   return Bibliotech::Page::HTML_Content->new({html_parts => {main => $o},
 					      javascript_onload => ($main ? $javascript_first_empty : undef)});
@@ -85,6 +88,23 @@ sub validate_openurl {
       die "The OpenURL resolver location you have entered doesn\'t look like a full URL. Perhaps you meant:<br />$suggestion<br />If so, please click Update.  If not, please edit the location, making sure you include http or https.\n";
     }
     $uri_obj->host or die "Sorry, your OpenURL resolver address appears to have no host name.\n";
+  });
+}
+
+sub validate_openid {
+  my ($self, $uri, $suggestion_callback) = @_;
+  $self->validate_tests('openid', sub {
+    return 1 if !$uri;
+    length $uri <= 255 or die "Your OpenID address must be no more than 255 characters long.\n";
+    my $uri_obj = URI->new($uri);
+    unless ($uri_obj->scheme =~ /^https?$/) {
+      my $suggestion = uf_uristr($uri_obj);
+      die "Sorry, please use an http or https scheme for your OpenID address\n"
+	  if !$suggestion or $suggestion eq $uri_obj;
+      $suggestion_callback->($suggestion) if defined $suggestion_callback;
+      die "The OpenID URL you have entered doesn\'t look like a full URL. Perhaps you meant:<br />$suggestion<br />If so, please click Update.  If not, please edit the location, making sure you include http or https.\n";
+    }
+    $uri_obj->host or die "Sorry, your OpenID address appears to have no host name.\n";
   });
 }
 

@@ -387,6 +387,20 @@ CREATE TABLE `user_gang` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
+-- Table structure for table `user_openid`
+--
+
+DROP TABLE IF EXISTS `user_openid`;
+CREATE TABLE `user_openid` (
+  `user` int(7) unsigned NOT NULL,
+  `openid` varchar(255) default NULL,
+  `created` datetime NOT NULL default '0000-00-00 00:00:00',
+  PRIMARY KEY  (`user`),
+  KEY `openid_idx` (`openid`),
+  CONSTRAINT `user_fk` FOREIGN KEY (`user`) REFERENCES `user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
 -- Table structure for table `user_tag_annotation`
 --
 

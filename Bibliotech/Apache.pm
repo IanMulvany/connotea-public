@@ -78,6 +78,30 @@ sub explainable_http_code {
   return exception_handler_text($self, "Would have returned $code but in explain mode:\n$reason", $r);
 }
 
+sub _figure_docroot_path_link_location {
+  my ($sitename, $staticfile, $args, $default_docroot, $default_link, $default_location, $server_name, $httpd_location) = @_;
+
+  my $docroot = $default_docroot;
+  $docroot =~ s|([^/])$|$1/|;
+  $docroot .= lc($sitename) if -e $docroot.lc($sitename);
+  $docroot =~ s|([^/])$|$1/|;
+
+  (my $path = $staticfile) =~ s|^$docroot|/|;
+  $path =~ s|/uri/(\w{1,10}):/|/uri/$1://|;
+  $path .= '?'.$args if $args;
+
+  my $link = $default_link;
+  my $location = $default_location;
+  unless ($link && $location) {
+    ($link = 'http://'.$server_name.$httpd_location) =~ s|/$||;
+    $location = $link.'/';
+    $link .= $path;
+    $location = URI->new($location);
+  }
+
+  return ($docroot, $path, $link, $location);
+}
+
 sub handler {
   my $starthrtime = gethrtime;
   my $r = shift;
@@ -88,40 +112,31 @@ sub handler {
   $pool->cleanup_register(\&cleanup_quick, [\$USER_ID, \$USER, \%QUICK]);
 
   my $staticfile = do { my $filename = $r->filename;
-			$filename =~ s/\Q$PREPATH\E$// if $PREPATH;
+			#$filename =~ s/\Q$PREPATH\E$// if $PREPATH;
 			$filename.$r->path_info; };
+
   return explainable_http_code(undef, DECLINED, 'Apache can handle static files', $r)
       if is_filename_handled_by_apache($staticfile) and !is_filename_forced_handled($staticfile);
 
   $staticfile = decode_utf8($staticfile) || decode_utf8(encode_utf8($staticfile)) || $staticfile;
-  my $self = bless Bibliotech->new({request => $r, log => $LOG}), __PACKAGE__;
-  my $docroot = $DOCROOT || $r->document_root;
-  $docroot =~ s|([^/])$|$1/|;
-  my $sitename = $self->sitename;
-  $docroot .= lc($sitename) if -e $docroot.lc($sitename);
-  $docroot =~ s|([^/])$|$1/|;
-  $self->docroot($docroot);
 
-  # set path
-  (my $path = $staticfile) =~ s|^$docroot|/|;
-  $path =~ s|/uri/(\w{1,10}):/|/uri/$1://|;
-  my $args = $r->args;
-  $path .= '?'.$args if $args;
-  $self->path($path);
+  my ($docroot, $path, $link, $location) =
+      _figure_docroot_path_link_location($Bibliotech::SITE_NAME,
+					 $staticfile,
+					 scalar($r->args),
+					 $DOCROOT || $r->document_root,
+					 $LINK,
+					 $LOCATION,
+					 $r->get_server_name,
+					 $r->location);
 
-  # set link and location
-  my $link = $LINK;
-  my $location = $LOCATION;
-  unless ($link && $location) {
-    ($link = 'http://'.$r->get_server_name.$r->location) =~ s|/$||;
-    $location = $link.'/';
-    $link .= $path;
-    $location = new URI ($location);
-  }
-  $self->link($link);
-  $self->location($location);
-
-  $self->memcache($MEMCACHE);
+  my $self = bless Bibliotech->new({request => $r,
+				     log => $LOG,
+				     memcache => $MEMCACHE,
+				     docroot => $docroot,
+				     path => $path,
+				     link => $link,
+				     location => $location}), __PACKAGE__;
 
   # without the next line, objects left in an Apache child's memory could be reused even if another child had
   # in the intervening time acted to change the contents of the database... a possible optimization here would
@@ -167,7 +182,7 @@ sub handler {
   $LOG->info($log_line);  # will also go in error report if there's an exception
 
   my $canonical_path_for_cache_key = $canonical_path->clone;
-  my $args_obj = URI->new($location.'?'.$args);
+  my $args_obj = URI->new($location.'?'.$r->args);
   foreach my $cache_relevant_arg ('uri',    	# used for queries
 				  'q',      	# used for queries
 				  'user',   	# used for forgotpw
@@ -450,6 +465,7 @@ sub query_handler {
     if ($r->user or          # don't use cache - their browser and our 304's should be sufficient
 	$verb ne 'GET' or    # cannot cache POST's
 	$page eq 'error' or  # cannot cache errors
+	$page eq 'openid' or # cannot cache openid exchanges with third parties
 	$debug               # let debug flag override cache as well
 	) {
       $getresult->();

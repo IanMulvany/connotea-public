@@ -183,6 +183,13 @@ sub main_component {
   'LogoutForm';
 }
 
+package Bibliotech::Page::Openid;
+use base 'Bibliotech::Page';
+
+sub main_component {
+  'OpenIDForm';
+}
+
 package Bibliotech::Page::Verify;
 use base 'Bibliotech::Page';
 

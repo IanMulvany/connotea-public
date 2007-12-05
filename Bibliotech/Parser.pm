@@ -29,6 +29,7 @@ output : <reject>
 page : 'library/export' | 'library' | 'profile'
      | 'recent' | 'populartags' | 'popular'
      | 'loginpopup' | 'login' | 'logout'
+     | 'openid'
      | 'commentspopup' | 'comments'
      | 'addcommentpopup' | 'addcomment'
      | 'addgroup' | 'editgroup'
@@ -219,7 +220,7 @@ freematch_param : freematch_keyword
 freematch_arg : freematch_param <commit> '=' /[^\&\r\n]*/
 { [$item[1] => ($item[4] ? CGI::unescape($item[4]) : undef)] }
 
-other_keyword : /\w+/
+other_keyword : /[\w\.]+/
 
 other_arg : other_keyword '=' /[^\&\r\n]*/
 { [$item[1] => ($item[3] ? CGI::unescape($item[3]) : undef)] }

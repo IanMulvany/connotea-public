@@ -1,0 +1,30 @@
+<h1>Login with OpenID to [% sitename %]</h1>
+
+[% IF user %]
+<p>You are currently logged in as "[% user.username %]".
+   This action will log you out and switch to the new user.</p>
+[% END %]
+
+<div id="openidform">
+  <form name="openid" action="[% location %]openid" method="post" class="compform">
+    <input type="hidden" name="dest" value="[% sticky('dest') %]" />
+
+    <fieldset[% IF has_validation_error_for('openid') %] class="haserrors"[% END %]>
+      <legend>OpenID</legend>
+
+      [% IF has_validation_error_for('openid') %]
+      <p class="validation">[% validation_error %]</p>
+      [% END %]
+
+      <p><label for="openid"[% IF validation_error_field == "openid" %] class="validation"[% END %]>OpenID</label>
+	<input id="openid" name="openid" size="30" type="text" value="[% sticky('openid') %]" />
+      </p>
+    </fieldset>
+
+    <p><span class="cleardiv"><!-- clear --></span>
+      <input type="submit" class="submitbutton" name="button" value="login" /></p>
+
+    <p>&nbsp;</p>
+    <p>Your OpenID will be saved, but will not be displayed to other users.</p>
+  </form>
+</div>

@@ -55,32 +55,18 @@ sub html_content {
   my ($self, $class, $verbose, $main) = @_;
 
   my $bibliotech = $self->bibliotech;
-  my $r          = $bibliotech->request;
   my $cgi        = $bibliotech->cgi;
-  my $location   = $bibliotech->location;
-  my $command    = $bibliotech->command;
 
   my $validationmsg;
   if (lc($cgi->param('button')) eq 'login') {
-    my $user;
-    eval {
-      my $username = $cgi->param('username');
-      my $password = $cgi->param('password');
-      $user = $bibliotech->allow_login($username, $password);
-    };
-    if ($@) {
-      $validationmsg = $@;
-      unless (UNIVERSAL::isa($validationmsg, 'Bibliotech::Component::ValidationException')) {
-	$validationmsg = $self->validation_exception(eval { return 'username' if $validationmsg =~ /(?:username|account)/i;
-							    return 'password'; },
-						     $validationmsg);
-      }
+    my $user = eval { $bibliotech->allow_login($cgi->param('username') || undef, $cgi->param('password') || undef); };
+    if (my $e = $@) {
+      die $e if $e =~ / at .* line /;
+      $validationmsg = $self->validation_exception($e =~ /(?:username|account)/i ? 'username' : 'password', $e);
       $cgi->Delete('password');  # do not redisplay on form
     }
     else {
-      my $redirect_uri = $self->do_login_and_return_location($user, $bibliotech);
-      undef $user;
-      die "Location: $redirect_uri\n";
+      die 'Location: '.$self->do_login_and_return_location($user, $bibliotech)."\n";
     }
   }
 

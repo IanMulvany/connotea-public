@@ -17,6 +17,7 @@ use strict;
 require Bibliotech::DBI::Base;
 require Bibliotech::DBI::Unwritten;
 require Bibliotech::DBI::User;
+require Bibliotech::DBI::User_Openid;
 require Bibliotech::DBI::Gang;
 require Bibliotech::DBI::User_Gang;
 require Bibliotech::DBI::Bookmark;

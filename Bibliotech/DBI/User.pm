@@ -3,6 +3,7 @@ use strict;
 use base 'Bibliotech::DBI';
 use List::Util qw/min max/;
 use Bibliotech::Query;
+use Digest::MD5 qw/md5_hex/;
 
 __PACKAGE__->table('user');
 __PACKAGE__->columns(Primary => qw/user_id/);
@@ -20,6 +21,43 @@ __PACKAGE__->has_many(user_gangs => 'Bibliotech::User_Gang');
 __PACKAGE__->has_many(gangs_without_ownership => ['Bibliotech::User_Gang' => 'gang']);
 __PACKAGE__->has_a(author => 'Bibliotech::Author');
 __PACKAGE__->has_a(library_comment => 'Bibliotech::Comment');
+__PACKAGE__->has_many(openids => 'Bibliotech::User_Openid');
+
+sub by_openid_actual {
+  my $url_str = pop;
+  my $url = UNIVERSAL::isa($url_str, 'URI') ? $url_str : URI->new($url_str);
+  my $openid_check = Bibliotech::User_Openid->search(openid => $url);
+  my $link = $openid_check->first or return;
+  return Bibliotech::User->retrieve($link->user);
+}
+
+sub by_openid {
+  my ($class, $url) = @_;
+  return $class->by_openid_actual(_with_trailing_slash($url)) ||
+         $class->by_openid_actual(_without_trailing_slash($url));
+}
+
+sub _with_trailing_slash {
+  local $_ = pop;
+  return $_ if m|/$|;
+  return $_.'/';
+}
+
+sub _without_trailing_slash {
+  local $_ = pop;
+  return $_ unless m|/$|;
+  return substr($_, 0, -1);
+}
+
+sub create_for_openid {
+  my ($class, $openid) = @_;
+  my $user = Bibliotech::User->create({username => 'open_'.md5_hex($openid),
+				       password => $openid});
+  $user->username('openid_'.$user->user_id);
+  $user->update;
+  $user->add_to_openids({openid => $openid});
+  return $user;
+}
 
 sub captcha_karma_not_undef {
   my $karma = shift->captcha_karma;

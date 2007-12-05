@@ -347,4 +347,25 @@ insert into user_article_comment select user_bookmark_comment_id as user_article
 drop table user_bookmark_comment;
 --- data should work now, just won't be combined; run article_upgrade.pl to complete
 
+USE bibliotech_search;
+
+CREATE TABLE `user_openid` (
+  `user` int(7) unsigned NOT NULL,
+  `openid` varchar(255) default NULL,
+  `created` datetime NOT NULL default '0000-00-00 00:00:00',
+  PRIMARY KEY  (`user`),
+  KEY `openid_idx` (`openid`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+USE bibliotech;
+
+CREATE TABLE `user_openid` (
+  `user` int(7) unsigned NOT NULL,
+  `openid` varchar(255) default NULL,
+  `created` datetime NOT NULL default '0000-00-00 00:00:00',
+  PRIMARY KEY  (`user`),
+  KEY `openid_idx` (`openid`),
+  CONSTRAINT `user_fk` FOREIGN KEY (`user`) REFERENCES `user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
 set FOREIGN_KEY_CHECKS = 1;
