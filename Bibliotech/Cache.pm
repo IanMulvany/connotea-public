@@ -30,7 +30,7 @@ sub log {
   shift->{log};
 }
 
-# save a value in the memchae
+# save a value in the memcache
 sub set_with_last_updated {
   my ($self, $key, $value, $last_updated) = @_;
   my $key_s = "$key";  # in case the key is an object, flatten it to a string value
@@ -39,8 +39,9 @@ sub set_with_last_updated {
   return $self->set($key_s => Bibliotech::Cache::Value->new($value, $last_updated), 43200);  # drop after 12 hours
 }
 
-# mark a value in the memcache with a "calc lock" which indicates to other processes that we're figuring it out
-# those processes may then elect to simply idle and wait for us to finish (see below)
+# mark a value in the memcache with a "calc lock" which indicates to
+# other processes that we're figuring it out; those processes may then
+# elect to simply idle and wait for us to finish (see below)
 sub set_calc {
   my ($self, $key, $existing_cache_entry) = @_;
   my $key_s = "$key";  # in case the key is an object, flatten it to a string value
@@ -54,15 +55,18 @@ sub set_calc {
   else {
     $cache_entry = Bibliotech::Cache::Value->new_calc;
   }
-  return $self->set($key_s => $cache_entry, 1800);  # drop after half an hour (we expect the calc to be finished long before then)
+  return $self->set($key_s => $cache_entry, 1800);  # drop after half an hour (calc should be finished long before then)
 }
 
 # get a value from memcache
-# the memcache return value will be of type Bibliotech::Cache::Value (defined below) that contains the value, a timestamp, and a calc lock
-# will check the timestamp based on a provided current last_updated timestamp and a lazy update period (expressed as seconds)
-# will check the calc lock and wait up to 20 seconds for another process to finish the calculation and provide a value
-# in scalar context returns the cached value
-# in list context also returns the cached timestamp
+# the memcache return value will be of type Bibliotech::Cache::Value
+# (defined below) that contains the value, a timestamp, and a calc
+# lock; will check the timestamp based on a provided current
+# last_updated timestamp and a lazy update period (expressed as
+# seconds); will check the calc lock and wait up to 20 seconds for
+# another process to finish the calculation and provide a value; in
+# scalar context returns the cached value, in list context also
+# returns the cached timestamp
 sub get_with_last_updated {
   my ($self, $key, $last_updated, $lazy_update, $set_calc) = @_;
   my $key_s = "$key";  # in case the key is an object, flatten it to a string value
@@ -96,13 +100,13 @@ sub get_with_last_updated {
   return wantarray ? (undef, undef) : undef;
 }
 
-# this will prepend debug strings to returned HTML values to visually report that they came from the cache
+# this will prepend debug strings to returned HTML values to visually
+# report that they came from the cache
 sub get_with_last_updated_debug_wrapper {
   my ($self, $key, $last_updated, $lazy_update, $set_calc) = @_;
   my ($value, $cache_last_updated) = $self->get_with_last_updated($key, $last_updated, $lazy_update, $set_calc);
   return undef unless defined $value;
-  my $cache_last_updated_str = localtime($cache_last_updated);
-  my $debug = "\n<div class=\"debug\">Loaded from memcache on [$key] stamped [$cache_last_updated_str ($cache_last_updated)].</div>\n";
+  my $debug = _debug_html($key, $cache_last_updated);
   return $debug.$value unless ref $value;
   return $value unless ref $value eq 'Bibliotech::Page::HTML_Content';
   my $html_parts = $value->html_parts;
@@ -113,6 +117,12 @@ sub get_with_last_updated_debug_wrapper {
     $html_parts->{main} = $debug.$html_parts->{main};
   }
   return $value;
+}
+
+sub _debug_html {
+  my ($key, $last_updated) = @_;
+  my $last_updated_str = localtime($last_updated);
+  return "\n<div class=\"debug\">Loaded from memcache on [$key] stamped [$last_updated_str ($last_updated)].</div>\n";
 }
 
 
