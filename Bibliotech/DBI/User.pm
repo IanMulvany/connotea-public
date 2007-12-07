@@ -50,11 +50,40 @@ sub _without_trailing_slash {
 }
 
 sub create_for_openid {
-  my ($class, $openid) = @_;
+  my ($class, $openid, $username, $firstname, $lastname, $email) = @_;
   my $user = Bibliotech::User->create({username => 'open_'.md5_hex($openid),
 				       password => $openid});
-  $user->username('openid_'.$user->user_id);
-  $user->update;
+  if ($username) {
+    eval { _validate_username($username); };
+    unless ($@) {
+      $user->username($username);
+      eval { $user->update; };
+      $username = undef if $@;
+    };
+  }
+  unless ($username) {
+    $user->username('openid_'.$user->user_id);
+    $user->update;
+  }
+  if ($email) {
+    eval { _validate_email($email); };
+    unless ($@) {
+      $user->email($email);
+      eval { $user->update; };
+      $email = undef if $@;
+    }
+  }
+  if ($firstname or $lastname) {
+    if ($firstname) {
+      eval { _validate_firstname($firstname); };
+      $user->firstname($firstname) unless $@;
+    }
+    if ($lastname) {
+      eval { _validate_lastname($lastname); };
+      $user->lastname($lastname) unless $@;
+    }
+    $user->update;
+  }
   $user->add_to_openids({openid => $openid});
   return $user;
 }

@@ -900,9 +900,9 @@ sub allow_login {
 }
 
 sub allow_login_openid {
-  my ($self, $openid) = @_;
+  my ($self, $openid, $username, $firstname, $lastname, $email) = @_;
   my $user = Bibliotech::User->by_openid($openid) ||
-             Bibliotech::User->create_for_openid($openid);
+             Bibliotech::User->create_for_openid($openid, $username, $firstname, $lastname, $email);
   defined $user or die 'no user from create_for_openid';
   $self->validate_user_can_login($user);
   return $user;

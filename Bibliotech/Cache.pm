@@ -125,6 +125,32 @@ sub _debug_html {
   return "\n<div class=\"debug\">Loaded from memcache on [$key] stamped [$last_updated_str ($last_updated)].</div>\n";
 }
 
+sub try_lock {
+  my ($self, $orig_key) = @_;
+  my $key = $orig_key.'_lock';
+  my $value = $$;
+  $self->add($key, $value);
+  return 1 if $self->get($key) eq $value;
+  return;
+}
+
+sub lock {
+  my ($self, $key, $max) = @_;
+  $max ||= 10;
+  my $count = 0;
+  my $value;
+  while (not($value = $self->try_lock($key))) {
+    sleep 1;
+    return if ++$count >= $max;
+  }
+  return $value;
+}
+
+sub unlock {
+  my ($self, $orig_key) = @_;
+  my $key = $orig_key.'_lock';
+  $self->delete($key);
+}
 
 package Bibliotech::Cache::Value;
 use strict;
