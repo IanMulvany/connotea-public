@@ -518,7 +518,7 @@ vendor packages, and you're better off using those.
 
 =item * Pod::Man (for DateTime, better to preinstall)
 
-=item * Bio::Biblio::IO (usually has to be forced unfortunately, there are many tests and some fail)
+=item * Bio::Biblio (may need to be forced)
 
 =item * Cache::Memcached
 

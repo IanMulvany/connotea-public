@@ -367,8 +367,7 @@ MINIMUM REQUIREMENTS
     * XML::Twig (for Bio::Biblio::IO, better to preinstall)
     * SOAP::Lite (for Bio::Biblio::IO, better to preinstall)
     * Pod::Man (for DateTime, better to preinstall)
-    * Bio::Biblio::IO (usually has to be forced unfortunately, there are
-    many tests and some fail)
+    * Bio::Biblio (may need to be forced)
     * Cache::Memcached
     * CGI
     * Class::DBI
