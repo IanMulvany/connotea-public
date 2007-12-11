@@ -49,15 +49,25 @@ sub init {
   return $CONFIG = load($FILE);
 }
 
-sub get {
-  my $self = shift if ref $_[0] or $_[0] eq 'Bibliotech::Config';
+sub _normalized_value {
+  local $_ = shift;
+  return 0 if m/^(no|off|false|0)$/i;
+  return 1 if m/^(yes|on|true|1)$/i;
+  return $_;
+}
+
+sub _simple_get {
   unshift @_, 'GENERAL' if @_ == 1;
   my $value;
   while (my $next = shift) {
     $value = ($value||$CONFIG)->{$next};
   }
-  $value = 0 if $value =~ /^(NO|OFF|FALSE)$/i;
   return $value;
+}
+
+sub get {
+  shift if ref $_[0] or $_[0] eq 'Bibliotech::Config';
+  return _normalized_value(_simple_get(@_));
 }
 
 sub last_calling_class {
@@ -76,6 +86,7 @@ sub get_required {
   return $REQUIRED_SUB->(@_) if defined $REQUIRED_SUB;
   die 'Configuration variable '.join(' > ', @_).' required by '.last_calling_class()." but not found.\n";
 }
+
 
 package Bibliotech::Config::Config::Scoped;
 use base 'Config::Scoped';
