@@ -56,8 +56,9 @@ sub list_from_undef_scalar_or_arrayref {
 }
 
 sub _is_service_read_only {
-  my ($config_switch, $page, $config_write_pages_list, $config_exemption_list, $remote_ip) = @_;
+  my ($config_switch, $page, $freematch, $config_write_pages_list, $config_exemption_list, $remote_ip) = @_;
   return unless $config_switch;
+  return 1 if $freematch;
   my @write_pages = list_from_undef_scalar_or_arrayref($config_write_pages_list) or return;
   return if none { $page eq $_ } @write_pages;
   my @exempt = list_from_undef_scalar_or_arrayref($config_exemption_list) or return 1;
@@ -65,9 +66,10 @@ sub _is_service_read_only {
 }
 
 sub is_service_paused {
-  my ($page, $remote_ip) = @_;
+  my ($page, $freematch, $remote_ip) = @_;
   return _is_service_read_only($SERVICE_READ_ONLY,
 			       $page,
+			       $freematch,
 			       $SERVICE_READ_ONLY_SEARCH_TOO ? \@COMBINED : \@WRITE_PAGES,
 			       $SERVICE_NEVER_READ_ONLY_FOR,
 			       $remote_ip);
@@ -75,7 +77,9 @@ sub is_service_paused {
 
 sub do_service_read_only {
   my $self = shift;
-  is_service_paused($self->command->page_or_inc, $self->request->connection->remote_ip);
+  my $command = $self->command;
+  my $request = $self->request;
+  return is_service_paused($command->page_or_inc, $command->freematch, $request->connection->remote_ip);
 }
 
 sub is_service_read_only_at_all {

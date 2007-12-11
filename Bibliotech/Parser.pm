@@ -588,6 +588,7 @@ __PACKAGE__->mk_accessors(qw/str terms/);
 
 sub new {
   my ($class, $str) = @_;
+  return unless $str;
   ($STOPMIN, $STOPMAX, $STOPWORDS) = init_stopwords() unless defined $STOPMIN;
   my @raw_terms = split(/[,\s\'\"]+/, $str);
   my @terms = grep(length($_) >= $STOPMIN && length($_) <= $STOPMAX && !$STOPWORDS->{lc $_}, @raw_terms);
