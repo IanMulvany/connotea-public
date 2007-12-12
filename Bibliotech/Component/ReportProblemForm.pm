@@ -67,6 +67,12 @@ sub validate_problem_text {
   length(without_hyperlinks_or_trailing_spaces($_))
       or die "You may not submit a report consisting only of hyperlinks. ".
              "Please note that reports submitted here are directed only to management and are not seen by users.\n";
+  # wiki spam:
+  m|\[URL=.*\].*\[/URL\]|s
+      and die "Sorry, your problem report appears to contain spam.\n";
+  # several URL's mentioned rarely happens in real reports but a lot in spam:
+  do { my @count = m|https?://|g; scalar @count; } >= 5
+      and die "Sorry, your problem report appears to contain spam.\n";
   return 1;
 }
 
