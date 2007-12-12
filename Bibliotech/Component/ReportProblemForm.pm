@@ -62,17 +62,16 @@ sub html_content {
 
 sub validate_problem_text {
   local $_ = shift;
+  my $MGMT = 'Please note that reports submitted here are directed only to management and are not seen by users.';
   length(without_spaces($_))
       or die "You may not submit a report without text.\n";
   length(without_hyperlinks_or_trailing_spaces($_))
-      or die "You may not submit a report consisting only of hyperlinks. ".
-             "Please note that reports submitted here are directed only to management and are not seen by users.\n";
-  # wiki spam:
-  m|\[URL=.*\].*\[/URL\]|s
-      and die "Sorry, your problem report appears to contain spam.\n";
+      or die "You may not submit a report consisting only of hyperlinks. $MGMT\n";
+  m|\[URL=.*\].*\[/URL\]|s  # wiki-style spam
+      and die "Sorry, your problem report appears to contain spam. $MGMT\n";
   # several URL's mentioned rarely happens in real reports but a lot in spam:
   do { my @count = m|https?://|g; scalar @count; } >= 5
-      and die "Sorry, your problem report appears to contain spam.\n";
+      and die "Sorry, your problem report appears to contain spam. $MGMT\n";
   return 1;
 }
 
