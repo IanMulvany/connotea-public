@@ -8,7 +8,7 @@ use Digest::MD5 qw/md5_hex/;
 __PACKAGE__->table('user');
 __PACKAGE__->columns(Primary => qw/user_id/);
 __PACKAGE__->columns(Essential => qw/username openurl_resolver openurl_name updated/);
-__PACKAGE__->columns(Others => qw/password active firstname lastname email verifycode author captcha_karma library_comment reminder_email last_deletion quarantined created/);
+__PACKAGE__->columns(Others => qw/password active firstname lastname email verifycode author captcha_karma library_comment reminder_email last_deletion quarantined origin created/);
 __PACKAGE__->columns(TEMP => qw/gangs_packed user_articles_count_packed/);
 __PACKAGE__->force_utf8_columns(qw/username firstname lastname/);
 __PACKAGE__->datetime_column('created', 'before_create');
@@ -51,40 +51,54 @@ sub _without_trailing_slash {
 
 sub create_for_openid {
   my ($class, $openid, $username, $firstname, $lastname, $email) = @_;
-  my $user = Bibliotech::User->create({username => 'open_'.md5_hex($openid),
-				       password => $openid});
-  if ($username) {
-    eval { _validate_username($username); };
-    unless ($@) {
-      $user->username($username);
-      eval { $user->update; };
-      $username = undef if $@;
-    };
-  }
-  unless ($username) {
-    $user->username('openid_'.$user->user_id);
-    $user->update;
-  }
-  if ($email) {
-    eval { _validate_email($email); };
-    unless ($@) {
-      $user->email($email);
-      eval { $user->update; };
-      $email = undef if $@;
+  my $dbh = Bibliotech::DBI::db_Main;
+  $dbh->do('SET AUTOCOMMIT=0');
+  my $user = eval {
+    my $user = Bibliotech::User->create({username => 'oi_'.md5_hex($openid),
+					 password => $openid,
+					 origin   => 'openid',
+					});
+    if ($username) {
+      eval { _validate_username($username); };
+      unless ($@) {
+	$user->username($username);
+	eval { $user->update; };
+	$username = undef if $@;
+      };
     }
-  }
-  if ($firstname or $lastname) {
-    if ($firstname) {
-      eval { _validate_firstname($firstname); };
-      $user->firstname($firstname) unless $@;
+    unless ($username) {
+      $user->username('openid_'.$user->user_id);
+      $user->update;
     }
-    if ($lastname) {
-      eval { _validate_lastname($lastname); };
-      $user->lastname($lastname) unless $@;
+    if ($email) {
+      eval { _validate_email($email); };
+      unless ($@) {
+	$user->email($email);
+	eval { $user->update; };
+	$email = undef if $@;
+      }
     }
-    $user->update;
+    if ($firstname or $lastname) {
+      if ($firstname) {
+	eval { _validate_firstname($firstname); };
+	$user->firstname($firstname) unless $@;
+      }
+      if ($lastname) {
+	eval { _validate_lastname($lastname); };
+	$user->lastname($lastname) unless $@;
+      }
+      $user->update;
+    }
+    $user->add_to_openids({openid => $openid});
+    return $user;
+  };
+  if (my $e = $@) {
+    $dbh->do('ROLLBACK');
+    $dbh->do('SET AUTOCOMMIT=1');
+    die $e;
   }
-  $user->add_to_openids({openid => $openid});
+  $dbh->do('COMMIT');
+  $dbh->do('SET AUTOCOMMIT=1');
   return $user;
 }
 

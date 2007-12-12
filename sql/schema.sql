@@ -260,6 +260,7 @@ CREATE TABLE `user` (
   `reminder_email` datetime default NULL,
   `last_deletion` datetime default NULL,
   `quarantined` datetime default NULL,
+  `origin` enum('normal','openid') NOT NULL default 'normal',
   `created` datetime NOT NULL default '0000-00-00 00:00:00',
   `updated` datetime NOT NULL default '0000-00-00 00:00:00',
   PRIMARY KEY  (`user_id`),

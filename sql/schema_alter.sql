@@ -368,4 +368,6 @@ CREATE TABLE `user_openid` (
   CONSTRAINT `user_fk` FOREIGN KEY (`user`) REFERENCES `user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+alter table user add origin enum('normal','openid') not null default 'normal' after quarantined;
+
 set FOREIGN_KEY_CHECKS = 1;
