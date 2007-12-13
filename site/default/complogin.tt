@@ -33,5 +33,9 @@
 </div>
 
 <div class="forgot-pw">
-  <a href="[% location %]forgotpw">Forgotten your username or password?</a>
+  <p><a href="[% location %]forgotpw">Forgotten your username or password?</a></p>
+</div>
+
+<div class="openid-note">
+  <p><a href="[% location %]openid">Login with OpenID</a></p>
 </div>
