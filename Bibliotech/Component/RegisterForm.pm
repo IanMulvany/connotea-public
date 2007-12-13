@@ -48,7 +48,7 @@ sub html_content {
       my $email2    = $cgi->param('email2');
       $self->validate_firstname($firstname);
       $self->validate_lastname($lastname);
-      $self->validate_username($username) if $button =~ /^Register$/i;
+      $self->validate_username($username) if $button =~ /^Register$/i or $username;
       $self->validate_password($password, $password2);
       $self->validate_email($email, $email2);
       eval {
@@ -89,7 +89,9 @@ sub html_content {
     $cgi->param(email2 => $user{email});
   }
 
-  my $o = $self->tt('compregister', undef, $validation);
+  my $o = $self->tt('compregister',
+		    {from_openid => do { local $_ = $cgi->param('from'); $_ ? $_ eq 'openid' : 0; }},
+		    $validation);
 
   my $javascript_first_empty = $self->firstempty($cgi, 'register', [qw/firstname lastname username password password2 email email2/], $validation);
 

@@ -5,6 +5,11 @@
 <h1>Update [% sitename %] Registration</h1>
 [% END %]
 
+[% IF from_openid %]<p>A new user has been created for you. Please
+update the details. Your password (for non-OpenID logins) has been set
+to your OpenID URL ([% user.password %]) but you can change it
+below.</p>[% END %]
+
 <div id="registrationform">
   <form name="register" action="[% location %]register" method="post" class="compform">
 
@@ -33,7 +38,7 @@
       <p class="validation">[% validation_error %]</p>
       [% END %]
 
-      <p>Your username will be seen by other users. It can only contain the characters <code>a-z</code> and <code>0-9</code>.</p>
+      <p>[% IF NOT user OR user.is_unnamed_openid %]Your username will be seen by other users. It can only contain the characters <code>a-z</code> and <code>0-9</code>.[% ELSE %]Your username is now fixed (<a href="mailto:[% siteemail %]">contact us</a> to change it).[% END %]</p>
 
       <p><label for="username"[% IF validation_error_field == "username" %] class="validation"[% END %]>Username</label>
 	[% IF NOT user OR user.is_unnamed_openid %]<input id="username" name="username" size="30" type="text" value="[% sticky('username') %]" />[% ELSE %][% user.username %]<input type="hidden" name="username" value="[% user.username %]" />[% END %]

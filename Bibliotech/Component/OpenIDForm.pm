@@ -33,20 +33,26 @@ sub html_content {
 
   if ($button or $ret) {
     my $myopenid = Bibliotech::OpenID->new($sid, $location, $memcache);
-    my $url = eval {
+    my ($url, $user);
+    eval {
       if ($button and $button =~ /^login$/i) {
-	return $myopenid->start_and_get_url
+	$url = $myopenid->start_and_get_url
 	    ($openid,
 	     sub { Bibliotech::User->by_openid(shift) });
       }
       if ($ret) {
-	return $myopenid->login
+	$url = $myopenid->login
 	    ({map {$_ => $cgi->param($_)} $cgi->param},
 	     sub { my ($openid, $sreg_sub) = @_;
 		   $bibliotech->allow_login_openid($openid, $sreg_sub); },
-	     sub { my $user = shift;
+	     sub { $user = shift;
 		   my $login = Bibliotech::Component::LoginForm->new({bibliotech => $bibliotech});
 		   $login->do_login_and_return_location($user, $bibliotech); });
+	if (defined $user) {
+	  if ($user->is_unnamed_openid or !$user->firstname or !$user->lastname or !$user->email) {
+	    $url = $location.'register?from=openid';  # sreg failed - we need to get this user to fix their record
+	  }
+	}
       }
     };
     if (my $e = $@) {
