@@ -736,31 +736,54 @@ sub load_user {
 	  (openid => do { local $_ = $user->openids->first; defined $_ ? $_->openid : undef; }));
 }
 
-# pass in user_id, password, firstname, lastname, email, openurl_resolver, openurl_name, openid
+# pass in user_id, password, firstname, lastname, email, openurl_resolver, openurl_name, openid, new username
 sub update_user {
   my $self    = shift;
   my $user_id = shift or die "You must specify a userid\n";
-  my $user    = Bibliotech::User->retrieve($user_id) or die "cannot find user $user_id\n";
-  foreach (qw/password firstname lastname email openurl_resolver openurl_name/) {
-    last unless @_;
-    my $current = $user->$_;
-    my $new = shift;
-    next if $new eq $current;
-    if ($_ eq 'email') {
-      my $email = $new;
-      Bibliotech::User->search(email => $email)
-	  and die "Sorry, the email address $email is already registered.\n";
+  my $dbh     = Bibliotech::DBI::db_Main;
+
+  $dbh->do('SET AUTOCOMMIT=0');
+  eval {
+    my $user = Bibliotech::User->retrieve($user_id) or die "cannot find user $user_id\n";
+    foreach (qw/password firstname lastname email openurl_resolver openurl_name/) {
+      last unless @_;
+      my $current = $user->$_;
+      my $new = shift;
+      next if $new eq $current;
+      if ($_ eq 'email') {
+	my $email = $new;
+	Bibliotech::User->search(email => $email)
+	    and die "Sorry, the email address $email is already registered.\n";
+      }
+      $user->$_($new);
     }
-    $user->$_($new);
-  }
-  $user->update;
-  Bibliotech::User_Openid->search(user => $user)->delete_all;
-  if (my $openid = shift) {
-    foreach my $single_openid (ref($openid) eq 'ARRAY' ? @{$openid} : ($openid)) {
-      my $uri = UNIVERSAL::isa($single_openid, 'URI') ? $single_openid : URI->new($single_openid);
-      $user->add_to_openids({openid => $uri});
+    $user->update;
+    Bibliotech::User_Openid->search(user => $user)->delete_all;
+    if (my $openid = shift) {
+      foreach my $single_openid (ref($openid) eq 'ARRAY' ? @{$openid} : ($openid)) {
+	my $uri = UNIVERSAL::isa($single_openid, 'URI') ? $single_openid : URI->new($single_openid);
+	$user->add_to_openids({openid => $uri});
+      }
     }
+    if (my $new_username = shift) {
+      if ($user->is_unnamed_openid) {
+	Bibliotech::User->search(username => $new_username)
+	    and die "Sorry, the username $new_username is already registered.\n";
+	$user->username($new_username);
+	$user->update;
+      }
+      else {
+	die "Sorry, you may only rename a user if they have a temporary OpenID username.\n";
+      }
+    }
+  };
+  if (my $e = $@) {
+    $dbh->do('ROLLBACK');
+    $dbh->do('SET AUTOCOMMIT=1');
+    die $e;
   }
+  $dbh->do('COMMIT');
+  $dbh->do('SET AUTOCOMMIT=1');
   return 1;
 }
 

@@ -102,6 +102,11 @@ sub create_for_openid {
   return $user;
 }
 
+sub is_unnamed_openid {
+  my $self = shift;
+  return $self->origin eq 'openid' && $self->username =~ /^(?:oi_[a-z0-9]{32}|openid_\d+)$/;
+}
+
 sub captcha_karma_not_undef {
   my $karma = shift->captcha_karma;
   return 0 unless defined $karma;
