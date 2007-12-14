@@ -31,9 +31,19 @@ sub new {
   return $self;
 }
 
-# perform request as normal but do content type decoding before releasing to program
+# LWP::UserAgent handles _foreign gracefully but LWPx::ParanoidAgent
+# doesn't - although it is a subclass so just pass it back
+sub request_handle_foreign {
+  my ($self, $req, $arg, $size, $previous) = @_;
+  return LWP::UserAgent::request($self, $req, $arg, $size, $previous)
+      if UNIVERSAL::isa($req->uri, 'URI::_foreign');
+  return $self->SUPER::request($req, $arg, $size, $previous);
+}
+
+# perform request as normal but afterwards do content type decoding
 sub request {
-  my $response = shift->SUPER::request(@_);
+  my ($self, $req, $arg, $size, $previous) = @_;
+  my $response = $self->request_handle_foreign($req, $arg, $size, $previous);
   if (defined(my $decoded = Bibliotech::Util::ua_decode_content($response))) {
     $response->content($decoded);
   }
