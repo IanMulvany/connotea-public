@@ -5,8 +5,7 @@ use Bibliotech::DBI::Unwritten::CitationConcat;
 
 __PACKAGE__->table('article');
 __PACKAGE__->columns(Primary => qw/article_id/);
-__PACKAGE__->columns(Essential => qw/hash citation/);
-__PACKAGE__->columns(Others => qw/created updated/);
+__PACKAGE__->columns(Essential => qw/hash citation created updated/);
 __PACKAGE__->columns(TEMP => qw/x_adding x_for_user_article user_article_count_packed tags_packed/);
 __PACKAGE__->datetime_column('created', 'before_create');
 __PACKAGE__->datetime_column('updated', 'before_update');
