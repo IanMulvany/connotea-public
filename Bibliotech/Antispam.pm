@@ -604,7 +604,7 @@ sub title_sitemap {
 sub _i_am_spam {
   my ($uri, $tags_ref, $score) = @_;
   return 0 if !$score;
-  return $score if $uri =~ /i_am_spam/;
+  return ($1 ? int($2) : $score) if $uri =~ m|i_am_spam(/(\d+))?|;
   return $score if any { $_ eq 'i_am_spam' } @{$tags_ref};
   return 0;
 }
