@@ -19,8 +19,8 @@ our $OUTPUT_LOCATION = Bibliotech::Config->get('CAPTCHA', 'OUTPUT_LOCATION') || 
 
 sub new {
   my $class = shift;
-  my $self  = Authen::Captcha->new(data_folder => $DATA_FOLDER, output_folder => $OUTPUT_FOLDER);
-  return bless $self, $class;
+  my $self = $class->SUPER::new(data_folder => $DATA_FOLDER, output_folder => $OUTPUT_FOLDER, @_);
+  return bless $self, ref $class || $class;
 }
 
 sub img_href {
