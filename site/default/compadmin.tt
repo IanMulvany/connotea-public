@@ -12,7 +12,7 @@
   <td>[% matched_user.firstname %]</td>
   <td>[% matched_user.lastname %]</td>
   <td>[% matched_user.created.ymd %]</td>
-  <td align="right">[% matched_user.count_user_bookmarks %]</td>
+  <td align="right">[% matched_user.count_user_articles %]</td>
   <td>[% IF matched_user.active %]<a href="[% location %]killspammer?user=[% matched_user.username %]">active</a>[% ELSE %]inactive[% END %]</td>
   <td>[% IF matched_user.verifycode %]<a href="[% location %]verify?userid=[% matched_user.user_id %]&code=[% matched_user.verifycode %]" onclick="return confirm('Are you sure you wish to follow this link and verify the user?')">[% matched_user.verifycode %]</a>[% ELSE %]verified[% END %]</td>
   <td><a href="mailto:[% matched_user.email %]?subject=[% sitename %]">[% matched_user.email %]</a></td>
@@ -23,9 +23,9 @@
 <p><br />[% plural(commas(total_user_count), 'user') %] found
          [% IF total_user_count %] ([% commas(active_user_count) %] active;
                                     [% commas(inactive_user_count) %] inactive)[% END %]
-         with [% plural(commas(total_user_bookmarks), 'total bookmark') %][%#
-         %][% IF total_user_bookmarks %] ([% commas(average_user_bookmarks) %]/user average;
-                                          [% commas(median_user_bookmarks) %]/user median)[% END %].</p>
+         with [% plural(commas(total_user_articles), 'total bookmark') %][%#
+         %][% IF total_user_articles %] ([% commas(average_user_articles) %]/user average;
+                                          [% commas(median_user_articles) %]/user median)[% END %].</p>
 </fieldset>
 [% END %]
 

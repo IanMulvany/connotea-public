@@ -18,7 +18,7 @@
     [% FOREACH user IN b.users %]
     <postedBy>[% user.label %]</postedBy>
     [% END %]
-    <postCount>[% b.count_user_bookmarks %]</postCount>
+    <postCount>[% b.count_user_articles %]</postCount>
     <hash>[% b.hash %]</hash>
     <bookmarkID>[% b.bookmark_id %]</bookmarkID>
     <created>[% b.created.iso8601_utc %]</created>

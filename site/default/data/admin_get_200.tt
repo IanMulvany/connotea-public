@@ -23,7 +23,7 @@
 	[% IF user.quarantined %]<isQuarantined>1</isQuarantined>[% END %]
 	[% IF NOT user.quarantined %]<isUnquarantined>1</isUnquarantined>[% END %]
 	[% IF user.quarantined %]<quarantined>[% user.quarantined.iso8601_utc %]</quarantined>[% END %]
-	<postCount>[% user.count_user_bookmarks %]</postCount>
+	<postCount>[% user.count_user_articles %]</postCount>
 	<rdfs:seeAlso rdf:resource="[% location %]data/user/[% user.username %]" />
       </User>
     </item>
@@ -39,9 +39,9 @@
     </entity>
     <entity>
       <Posts>
-	<total>[% answer.vars.total_user_bookmarks %]</total>
-	<average>[% answer.vars.average_user_bookmarks %]</average>
-	<median>[% answer.vars.median_user_bookmarks %]</median>
+	<total>[% answer.vars.total_user_articles %]</total>
+	<average>[% answer.vars.average_user_articles %]</average>
+	<median>[% answer.vars.median_user_articles %]</median>
       </Posts>
     </entity>
   </UserListStats>

@@ -17,7 +17,7 @@
     [% FOREACH tag IN p.tags %]
     <dc:subject>[% encode_xml_utf8(tag.label) %]</dc:subject>
     [% END %]
-    <userBookmarkID>[% p.user_bookmark_id %]</userBookmarkID>
+    <userBookmarkID>[% p.user_article_id %]</userBookmarkID>
     <dc:creator>[% p.user.label %]</dc:creator>
     [% IF p.user_is_author %]
     <myWork>1</myWork>

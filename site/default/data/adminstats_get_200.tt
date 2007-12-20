@@ -6,28 +6,28 @@
   <Stats rdf:about="[% encode_xml_utf8(no_num(object_location)) %]">
     <entity>
       <Posts>
-	<total>[% answer.vars.total_user_bookmarks %]</total>
-	<new>[% answer.vars.new_user_bookmarks('24 hour') %]</new>
-	<week>[% answer.vars.new_user_bookmarks('168 hour') %]</week>
+	<total>[% answer.vars.total_user_articles %]</total>
+	<new>[% answer.vars.new_user_articles('24 hour') %]</new>
+	<week>[% answer.vars.new_user_articles('168 hour') %]</week>
 	<public>
 	  <Posts>
-	    <total>[% answer.vars.total_user_bookmarks_public %]</total>
-	    <new>[% answer.vars.new_user_bookmarks_public('24 hour') %]</new>
-	    <week>[% answer.vars.new_user_bookmarks_public('168 hour') %]</week>
+	    <total>[% answer.vars.total_user_articles_public %]</total>
+	    <new>[% answer.vars.new_user_articles_public('24 hour') %]</new>
+	    <week>[% answer.vars.new_user_articles_public('168 hour') %]</week>
 	  </Posts>
 	</public>
 	<private>
 	  <Posts>
-	    <total>[% answer.vars.total_user_bookmarks_private %]</total>
-	    <new>[% answer.vars.new_user_bookmarks_private('24 hour') %]</new>
-	    <week>[% answer.vars.new_user_bookmarks_private('168 hour') %]</week>
+	    <total>[% answer.vars.total_user_articles_private %]</total>
+	    <new>[% answer.vars.new_user_articles_private('24 hour') %]</new>
+	    <week>[% answer.vars.new_user_articles_private('168 hour') %]</week>
 	  </Posts>
 	</private>
 	<author>
 	  <Posts>
-	    <total>[% answer.vars.total_user_bookmarks_mywork %]</total>
-	    <new>[% answer.vars.new_user_bookmarks_mywork('24 hour') %]</new>
-	    <week>[% answer.vars.new_user_bookmarks_mywork('168 hour') %]</week>
+	    <total>[% answer.vars.total_user_articles_mywork %]</total>
+	    <new>[% answer.vars.new_user_articles_mywork('24 hour') %]</new>
+	    <week>[% answer.vars.new_user_articles_mywork('168 hour') %]</week>
 	  </Posts>
 	</author>
       </Posts>
