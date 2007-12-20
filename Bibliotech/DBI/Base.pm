@@ -858,20 +858,29 @@ sub sql_joined_dynamic {
     $sortdir = $1 if $order_by =~ / (ASC|DESC)$/i;
     $order_by = "ORDER BY sortvalue $sortdir";
   }
+  elsif ($options{class} eq 'Bibliotech::Bookmark') {
+    my $privacy = $options{join_ua};
+    $privacy =~ s/\bua\b/uai/g;
+    my $subselect_sql = "\n(".
+	join("\n",
+	     "SELECT bi.bookmark_id, (SELECT COUNT(uai.user_article_id) FROM article ai LEFT JOIN user_article uai ON (ai.article_id = uai.article) WHERE bi.article = ai.article_id AND $privacy) AS cnt",
+	     'FROM bookmark bi',
+	     'HAVING cnt > 0',
+	     'ORDER BY bi.created DESC',  # sortvalue should be used here
+	     $limit).
+	     ") as bic\n";
+    $limit = '';
+    my @subselect_bind = ($options{bind_ua} ? @{$options{bind_ua}} : ());
+    push @joins, [$subselect_sql, \@subselect_bind, 'Bibliotech::Bookmark', 'bic'];
+    push @joins, ['LEFT JOIN bookmark b ON (bic.bookmark_id=b.bookmark_id)', undef, 'Bibliotech::Bookmark', 'b'];
+    @tableorder = grep(!/^b$/, @tableorder);
+    $forceback{a} = 'b';
+  }
   else {
     # entities other than user_article:
 
     if ($options{freematch} and @{$options{freematch}}) {
-      my ($freematch_sql, $freematch_bind) = $self->freematch_all_terms(@{$options{freematch}});
-      if ($options{class} eq 'Bibliotech::Bookmark') {
-	push @joins, ["($freematch_sql ORDER BY sortvalue) as fm", [@{$freematch_bind||[]}], 'Bibliotech::User_Article', 'fm'];
-	push @joins, ['LEFT JOIN user_article uaj ON (fm.user_article_id=uaj.user_article_id)', undef, 'Bibliotech::User_Article', 'uaj'];
-	push @joins, ['LEFT JOIN bookmark b ON (uaj.bookmark=b.bookmark_id)', undef, 'Bibliotech::Bookmark', 'b'];
-	shift @tableorder if $tableorder[0] eq 'b';
-      }
-      else {
-	die "Currently no support for search on entities other than posts or bookmarks.\n";
-      }
+      die "Sorry, currently no support for search on entities other than user posts.\n";
     }
     else {
       push @joins, [undef, undef, $class{$tableorder[0]}, $tableorder[0]];
