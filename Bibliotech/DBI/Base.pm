@@ -858,7 +858,7 @@ sub sql_joined_dynamic {
     $sortdir = $1 if $order_by =~ / (ASC|DESC)$/i;
     $order_by = "ORDER BY sortvalue $sortdir";
   }
-  elsif ($options{class} eq 'Bibliotech::Bookmark') {
+  elsif ($options{class} eq 'Bibliotech::Bookmark' and $tableorder[0] eq 'b') {
     my $privacy = $options{join_ua};
     $privacy =~ s/\bua\b/uai/g;
     my $subselect_sql = "\n(".
