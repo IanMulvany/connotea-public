@@ -1,0 +1,2 @@
+<h1>Login Required</h1>
+<p>You must <a href="[% url %]" class="nav">login</a>[% IF task %] [% task %][% END %].

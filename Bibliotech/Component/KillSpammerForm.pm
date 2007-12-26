@@ -30,7 +30,7 @@ sub deactivate_username {
 sub html_content {
   my ($self, $class, $verbose, $main) = @_;
 
-  my $user       = $self->getlogin or return $self->saylogin('to deactive spammers');
+  my $user       = $self->getlogin or return $self->saylogin('to deactive spammer accounts');
   my $username   = $user->username;
   grep { $username eq $_ } @{$KILLSPAMMERFORM_ADMIN_USERS} or return Bibliotech::Page::HTML_Content->simple('Not an admin.');
   my $bibliotech = $self->bibliotech;

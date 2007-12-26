@@ -283,14 +283,10 @@ sub saylogin {
   my $bibliotech = $self->bibliotech;
   my $location   = $bibliotech->location;
   my $command    = $bibliotech->command;
-  my $cgi        = $bibliotech->cgi;
   my $login      = $command->is_popup ? 'loginpopup' : 'login';
-  my $msg        = $cgi->div($cgi->h1('Login Required'),
-			     $cgi->p('You must', $cgi->a({href => $location.$login, class => 'nav'}, 'login').
-				     ($task ? ' '.$task : '').'.'));
   $self->remember_current_uri unless $command->is_login_or_logout;
-  $self->discover_main_title($msg);
-  return Bibliotech::Page::HTML_Content->simple($msg);
+  return Bibliotech::Page::HTML_Content->simple
+      ($self->tt('compneedlogin', {url => $location.$login, task => $task}));
 }
 
 sub include {
