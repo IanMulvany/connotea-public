@@ -84,6 +84,8 @@ sub html_content {
 		  $cgi->end_form,
 		  );
 
+  $self->discover_main_title($o);
+
   return Bibliotech::Page::HTML_Content->simple($o);
 }
 

@@ -550,7 +550,7 @@ sub deactivate_handle_user_articles {
   $self->delete_all_user_articles       if $reason_code eq 'resignation';
   $self->quarantine_all_user_articles   if $reason_code eq 'spammer';
   $self->unquarantine_all_user_articles if $reason_code eq 'undo-spammer' or
-                                            $reason_code eq 'no-quarantine';
+                                           $reason_code eq 'no-quarantine';
 }
 
 sub deactivate_notify_user {
@@ -595,11 +595,11 @@ sub deactivate {
   my $dbh = Bibliotech::DBI->db_Main;
   $dbh->do('SET AUTOCOMMIT=0');
   eval {
-    $self->deactivate_verify_germane($reason_code);
+    $self->deactivate_verify_germane      ($reason_code);
     $self->deactivate_handle_user_articles($reason_code);
-    $self->deactivate_delete_wiki_node($reason_code, $bibliotech);
-    $self->deactivate_notify_user($reason_code, $bibliotech);
-    $self->deactivate_update_record($reason_code);
+    $self->deactivate_delete_wiki_node    ($reason_code, $bibliotech);
+    $self->deactivate_notify_user         ($reason_code, $bibliotech);
+    $self->deactivate_update_record       ($reason_code);
   };
   if ($@) {
     $dbh->do('ROLLBACK');
