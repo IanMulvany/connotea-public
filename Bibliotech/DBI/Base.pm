@@ -471,10 +471,8 @@ SELECT   ua.user_article_id, 43 as score
 FROM     ${search_database}author au_s
          LEFT JOIN citation_author cta_s ON (au_s.author_id=cta_s.author)
          LEFT JOIN citation c_s ON (c_s.citation_id=cta_s.citation)
-         LEFT JOIN bookmark b_s ON (b_s.citation=c_s.citation_id)
-	 LEFT JOIN article a_s ON (b_s.article=a_s.article_id)
-         LEFT JOIN user_article ua ON (ua.article=a_s.article_id)
-WHERE    MATCH(au_s.lastname, au_s.forename, au_s.firstname) AGAINST (? IN BOOLEAN MODE) AND cta_s.citation_author_id IS NOT NULL AND c_s.citation_id IS NOT NULL AND b_s.bookmark_id IS NOT NULL AND ua.user_article_id IS NOT NULL
+         LEFT JOIN user_article ua ON (ua.citation=c_s.citation_id)
+WHERE    MATCH(au_s.lastname, au_s.forename, au_s.firstname) AGAINST (? IN BOOLEAN MODE) AND cta_s.citation_author_id IS NOT NULL AND c_s.citation_id IS NOT NULL AND ua.user_article_id IS NOT NULL
 UNION
 SELECT   uat_s.user_article as user_article_id, 20 as score
 FROM     tag t_s
