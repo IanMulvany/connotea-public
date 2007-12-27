@@ -300,6 +300,32 @@ sub freematch_one_term {
   my ($self, $term) = @_;
   my $search_database = $DBI_SEARCH_DOT_OR_BLANK;
   # if you edit the query, be sure to change the return statement that sets up the binding parameters
+  # sql union components included below in order (order is by descending score):
+  #   user_article_details title= [score 100]
+  #   bookmark_details title= [score 100]
+  #   citation title= (link thru bookmark to user_article) [score 99]
+  #   citation title= (link to user_article) [score 99]
+  #   journal name= (link citation thru bookmark to user_article) [score 98]
+  #   journal name= (link citation to user_article) [score 98]
+  #   journal medline_ta= (link citation thru bookmark to user_article) [score 98]
+  #   journal medline_ta= (link citation to user_article) [score 98]
+  #   author lastname= (link citation thru bookmark to user_article) [score 97]
+  #   author lastname= (link citation to user_article) [score 97]
+  #   user_article_details MATCH(title) [score 50]
+  #   bookmark_details MATCH(title) [score 50]
+  #   citation MATCH(title) (link thru bookmark to user_article) [score 49]
+  #   citation MATCH(title) (link to user_article) [score 49]
+  #   journal MATCH(name) (link citation thru bookmark to user_article) [score 48]
+  #   journal MATCH(name) (link citation to user_article) [score 48]
+  #   journal MATCH(medline_ta) (link citation thru bookmark to user_article) [score 48]
+  #   journal MATCH(medline_ta) (link citation to user_article) [score 48]
+  #   bookmark MATCH(url) [score 47]
+  #   user_article_details MATCH(description) [score 45]
+  #   comment MATCH(entry) [score 44]
+  #   author MATCH(lastname, forename, firstname) (link citation thru bookmark to user_article) [score 43]
+  #   author MATCH(lastname, forename, firstname) (link citation to user_article) [score 43]
+  #   tag name= [score 20]
+  #   tag MATCH(name) [score 20]
   my $sql = <<EOS;
 SELECT   uad_s.user_article_id, 100 as score
 FROM     user_article_details uad_s
