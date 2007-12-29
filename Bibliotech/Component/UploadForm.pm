@@ -231,8 +231,9 @@ sub html_content {
 	$o .= $cgi->end_form;
       }
     };
-    if ($@) {
-      $validationmsg = $@;
+    if (my $e = $@) {
+      die $e if $e =~ / at .* line /;
+      $validationmsg = $e;
     }
     else {
       die 'Location: '.$bibliotech->location."library\n" if $button eq 'Confirm';
