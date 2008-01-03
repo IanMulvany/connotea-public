@@ -257,7 +257,7 @@ sub onclick_snippet {
   my ($self, $bibliotech) = @_;
   return Bibliotech::Clicks::CGI::onclick_bibliotech($bibliotech, $self->url);
 }
-use Data::Dumper;
+
 sub html_content {
   my ($self, $bibliotech, $class, $verbose, $main) = @_;
   my $cgi = $bibliotech->cgi;
@@ -311,7 +311,7 @@ sub html_content {
     push @output, $cgi->div({class => 'citationline'}, $citation_line) if $citation_line;
 
     # show identifiers
-    if (my @id = $citation->standardized_identifiers(bibliotech => $bibliotech)) {
+    if (my @id = grep { $_->uri } $citation->standardized_identifiers(bibliotech => $bibliotech)) {
       $hasdblink = 1;
       $output[0] = $cgi->span({class => 'hasdblink'}, $output[0]);
       my @citelinks;
