@@ -892,6 +892,13 @@ sub sql_joined_dynamic {
 	push @joins, ['LEFT JOIN user_article uaj ON (fm.user_article_id=uaj.user_article_id)', undef, 'Bibliotech::User_Article', 'uaj'];
 	push @joins, ['LEFT JOIN bookmark b ON (uaj.bookmark=b.bookmark_id)', undef, 'Bibliotech::Bookmark', 'b'];
 	shift @tableorder if $tableorder[0] eq 'b';
+	if ($options{join_ua}) {
+	  $where .= ' AND ' if $where;
+	  $where .= $options{join_ua};
+	  push @where_bind, @{$options{bind_ua}} if $options{bind_ua};
+	  delete $options{join_ua};
+	  delete $options{bind_ua};
+	}
       }
       else {
 	die "Currently no support for search on entities other than posts or bookmarks.\n";
@@ -936,7 +943,7 @@ sub sql_joined_dynamic {
     $where .= ' AND ' if $where;
     $where .= $options{$special_option};
     my $bind_option = 'bind_'.$firstalias;
-    unshift @from_bind, @{$options{$bind_option}} if $options{$bind_option};
+    push @where_bind, @{$options{$bind_option}} if $options{$bind_option};
   }
   if ($where) {
     $where =~ s/^\s*AND\s*//;
