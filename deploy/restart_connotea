@@ -3,9 +3,9 @@
 
 . /root/bin/connotea_vars
 
-service httpd graceful
+/sbin/service httpd graceful
 sleep 3
-service memcached restart
+/sbin/service memcached restart
 sleep 10
 
 if ! ps axf | grep -v grep | grep -q httpd; then
