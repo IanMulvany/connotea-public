@@ -904,7 +904,7 @@ sub sql_joined_dynamic {
 	die "Currently no support for search on entities other than posts or bookmarks.\n";
       }
     }
-    elsif ($options{class} eq 'Bibliotech::Bookmark') {
+    elsif ($options{class} eq 'Bibliotech::Bookmark' and $tableorder[0] eq 'b') {
       my $privacy = $options{join_ua};
       $privacy =~ s/\bua\b/uai/g;
       my $subselect_sql = "\n(".
