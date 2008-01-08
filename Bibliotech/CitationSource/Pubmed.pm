@@ -25,7 +25,7 @@ sub name {
 }
 
 sub version {
-  '2.0';
+  '2.1';
 }
 
 sub understands {
@@ -40,8 +40,9 @@ sub understands {
   my $host = $uri->host or return 0;
   return 0 unless $host =~ /^(www|eutils)\.ncbi\.nlm\.nih\.gov(\.proxy\d+\.lib\.umanitoba\.ca)?$/;
 
-  return 1 if $self->understands_id({db     => _db_from_url($uri) || undef,
-				     pubmed => _id_from_url($uri) || undef});
+  my $db = _db_from_url($uri);
+  my $id = _id_from_url($uri);
+  return 1 if $id && $self->understands_id({db => $db, pubmed => $id});
 
   if (lc($uri->query_param('cmd')||'') eq 'search' and $uri->query_param('term')) {
     return 1 if is_search_page_with_one_result($content_sub);
@@ -75,8 +76,10 @@ sub understands_id {
 
 sub filter {
   my ($self, $uri) = @_;
+  return unless $uri;
   return _url_from_pmid('view', 'pubmed', $uri) if $uri =~ /^\d+$/;
-  return _url_from_pmid('view', 'pubmed', $uri->opaque) if $uri->scheme =~ /^pm(?:id)?$/i;
+  my $scheme = $uri->scheme or return;
+  return _url_from_pmid('view', 'pubmed', $uri->opaque) if $scheme =~ /^pm(?:id)?$/i;
   return;
 }
 
@@ -85,30 +88,21 @@ sub _url_from_pmid {
   $db ||= 'pubmed';
   $id =~ s/\%20//g;
   $id =~ s/\D//g;
-  my $uri;
-  if ($purpose eq 'view') {
-    $uri = URI->new('http://www.ncbi.nlm.nih.gov/entrez/query.fcgi');
-    $uri->query_param(cmd => 'Retrieve');
-    $uri->query_param(db => $db);
-    $uri->query_param(dopt => 'Abstract');
-    $uri->query_param(list_uids => $id);
-  }
-  elsif ($purpose eq 'fetch') {
-    $uri = URI->new('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi');
-    $uri->query_param(retmode => 'xml');
-    $uri->query_param(db => $db);
-    $uri->query_param(id => $id);
-  }
-  return $uri;
+  return URI->new('http://www.ncbi.nlm.nih.gov/'.$db.'/'.$id) if $purpose eq 'view';
+  return URI->new('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?retmode=xml&db='.$db.'&id='.$id);
 }
 
 sub _db_from_url {
   my $uri = shift;
+  my $path = $uri->path;
+  return 'pubmed' if $path =~ m|^/pubmed|;
   return $uri->query_param('Db') || $uri->query_param('db');
 }
 
 sub _id_from_url {
   my $uri = shift;
+  my $path = $uri->path;
+  return $1 if $path =~ m|^/pubmed/(\d+)|;
   return $uri->query_param('TermToSearch') || $uri->query_param('list_uids');
 }
 
