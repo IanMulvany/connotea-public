@@ -173,7 +173,11 @@ sub get_old_citation {
 sub get_new_citation {
   my ($bookmark, $bibliotech) = @_;
   my ($new_bookmark, $citation) = $bibliotech->pull_citation_calc_return_unwritten_citation_obj($bookmark);
-  return ($citation, sub { $citation->write($new_bookmark) });
+  return ($citation,
+	  sub { $citation->write($new_bookmark);
+		my $article = $new_bookmark->article;
+		$article->reconcat_citations if defined $article;
+	  });
 }
 
 sub use_new_citation {
