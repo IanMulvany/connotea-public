@@ -205,7 +205,6 @@ sub is_new_citation_better {
   return 1;
 }
 
-use Data::Dumper;
 sub citation_diff {
   my ($old, $new) = @_;
   my @diff;
