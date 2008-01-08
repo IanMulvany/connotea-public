@@ -330,7 +330,7 @@ sub _entry_get_or_make_uri {
   }
   if ($entry->can('pubmed')) {
     if (my $pubmed = $entry->pubmed) {
-      return 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=pubmed&dopt=Abstract&list_uids='.$pubmed;
+      return 'http://www.ncbi.nlm.nih.gov/pubmed/'.$pubmed;
     }
   }
   if ($entry->can('doi')) {

@@ -207,8 +207,7 @@ sub standardized_uri {
 }
 
 sub pubmed_uri {
-  shift->standardized_uri(pubmed =>
-			  'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=pubmed&dopt=Abstract&list_uids=');
+  shift->standardized_uri(pubmed => 'http://www.ncbi.nlm.nih.gov/pubmed/');
 }
 
 sub pubmed_clean {
