@@ -430,7 +430,7 @@ SELECT 	 __ESSENTIAL(b)__, COUNT(ua.user_article_id) as cnt
 FROM     __TABLE(Bibliotech::User_Article=ua)__,
          __TABLE(Bibliotech::Article=a)__,
    	 __TABLE(Bibliotech::Bookmark=b)__
-WHERE  	 __JOIN(ua a)__,
+WHERE  	 __JOIN(ua a)__
 AND      __JOIN(a b)__
 %s
 GROUP BY b.bookmark_id

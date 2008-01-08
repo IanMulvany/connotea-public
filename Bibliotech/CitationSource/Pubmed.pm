@@ -38,7 +38,7 @@ sub understands {
   return 0 unless $scheme eq 'http';
   
   my $host = $uri->host or return 0;
-  return 0 unless $host =~ /^(www|eutils)\.ncbi\.nlm\.nih\.gov(\.proxy\d+\.lib\.umanitoba\.ca)?$/;
+  return 0 unless $host =~ /^(view|www|eutils)\.ncbi\.nlm\.nih\.gov(?:\.(?:lib|ez)?proxy\..+)?$/;
 
   my ($db, $id) = _db_and_id_from_url($uri);
   return 1 if $db and $id and $self->understands_id({db => $db, pubmed => $id});
@@ -56,7 +56,7 @@ sub is_search_page_with_one_result {
   return unless $response->is_success;
   my $content = $response->content;
   my @uids;
-  while ($content =~ /<dd class="abstract" id="abstract(\d+)">/g) {
+  while ($content =~ /<dd class="abstract".*PMID: (\d+)/gs) {
     push @uids, $1;
   }
   return unless @uids == 1;
@@ -82,23 +82,47 @@ sub filter {
   return;
 }
 
+sub _clean_db_str {
+  local $_ = shift or return;
+  s/\W//g;
+  return $_;
+}
+
+sub _clean_id_str {
+  local $_ = shift or return;
+  s/\%20/ /g;
+  s/\D//g;
+  return $_;
+}
+
 sub _url_from_pmid {
-  my ($purpose, $db, $id) = @_;
-  $db ||= 'pubmed';
-  $id =~ s/\%20//g;
-  $id =~ s/\D//g;
+  my $purpose = shift;
+  my $db = _clean_db_str(shift) || 'pubmed';
+  my $id = _clean_id_str(shift);
   return URI->new('http://www.ncbi.nlm.nih.gov/'.$db.'/'.$id) if $purpose eq 'view';
   return URI->new('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?retmode=xml&db='.$db.'&id='.$id);
 }
 
 sub _db_and_id_from_url {
   my $uri = shift;
-  # current links:
-  my $path = $uri->path;
-  return ($1, $2) if $path =~ m|^/(pubmed)/(\d+)|;
-  # older forms:
-  return ($uri->query_param('Db') || $uri->query_param('db') || undef,
-	  $uri->query_param('TermToSearch') || $uri->query_param('list_uids') || undef);
+  if (my $path = $uri->path) {
+    return ($1, $2) if $path =~ m|^/(pubmed)/(\d+)|;
+  }
+  return (_clean_db_str($uri->query_param('db') ||
+			$uri->query_param('Db')) ||
+	  undef,
+	  _clean_id_str($uri->query_param('uid') ||
+			$uri->query_param('list_uids') ||
+			_pmid_in_term($uri->query_param('term') ||
+				      $uri->query_param('Term') ||
+				      $uri->query_param('TermToSearch'))) ||
+	  undef);
+}
+
+sub _pmid_in_term {
+  local $_ = shift or return;
+  /(\d+)/ and return $1;
+  return;
 }
 
 sub citations {

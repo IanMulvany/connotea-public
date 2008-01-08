@@ -158,7 +158,8 @@ sub ok_to_change_bookmark {
 sub ok_to_process_citation {
   my ($bookmark, $chosen_source, $bibliotech) = @_;
   return 1 if !$chosen_source;
-  my $source = $bibliotech->scan_for_best_citation_source_module_for_uri($bookmark->url);
+  my $source = $bibliotech->scan_for_best_citation_source_module_for_uri
+                   ($bookmark->url, $bibliotech->make_document_callback($bookmark));
   print ('Citation module: ', ($source ? $source->name || ref $source : 'None'), "\n");
   return 0 if !defined($source);
   return 1 if $source->isa('Bibliotech::CitationSource::'.$chosen_source);
