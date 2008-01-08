@@ -40,9 +40,8 @@ sub understands {
   my $host = $uri->host or return 0;
   return 0 unless $host =~ /^(www|eutils)\.ncbi\.nlm\.nih\.gov(\.proxy\d+\.lib\.umanitoba\.ca)?$/;
 
-  my $db = _db_from_url($uri);
-  my $id = _id_from_url($uri);
-  return 1 if $id && $self->understands_id({db => $db, pubmed => $id});
+  my ($db, $id) = _db_and_id_from_url($uri);
+  return 1 if $db and $id and $self->understands_id({db => $db, pubmed => $id});
 
   if (lc($uri->query_param('cmd')||'') eq 'search' and $uri->query_param('term')) {
     return 1 if is_search_page_with_one_result($content_sub);
@@ -92,34 +91,22 @@ sub _url_from_pmid {
   return URI->new('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?retmode=xml&db='.$db.'&id='.$id);
 }
 
-sub _db_from_url {
+sub _db_and_id_from_url {
   my $uri = shift;
+  # current links:
   my $path = $uri->path;
-  return 'pubmed' if $path =~ m|^/pubmed|;
-  return $uri->query_param('Db') || $uri->query_param('db');
-}
-
-sub _id_from_url {
-  my $uri = shift;
-  my $path = $uri->path;
-  return $1 if $path =~ m|^/pubmed/(\d+)|;
-  return $uri->query_param('TermToSearch') || $uri->query_param('list_uids');
+  return ($1, $2) if $path =~ m|^/(pubmed)/(\d+)|;
+  # older forms:
+  return ($uri->query_param('Db') || $uri->query_param('db') || undef,
+	  $uri->query_param('TermToSearch') || $uri->query_param('list_uids') || undef);
 }
 
 sub citations {
   my ($self, $article_uri, $content_sub) = @_;
   return undef unless $self->understands($article_uri, $content_sub);
-  my ($db, $id);
-  eval {
-    $db = _db_from_url($article_uri) or die "no database parameter (Db or db)\n";
-    $id = _id_from_url($article_uri) or die "no PMID parameter (TermToSearch or list_uids)\n";
-  };
-  my $e = $@;
-  die $e if $e =~ /at .* line \d+/;
-  if ($e =~ /no PMID parameter/) {
-    $e = undef if $id = is_search_page_with_one_result($content_sub);
-  }
-  $self->errstr($e), return undef if $e;
+  my ($db, $id) = _db_and_id_from_url($article_uri);
+  $id ||= is_search_page_with_one_result($content_sub);
+  return undef unless $db and $id;
   return $self->citations_id({db => $db, pubmed => $id});
 }
 
@@ -134,8 +121,11 @@ sub citations_id {
     my $obj = Bio::Biblio::IO->new(-data => $xml, -format => 'pubmedxml') or die "IO object false\n";
     return $obj;
   };
-  die $@ if $@ =~ /at .* line \d+/;
-  $self->errstr($@), return undef if $@;
+  if (my $e = $@) {
+    die $e if $e =~ /at .* line \d+/;
+    $self->errstr($e);
+    return undef;
+  }
 
   # we cannot simply rebless as I'd prefer because Bioperl uses child classes
   return Bibliotech::CitationSource::Pubmed::ResultList->new($io);
