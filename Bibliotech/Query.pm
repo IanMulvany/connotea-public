@@ -32,12 +32,6 @@ __PACKAGE__->mk_accessors(qw/bibliotech command memcache activeuser
 			     lastcount geocount
 			     bad/);
 
-sub lastcount_debug {
-  my $self = shift;
-  warn 'setting lastcount = '.$_[0] if @_;
-  return $self->x_lastcount(@_);
-}
-
 sub new {
   my ($class, $command_param, $bibliotech) = @_;
   my $command = eval { return $command_param if defined $command_param;
