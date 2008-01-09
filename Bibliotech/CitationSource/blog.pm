@@ -12,19 +12,13 @@
 
 package Bibliotech::CitationSource::blog;
 use strict;
-
 use Bibliotech::CitationSource;
 use base 'Bibliotech::CitationSource';
-
-use Bibliotech::CitationSource::Simple;
-
-use HTTP::Request::Common;	# request(GET xx);
-
 use URI;
 use URI::QueryParam;
-
-use HTML::TokeParser;	# to parse HTML content
+use HTML::TokeParser;
 use XML::Feed;
+use Bibliotech::CitationSource::Simple;
 
 sub api_version {
   1;
