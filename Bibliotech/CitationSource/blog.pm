@@ -39,96 +39,56 @@ sub cfgname {
 }
 
 sub version {
-  '1.2.2.4';
+  '1.3';
 }
 
 sub understands {
-  my ($self, $uri, $getURLContent_sub) = @_;
+  my ($self, $uri, $content_sub) = @_;
 
   return 0 unless $uri->scheme eq 'http';
 
-  $self->clearContent;
-  $self->warnstr('');
-
-  my ($ok, $response) = $self->catch_transient_warnstr(sub { $self->getURLContent($getURLContent_sub || $uri) });
+  my ($ok, $response) = $self->catch_transient_warnstr
+      (sub { my ($response) = $content_sub->();
+	     $response->is_success or die $response->status_line."\n";
+	     return $response;
+       });
   $ok or return -1;
 
   my $content_type = $response->content_type;
   $content_type eq 'text/html' || $content_type eq 'application/xhtml+xml'
       or return 0;
 
-  $self->{feedURL} = getFeedURL($response->content)
+  my $href = _get_feed_href_from_content($response->content)
       or return 0;
+  $self->{feedURL} = URI->new_abs($href, $uri);
 
   return 3;  # 3 is the code for success from this module
 }
 
-sub clearContent {
-  my ($self) = @_;
-  undef $self->{feedURL};
-}
-
-sub getURLContent {
-  my ($self, $content_sub_or_uri) = @_;
-
-  my $response = do {
-    if (ref($content_sub_or_uri) eq 'CODE') {
-      ($content_sub_or_uri->())[0];
-    }
-    else {
-      scalar $self->ua->request(GET $content_sub_or_uri);
-    }
-  };
-
-  # check for problems with request
-  die $response->status_line."\n" unless $response->is_success;
-
-  return $response;
-}
-
-#
 # parse and load up the atom or rss <link> in the HTML file
-#
-sub getFeedURL {
+sub _get_feed_href_from_content {
   my $content = shift or return;
-  my @candidate_urls;
+  my @candidate_hrefs;
   my $parser = HTML::TokeParser->new(\$content);
   while (my $token = $parser->get_tag('link')) {
-    my $href = $token->[1]{href} or next;
-    my $type = $token->[1]{type};
-    my $rel  = $token->[1]{rel};
-    return $href if $type eq 'application/atom+xml' && $rel eq 'alternate';  # use it if Atom
-    push @candidate_urls, $href if $type =~ m,application/(rss|atom),i;      # otherwise store as possibility
+    my $href = $token->[1]->{href} or next;
+    my $type = $token->[1]->{type} or next;
+    my $rel  = $token->[1]->{rel}  || '';
+    next unless $type =~ m,application/(rss|atom),i;
+    return $href if lc($1) eq 'atom' and $rel eq 'alternate';  # use it if Atom
+    push @candidate_hrefs, $href;                              # otherwise store as possibility
   }
-  return $candidate_urls[0];  # use the first candiate if we got this far
-}
-
-sub urlCheck {
-  my($self, $uri, $url) = @_;
-
-  #convert relative URL to absolute, if necessary
-  my $new_url = URI->new_abs($url, $uri);
-       
-  #print "$url    --->    $new_url\n";
-
-  return $new_url;
+  return $candidate_hrefs[0];  # use the first candiate if we got this far
 }
 
 sub citations {
-  my ($self, $blog_uri) = @_;
+  my ($self, $blog_uri, $content_sub) = @_;
 
   my $metadata;
   eval {
-    # in understands, see if header type html, and has atom or rss feed
-    $self->errstr('do not understand URI'), return undef unless $self->understands($blog_uri);
-
-    $self->{feedURL} = $self->urlCheck($blog_uri, $self->{feedURL}) if $self->{feedURL};
-
-    # need Feed::Result??
-    # what if not <rss> or <feed>? (ex. ben's is <rdf:RDF>, chokes parser)
-    my $feed_uri = $self->{feedURL};
+    $self->errstr('do not understand URI'), return undef unless $self->understands($blog_uri, $content_sub);
+    my $feed_uri = $self->{feedURL} or die 'no feed link set';
     $metadata = Bibliotech::CitationSource::blog::Feed->new($feed_uri, $blog_uri);
-
     die "Atom/RSS obj false\n"                   unless $metadata;
     die "Atom/RSS file contained zero entries\n" unless $metadata->{entry_count};
     die "URI in question not found in feed (may be old or unreachable, or URI is home page of blog): $feed_uri\n"
@@ -181,7 +141,8 @@ sub new {
 			   $e =~ m/not well-formed \(invalid token\)/ or
 			   $e =~ m/undefined entity at / or
 			   $e =~ m/unclosed CDATA section at / or
-			   $e =~ m/junk after document element at /;
+			   $e =~ m/junk after document element at / or
+			   $e =~ m/Couldn\'t open encmap /;
 
     # disguise the error so it does not look like a perl error and will thus be emitted in errstr()
     $e =~ s/\bline (\d+)$/line:$1/;

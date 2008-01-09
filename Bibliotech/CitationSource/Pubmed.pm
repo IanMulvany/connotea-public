@@ -141,7 +141,7 @@ sub citations_id {
     die "do not understand id\'s\n" unless $self->understands_id($id_hashref);
     my $query_uri = _url_from_pmid('fetch', $id_hashref->{db}, $id_hashref->{pubmed});
     my $xml = $self->get($query_uri) or die "XML retrieval failed\n";
-    die "Error message from Pubmed server: $1\n" if $xml =~ m|<Error[^>]*>(.*)</Error>|si;
+    die "Error message from Pubmed server ($query_uri): $1\n" if $xml =~ m|<Error[^>]*>(.*)</Error>|si;
     my $obj = Bio::Biblio::IO->new(-data => $xml, -format => 'pubmedxml') or die "IO object false\n";
     return $obj;
   };
