@@ -19,8 +19,6 @@ use Bibliotech::DBI;
 use Bibliotech::Util;
 use Bibliotech::Component::Wiki;
 use Bibliotech::Profile;
-use Data::Dumper;
-use Carp qw/cluck/;
 
 (our $LINKED_RECENT_INTERVAL = Bibliotech::Config->get('LINKED_RECENT_INTERVAL') || '24 HOUR') =~ s|^(\d+)$|$1 HOUR|;
 
