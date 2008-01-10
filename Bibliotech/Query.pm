@@ -439,7 +439,8 @@ sub _search_ua_optimized_data {
       (join(', ', @select),
        'qq2',
        $privacywhere,
-       $orderby);
+       ($orderby eq 'ORDER BY ua.created DESC' ? 'ORDER BY uap.user_article_id DESC'  # speed optimization only
+	                                       : $orderby));
 
   Bibliotech::Profile::start('query object waiting for mysql for data (_search_ua_optimized)');
   my $activeuser_id = eval { return 0 unless defined $activeuser;
