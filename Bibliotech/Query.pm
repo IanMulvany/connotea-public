@@ -644,7 +644,7 @@ sub _search {
 
     my ($privacywhere, @privacybind) = $self->privacywhere($activeuser);
     
-    # for each of various keys (USER ARTICLE TAG DATE) there can zero or more search matches
+    # for each of various keys there can zero or more search matches
     # the matches are OR'd
     # if a match is an arrayref the constituent elements are AND'd
     # psuedo-code:
@@ -652,7 +652,7 @@ sub _search {
     #   loop over the matches
     #     perform a SQL query (nested AND's handled here)
     #   union (OR) the results of the matches
-    # intersect (AND) the results of the three keys
+    # intersect (AND) the results of the keys
     # provide final results back as a raw array of primary keys or in a Class::DBI-friendly way
 
     my $alias = join('', map(substr($_, 0, 1), split(/_/, $class->table)));
