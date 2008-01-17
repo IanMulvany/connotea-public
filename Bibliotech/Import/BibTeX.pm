@@ -16,7 +16,7 @@ use Bibliotech::Import::RIS;
 use Bibliotech::BibUtils qw(can_bib2ris bib2ris);
 
 sub name {
-  'BibTeX [Experimental]';
+  'BibTeX';
 }
 
 sub version {

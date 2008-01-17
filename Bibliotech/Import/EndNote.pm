@@ -14,7 +14,7 @@ use Bibliotech::Import::RIS;
 use Bibliotech::BibUtils qw(can_end2ris end2ris);
 
 sub name {
-  'EndNote';
+  'EndNote (Refer)';
 }
 
 sub version {

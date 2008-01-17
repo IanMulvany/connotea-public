@@ -14,7 +14,7 @@ use Bibliotech::Import::RIS;
 use Bibliotech::BibUtils qw(can_isi2ris isi2ris);
 
 sub name {
-  'ISI Web of Knowledge [Experimental]';
+  'ISI Web of Knowledge';
 }
 
 sub version {

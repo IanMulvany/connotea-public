@@ -14,7 +14,7 @@ use Bibliotech::Import::RIS;
 use Bibliotech::BibUtils qw(can_modsclean modsclean can_xml2ris xml2ris);
 
 sub name {
-  'MODS [Experimental]';
+  'MODS';
 }
 
 sub version {
