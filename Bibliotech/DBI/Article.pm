@@ -182,5 +182,15 @@ sub some_title {
   return;
 }
 
+sub standard_annotation_text {
+  my ($self, $bibliotech, $register) = @_;
+  my $sitename = $bibliotech->sitename;
+  my $title = $self->some_title;
+  $title =~ s/[<>]//g;            # destroy HTML hacks
+  $title =~ s/^(.{50}).+/$1.../;  # limit to 50 chars
+  return "This is a list of postings for \"$title\" by users of $sitename.
+          To copy this resource to your own $sitename library, $register";
+}
+
 1;
 __END__
