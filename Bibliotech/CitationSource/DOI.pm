@@ -37,27 +37,21 @@ sub name {
 }
 
 sub version {
-  '1.9.2.4';
+  '2.0';
 }
 
 sub understands {
   my ($self, $uri) = @_;
-
-  $self->{'query_result'} = undef;  #  reset query result cache
-
+  $self->{'query_result'} = undef;  # reset query result cache
   return 0 unless $self->crossref_account;
-
-  my $scheme = $uri->scheme;
-  return 1 if $scheme eq 'doi';
-  return 1 if $scheme eq 'http' and $uri->host eq 'dx.doi.org' && $uri->path =~ m!^/10\.\d{4}/.+!;
+  return 1 if $self->get_doi($uri);
   return 0;
 }
 
 sub filter {
   my ($self, $uri) = @_;
   my $doi = $self->get_doi($uri) or return undef;
-  # Do the CrossRef query now so we can fail and return a nice error message if the DOI is not registered
-  if (!$self->resolved($doi)) {
+  if (!$self->resolved($doi)) {  # do crossref query now, fail if doi unregistered
     $self->errstr("DOI $doi cannot be resolved.  It may not be in the CrossRef database, or you may have mis-entered it.  Please check it and try again.\n");
     return '';
   }
@@ -97,6 +91,7 @@ sub query_result {
   my ($self, $doi) = @_;
   return $self->{'query_result'}->{$doi} if $self->{'query_result'}->{$doi};
   my $xml = $self->crossref_query($doi);
+  warn "XML:\n$xml\n";
   my $query_result = $self->parse_crossref_xml($xml, $doi);
   return undef unless $query_result;
   $self->{'query_result'}->{$doi} = $query_result;
@@ -148,16 +143,25 @@ sub get_QueryValue {
   return $root->findvalue('query_result/body/query/'.$key);
 }
 
+sub _get_raw_doi_from_uri {
+  my $uri    = shift;
+  my $scheme = $uri->scheme;
+  local $_   = $uri->path;
+  return $_                        if $scheme eq 'doi';
+  return do { m|^doi/(.*)$|; $1; } if $scheme eq 'info';
+  return do { m|^/(.*)$|; $1; }    if $scheme eq 'http' and $uri->host eq 'dx.doi.org';
+  return;
+}
+
+sub _clean_raw_doi_from_uri {
+  my $doi = shift or return;
+  $doi =~ /^10\./ or return;
+  return lc(uri_unescape($doi));  # URI module escapes unsafe characters
+}
+
 sub get_doi {
   my ($self, $uri) = @_;
-  my $doi;
-  if ($uri->scheme eq 'doi') {
-    ($doi = $uri->as_string) =~ s!^doi:!!;
-  }
-  elsif ($uri->scheme eq 'http' && $uri->host eq 'dx.doi.org' && $uri->path =~ m!^/10\.\d{4}/.+!) {
-    ($doi = $uri->as_string) =~ s!^http://dx\.doi\.org/!!i;
-  }
-  return $doi ? lc(uri_unescape($doi)) : undef;  # URI module escapes unsafe characters 
+  return _clean_raw_doi_from_uri(_get_raw_doi_from_uri($uri));
 }
 
 sub crossref_query {
