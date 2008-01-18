@@ -25,7 +25,7 @@ sub name {
 }
 
 sub version {
-  '2.1';
+  '2.2';
 }
 
 sub understands {
@@ -35,6 +35,7 @@ sub understands {
 
   my $scheme = $uri->scheme or return 0;
   return 1 if $scheme =~ /^pm(?:id)?$/i;
+  return 1 if $scheme eq 'info' and $uri->path =~ m|^pmid/|;
   return 0 unless $scheme eq 'http';
   
   my $host = $uri->host or return 0;
@@ -76,9 +77,10 @@ sub understands_id {
 sub filter {
   my ($self, $uri) = @_;
   return unless $uri;
-  return _url_from_pmid('view', 'pubmed', $uri) if $uri =~ /^\d+$/;
+  return _url_from_pmid('view', 'pubmed', "$uri") if $uri =~ /^\d+$/;
   my $scheme = $uri->scheme or return;
   return _url_from_pmid('view', 'pubmed', $uri->opaque) if $scheme =~ /^pm(?:id)?$/i;
+  return _url_from_pmid('view', 'pubmed', do { $uri->path =~ m|^pmid/(.*)$|; $1; }) if $scheme eq 'info';
   return;
 }
 
