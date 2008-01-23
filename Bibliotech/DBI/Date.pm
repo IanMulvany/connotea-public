@@ -17,7 +17,7 @@ sub _as_datetime_constructor {
   };
   if (my $e = $@) {
     my $str = join(',', @_);
-    die "Invalid date/time: $str ($e)\n";
+    die "Invalid date/time in _as_datetime_constructor: ($str) ($e)\n";
   }
   return bless $dt, ref $class || $class;
 }
@@ -36,7 +36,8 @@ sub _as_quick_database_conversion {
 }
 
 sub _long_parse {
-  my ($class, $str, $create) = @_;
+  my ($class, $orig_str, $create) = @_;
+  my $str = $orig_str;
   my $self;
   my $complete = 1;
   # handle the contingency that it is not a date from MySQL, or that it contains zero's e.g. (2005-01-00)
@@ -76,18 +77,23 @@ sub _long_parse {
       $str =~ s|^(\d{4})\W+(\d+)$|$1-$2-00|;  # YYYY/MM
       $str =~ s|^(\d{4})[-/](\d+)[-/](\d+)$|sprintf('%04d-%02d-%02d', $1, $2, $3)|e;  # YYYY/MM/DD
       my ($second, $minute, $hour, $day, $month, $year, $tz) = Date::Parse::strptime($str);
-      $year = undef if $year eq '0000';  # because 1900 comes back as 0 not 0000
-      $year += 1900 if defined $year;    # deal with default perl year format
-      $month++ if defined $month;        # deal with default perl month format
-      $year = undef unless $year > 0;    # 0 and 00
-      $month = undef unless $month > 0;  # 0 and 00
-      $day = undef unless $day > 0;      # 0 and 00
-      $year = int($year) if defined $year;
-      $month = int($month) if defined $month;
-      $day = int($day) if defined $day;
-      $hour = int($hour) if defined $hour;
+      $year = undef if $year eq '0000';   # because 1900 comes back as 0 not 0000
+      $year += 1900 if defined $year;     # deal with default perl year format
+      $month++ if defined $month;         # deal with default perl month format
+      $year   = undef unless $year  > 0;  # 0 and 00
+      $month  = undef unless $month > 0;  # 0 and 00
+      $day    = undef unless $day   > 0;  # 0 and 00
+      $year   = int($year)   if defined $year;
+      $month  = int($month)  if defined $month;
+      $day    = int($day)    if defined $day;
+      $hour   = int($hour)   if defined $hour;
       $minute = int($minute) if defined $minute;
       $second = int($second) if defined $second;
+      if (defined $month and $month > 12 and defined $day and $day <= 12) {
+	my $month_switched_as_day = $day;
+	$day = $month;
+	$month = $month_switched_as_day;
+      }
       if (defined $year and defined $month and defined $day and defined $hour and defined $minute) {
 	$second = 0 if !defined $second;
       }
@@ -103,7 +109,7 @@ sub _long_parse {
     };
     if (my $e = $@) {
       die $e if $e =~ /cannot determine/i;  # e.g. Cannot determine local time zone
-      die "Invalid date/time: $str ($e)\n" if $create;
+      die "Invalid date/time in _long_parse: ($orig_str) ($str) ($e)\n" if $create;
       $self = $class->zero;
     }
   }
