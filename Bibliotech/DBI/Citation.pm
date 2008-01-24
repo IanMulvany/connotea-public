@@ -111,64 +111,24 @@ sub inferred_ris_type {
 
 sub standardized_identifiers {
   my ($self, %options) = @_;
-  my $bibliotech = $options{bibliotech};
+  my $bibliotech       = $options{bibliotech};
   my $just_with_values = $options{just_with_values} || $options{just_best};
-  my $just_best = $options{just_best};
+  my $just_best        = $options{just_best};
   my @id;
   unless ($just_with_values) {
-    my ($openurl_uri, $openurl_name) = $self->openurl_uri(bibliotech => $bibliotech);
-    if ($openurl_uri) {
-      my $id = Bibliotech::Citation::Identifier->new({source      => 'OpenURL',
-						      type        => 'openurl',
-						      prefix      => $openurl_name,
-						      noun        => $openurl_name,
-						      xmlnoun     => 'OpenURL',
-						      value       => undef,
-						      urilabel    => 'openurlResolver',
-						      uri         => $openurl_uri,
-						      natural_fmt => '%U'});
+    if (my $id = Bibliotech::Citation::Identifier::OpenURL->new($self, $bibliotech, $bibliotech->user)) {
       push @id, $id;
     }
   }
-  if (my $pubmed = $self->pubmed) {
-    my $id = Bibliotech::Citation::Identifier->new({source   	=> 'Pubmed',
-						    type     	=> 'pubmed',
-						    infotype 	=> 'pmid',
-						    prefix   	=> 'PMID: ',
-						    noun     	=> 'PubMedID',
-						    xmlnoun  	=> 'PubMedID',
-						    value    	=> $pubmed,
-						    urilabel 	=> 'pmidResolver',
-						    uri      	=> $self->pubmed_uri,
-						    natural_fmt => 'info:pmid/%v'});
+  if (my $id = Bibliotech::Citation::Identifier::Pubmed->new($self->pubmed)) {
     return $id if $just_best;
     push @id, $id;
   }
-  if (my $doi = $self->doi) {
-    my $id = Bibliotech::Citation::Identifier->new({source   	=> 'doi',
-						    type     	=> 'doi',
-						    infotype 	=> 'doi',
-						    prefix   	=> 'doi:',
-						    noun     	=> 'DOI',
-						    xmlnoun  	=> 'DOI',
-						    value    	=> $doi,
-						    urilabel 	=> 'doiResolver',
-						    uri      	=> $self->doi_uri,
-						    natural_fmt => 'info:doi/%v'});
+  if (my $id = Bibliotech::Citation::Identifier::DOI->new($self->doi)) {
     return $id if $just_best;
     push @id, $id;
   }
-  if (my $asin = $self->asin) {
-    my $id = Bibliotech::Citation::Identifier->new({source   	=> 'Amazon.com',
-						    type     	=> 'asin',
-						    infotype 	=> 'isbn',
-						    prefix   	=> 'ASIN: ',
-						    noun     	=> 'ASIN',
-						    xmlnoun  	=> 'ASIN',
-						    value    	=> $asin,
-						    urilabel 	=> 'asinResolver',
-						    uri      	=> $self->asin_uri,
-						    natural_fmt => 'urn:isbn:%v'});
+  if (my $id = Bibliotech::Citation::Identifier::ASIN->new($self->asin)) {
     return $id if $just_best;
     push @id, $id;
   }
@@ -197,152 +157,12 @@ sub best_standardized_identifier {
   return $self->standardized_identifiers(bibliotech => $bibliotech, just_best => 1);
 }
 
-sub standardized_uri {
-  my ($self, $column, $prefix) = @_;
-  die 'no prefix' unless $prefix;
-  my $accessor = $column.'_clean';
-  my $id = $self->$accessor or return undef;
-  my $escaped = uri_escape($id, "^A-Za-z0-9\-_.!~*'()/"); # standard, plus added forward slash to exclusion
-  return URI->new($prefix.$escaped);
-}
-
-sub pubmed_uri {
-  shift->standardized_uri(pubmed => 'http://www.ncbi.nlm.nih.gov/pubmed/');
-}
-
-sub pubmed_clean {
-  local $_ = shift->pubmed or return;
-  s/\D//g;
-  return $_;
-}
-
-sub doi_uri {
-  shift->standardized_uri(doi => 'http://dx.doi.org/');
-}
-
-sub doi_clean {
-  shift->doi;
-}
-
-sub asin_uri {
-  shift->standardized_uri(asin => 'http://www.amazon.com/exec/obidos/ASIN/');
-}
-
-sub asin_clean {
-  local $_ = shift->asin or return;
-  s/\(.*$//;  # some (Print) ... (Online) markers, we just use first
-  s/[ \-]//g;
-  return $_;
-}
-
 sub is_openurl_uri_possible {
   my ($self, %options) = @_;
-
   my $bibliotech = $options{bibliotech};
   my $user = $options{user} || (defined $bibliotech ? $bibliotech->user : $Bibliotech::Apache::USER);
   my $resolver_uri = $options{resolver_uri} || (defined $user ? $user->openurl_resolver : undef) or return 0;
   return 1;
-}
-
-sub openurl_uri {
-  my ($self, %options) = @_;
-
-  my $bibliotech     = $options{bibliotech};
-  my $user           = $options{user}           || (defined $bibliotech ? $bibliotech->user : $Bibliotech::Apache::USER);
-  my $resolver_uri   = $options{resolver_uri}   || (defined $user ? $user->openurl_resolver : undef) or return undef;
-  my $resolver_alias = $options{resolver_alias} || (defined $user ? $user->openurl_name : undef) || 'OpenURL';
-
-  my ($referrer_id, $requester_id, $referent_id);
-
-  if ($bibliotech) {
-    my $location = $bibliotech->location;
-    my $host = $location->host;
-    $host =~ s|^www\.||;
-    if (my $path = $location->path) {
-      $path =~ s|/$||;
-      $host .= $path;
-    }
-    my $sitename = $bibliotech->sitename;
-    $host .= ':'.$sitename if $sitename;
-    $referrer_id = 'info:sid/'.$host if $host;
-    if ($bibliotech->can('library_location') && defined $user) {
-      $requester_id = $bibliotech->library_location($user);
-    }
-    if (my @id = $self->standardized_identifiers(bibliotech => $bibliotech, just_with_values => 1)) {
-      $referent_id = [map($_->natural_uri, @id)];
-    }
-  }
-
-  my $openurl = URI::OpenURL->new($resolver_uri);
-  $openurl->referrer (id => $referrer_id)  if $referrer_id;
-  $openurl->requester(id => $requester_id) if $requester_id;
-  $openurl->referent (id => $referent_id)  if $referent_id;
-
-  my %citation;
-  if (my $first_author = $self->first_author) {
-    if (my $lastname = $first_author->lastname) {
-      $citation{aulast} = $lastname;
-    }
-    if (my $firstname = $first_author->firstname) {
-      $citation{aufirst} = $firstname;
-    }
-    elsif (my $initials = $first_author->initials) {
-      $citation{auinit} = $initials;
-    }
-    elsif (my $forename = $first_author->forename) {
-      $citation{auinit1} = substr($forename, 0, 1);
-    }
-  }
-  if (my $journal = $self->journal) {
-    if (my $title = $journal->name || $journal->medline_ta) {
-      $citation{jtitle} = $title;
-    }
-    if (my $issn = $journal->issn) {
-      $citation{issn} = $issn;
-    }
-  }
-  if (my $volume = $self->volume) {
-    $citation{volume} = $volume;
-  }
-  if (my $issue = $self->issue) {
-    $citation{issue} = $issue;
-  }
-  if (my $date = $self->date) {
-    $citation{date} = $date->ymd_ordered_cut;
-  }
-  if (my $start_page = $self->start_page) {
-    $citation{spage} = $start_page;
-  }
-  if (my $end_page = $self->end_page) {
-    $citation{epage} = $end_page;
-  }
-  my $ris_type = $self->inferred_ris_type;
-  my $typefunc = 'journal';
-  if ($ris_type eq 'BOOK') {
-    $typefunc = 'book';
-    if (my $title = $self->title) {
-      $citation{title} = $title;
-    }
-    if (my $asin = $self->asin) {
-      $citation{isbn} = $asin;
-    }
-  }
-  elsif ($ris_type eq 'CONF') {
-    $citation{genre} = 'conference';
-  }
-  elsif ($ris_type eq 'PAT') {
-    $typefunc = 'patent';
-  }
-  else {
-    $citation{genre} = 'article';
-    if (my $title = $self->title) {
-      $citation{atitle} = $title;
-    }
-  }
-  $openurl->$typefunc(%citation);
-
-  my $hybrid = $openurl->as_hybrid || $openurl;
-  return wantarray ? ($hybrid, $resolver_alias) : $hybrid;
 }
 
 sub citation_line {

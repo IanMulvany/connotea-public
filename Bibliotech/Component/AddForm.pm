@@ -16,6 +16,7 @@ use Bibliotech::Component::List;
 use Bibliotech::Captcha;
 use Bibliotech::CitationSource::RIS;
 use Bibliotech::Bookmarklets;
+use Bibliotech::DBI::Citation::Identifier;
 
 use constant LOOK_UP_LABEL => 'Look Up';
 
@@ -773,7 +774,10 @@ sub call_action_with_cgi_params {
     }
   }
 
-  $fields{user_citation} = $self->hashref_for_user_citation($cgi) if _check_if_citation_edited($cgi);
+  if (_check_if_citation_edited($cgi)) {
+    $fields{user_citation} = $self->hashref_for_user_citation($cgi);
+    _validate_user_citation_standardized_identifiers($fields{user_citation});
+  }
 
   $fields{prefilled} = 1 if $cgi->param('prefilled');
 
@@ -798,6 +802,22 @@ sub hashref_for_user_citation {
     $citation{$field} = $value;
   }
   return \%citation;
+}
+
+sub _validate_user_citation_standardized_identifiers {
+  my $citation = shift;
+  if (my $pubmed = $citation->{pubmed}) {
+    Bibliotech::Citation::Identifier::Pubmed->new($pubmed)
+	or die "Provided PMID does not appear to be valid (use digits only).\n";
+  }
+  if (my $doi = $citation->{doi}) {
+    Bibliotech::Citation::Identifier::DOI->new($doi)
+	or die "Provided DOI does not appear to be valid (use identifier beinging with \"10.\").\n";
+  }
+  if (my $asin = $citation->{asin}) {
+    Bibliotech::Citation::Identifier::ASIN->new($asin)
+	or die "Provided ASIN does not appear to be valid (use only digits and letters).\n";
+  }
 }
 
 1;
