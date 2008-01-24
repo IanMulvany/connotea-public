@@ -57,8 +57,7 @@ sub search_new {
 
 sub set_correct_hash {
   my $self = shift;
-  my $url = $self->url;
-  $self->hash(md5_hex("$url"));
+  $self->hash(md5_hex(do { my $url = $self->url; defined $url ? "$url" : ''; }));
 }
 
 sub my_alias {

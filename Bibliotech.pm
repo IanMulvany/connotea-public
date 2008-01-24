@@ -563,6 +563,7 @@ sub pull_citation_calc {
       else {
 	# otherwise it hurts nothing to simply update the one we're working on
 	$bookmark->url($new_uri);
+	$bookmark->set_correct_hash;
 	$bookmark->update;
       }
       # let the network get routine be updated too
