@@ -559,8 +559,7 @@ sub _proxit_link {
 			'proximic_proxit:',                                                        # intro
 			join('&',
 			     'aid=npg',                                                            # aid
-			     'headerURL=http://query.proximic.com/flash/images/logo_connotea.png', # headerURL
-			     'channel_expand=BUECHER',                                             # channel_expand
+			     'channel_expand=MEDIA',                                             # channel_expand
 			     'query_url='.$url));                                                  # the URL
   s/__ID__/$special_id/;
   return $_;
