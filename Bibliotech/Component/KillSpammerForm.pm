@@ -72,11 +72,12 @@ sub html_content {
 		  $cgi->br,
 		  $cgi->popup_menu(-name    => 'reason',
 				   -id      => 'reasonselect',
-				   -values  => [qw/resignation spammer undo-spammer no-quarantine/],
+				   -values  => [qw/resignation spammer undo-spammer no-quarantine empty-wiki/],
 				   -labels  => {'resignation'   => 'Resignation',
 						'spammer'       => 'Spammer',
 						'undo-spammer'  => 'Undo Spammer',
 						'no-quarantine' => 'Unquarantine Posts',
+						'empty-wiki' => 'Remove Wiki Contributions'
 				               },
 				   -default => 'spammer'),
 		  $cgi->br,

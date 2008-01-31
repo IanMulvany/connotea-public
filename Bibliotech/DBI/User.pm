@@ -562,7 +562,7 @@ sub deactivate_notify_user {
 
 sub deactivate_delete_wiki_node {
   my ($self, $reason_code, $bibliotech) = @_;
-  return unless $reason_code eq 'spammer';
+  return unless $reason_code eq 'spammer' or $reason_code eq 'empty-wiki';
   eval { $self->delete_wiki_node($bibliotech, 1); };
   warn $@ if $@;
 }
@@ -583,6 +583,7 @@ sub deactivate_verify_germane {
       die "cannot mark inactive user as spammer\n" if $reason_code eq 'spammer';
       die "cannot undo spammer on inactive user\n" if $reason_code eq 'undo-spammer';
       die "cannot unquarantine an inactive user\n" if $reason_code eq 'no-quarantine';
+      die "cannot unwiki an inactive user\n" if $reason_code eq 'empty-wiki';      
     }
   };
   die $self->username.': '.$@ if $@;
@@ -591,7 +592,7 @@ sub deactivate_verify_germane {
 sub deactivate {
   my ($self, $bibliotech, $reason_code) = @_;
   die 'invalid reason code' unless grep { $reason_code eq $_ }
-                                        qw/resignation spammer undo-spammer no-quarantine/;
+                                        qw/resignation spammer undo-spammer no-quarantine empty-wiki/;
   my $dbh = Bibliotech::DBI->db_Main;
   $dbh->do('SET AUTOCOMMIT=0');
   eval {
