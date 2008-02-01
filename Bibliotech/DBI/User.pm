@@ -539,9 +539,9 @@ sub delete_wiki_node {
   my $component = Bibliotech::Component::Wiki->new({bibliotech => $bibliotech});
   my $wiki = $component->wiki_obj;
   my $username = $self->username;
-  my @nodes = $all_nodes ? map { "$_" } $component->list_only_edited_by_username($wiki, $username) : ('User:'.$username);
-  foreach my $node ($component->list_only_edited_by_username($wiki, $username)) {
-    $wiki->delete_node($node) if $wiki->node_exists($node);
+  foreach my $nodename ($all_nodes ? (map { "$_" } grep { !$_->is_system } $component->list_only_edited_by_username($wiki, $username))
+                                   : ('User:'.$username)) {
+    $wiki->delete_node($nodename) if $wiki->node_exists($nodename);
   }
 }
 
@@ -583,7 +583,7 @@ sub deactivate_verify_germane {
       die "cannot mark inactive user as spammer\n" if $reason_code eq 'spammer';
       die "cannot undo spammer on inactive user\n" if $reason_code eq 'undo-spammer';
       die "cannot unquarantine an inactive user\n" if $reason_code eq 'no-quarantine';
-      die "cannot unwiki an inactive user\n" if $reason_code eq 'empty-wiki';      
+      die "cannot unwiki an inactive user\n"       if $reason_code eq 'empty-wiki';
     }
   };
   die $self->username.': '.$@ if $@;
