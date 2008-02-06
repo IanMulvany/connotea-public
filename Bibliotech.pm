@@ -788,20 +788,13 @@ sub notify_user {
 
 sub notify_admin {
   my ($self, %options) = @_;
-
-  $options{default_to}   ||= $EXCEPTION_ERROR_REPORTS_TO || $SITE_EMAIL;
+  $options{default_to}   ||= $SITE_EMAIL;
   $options{default_from} ||= $SITE_EMAIL;
-
-  if ($options{file}) {
-    $options{file} =~ s|^([^/])|$self->docroot.$1|e;
-  }
-
-  my $web_user = $self->user;
+  $options{file} =~ s|^([^/])|$self->docroot.$1|e if $options{file};
   $options{filter} = sub {
     my ($body_ref, $var_ref) = @_;
-    return [$self->replace_text_variables($body_ref, $web_user, $var_ref)];
+    return [$self->replace_text_variables($body_ref, $self->user, $var_ref)];
   };
-
   return Bibliotech::Util::notify(\%options);
 }
 
