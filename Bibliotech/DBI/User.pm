@@ -51,6 +51,10 @@ sub _without_trailing_slash {
 
 sub create_for_openid {
   my ($class, $openid, $username, $firstname, $lastname, $email) = @_;
+  do {
+    my ($existing) = Bibliotech::User->search(email => $email);
+    die "The email address $email is already registered in our user database. Existing users should use normal login and visit Advanced Settings on our footer menu to set an OpenID to enable OpenId login.\n" if defined $existing;
+  };
   my $dbh = Bibliotech::DBI::db_Main;
   $dbh->do('SET AUTOCOMMIT=0');
   my $user = eval {

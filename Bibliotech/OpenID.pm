@@ -36,13 +36,11 @@ __PACKAGE__->mk_accessors(qw/consumer root root_ret/);
 
 sub new {
   my ($class, $sid, $location, $memcache) = @_;
-
   my $session  = CGI::Session->new('driver:bibcache;id:md5;serializer:default', $sid, {memcache => $memcache});
   my $scache   = Bibliotech::OpenID::Store::Memcache->new($memcache);
   my $consumer = Net::OpenID::JanRain::Consumer->new($session, $scache);
   my $root     = "$location";
   my $root_ret = $root.'openid?ret=1&cssid='.$session->id;
-
   return $class->SUPER::new({consumer => $consumer, root => $root, root_ret => $root_ret});
 }
 
@@ -50,10 +48,11 @@ sub start_and_get_url {
   my ($self, $openid, $in_db_sub) = @_;
   $openid or die "Must supply an OpenID.\n";
   my $instance = $self->consumer->begin("$openid");
-  $instance->addExtensionArg('sreg', 'optional', 'nickname,fullname,email')
-      unless $in_db_sub->(normalizeUrl($openid));  # request sreg if not in db
-  my $status   = $instance->status;
-  return $instance->redirectURL($self->root, $self->root_ret) if $status eq 'in_progress';
+  my $status = $instance->status;
+  return do { $instance->addExtensionArg('sreg', 'optional', 'nickname,fullname,email')
+		  unless $in_db_sub->(normalizeUrl($openid));  # request sreg if not in db
+	      $instance->redirectURL($self->root,
+				     $self->root_ret); }      if $status eq 'in_progress';
   die 'OpenID error: '.$instance->message."\n"                if $status eq 'failure';
   die 'bad begin instance status';
 }
@@ -64,8 +63,8 @@ sub login {
   my $status   = $instance->status;
   if ($status eq 'success') {
     my $verified_url = $instance->identity_url;
-    my $sreg = $instance->extensionResponse('sreg');
-    my $user = $allow_login_sub->("$verified_url", sub { $self->parse_sreg($sreg) })
+    my $sreg_values = $instance->extensionResponse('sreg');
+    my $user = $allow_login_sub->("$verified_url", sub { $self->parse_sreg($sreg_values) })
 	or die "OpenID problem - no user.\n";
     return $do_login_sub->($user);
   }
@@ -78,8 +77,7 @@ sub login {
 # input:  {nickname => ..., fullname => ..., email => ...}
 # output: (username, firstname, lastname, email)
 sub parse_sreg {
-  my $self = shift;
-  my $sreg = shift or return;
+  my $sreg = pop or return;
   my %sreg = %{$sreg} or return;
   my $username = $sreg{nickname};
   my $fullname = $sreg{fullname};
