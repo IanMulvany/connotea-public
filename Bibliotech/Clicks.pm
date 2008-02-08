@@ -48,7 +48,7 @@ use CGI;
 use URI;
 
 sub onclick {
-  shift @_ if $_[0] eq __PACKAGE__;
+  shift @_ if !ref($_[0]) and $_[0] eq __PACKAGE__;
   my ($location, $source_uri, $dest_uri, $new_window) = @_;
   my $src    = CGI::escape(URI->new($source_uri)->as_string);
   my $dest   = CGI::escape(URI->new($dest_uri)->as_string);
@@ -61,7 +61,7 @@ sub onclick {
 }
 
 sub onclick_bibliotech {
-  shift @_ if $_[0] eq __PACKAGE__;
+  shift @_ if !ref($_[0]) and $_[0] eq __PACKAGE__;
   my ($bibliotech, $dest_uri, $new_window) = @_;
   my $location = $bibliotech->location;
   (my $path    = $bibliotech->canonical_path) =~ s|^/||;
