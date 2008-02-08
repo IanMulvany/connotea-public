@@ -10,7 +10,7 @@
 package Bibliotech::Component::AdvancedForm;
 use strict;
 use base 'Bibliotech::Component';
-use URI::Heuristic qw(uf_uristr);
+use URI::Heuristic qw(uf_uri);
 
 sub last_updated_basis {
   ('NOW');  # not an oft-used page, just always load exactly correct registration details
@@ -81,10 +81,10 @@ sub validate_openurl {
     length $uri <= 255 or die "Your OpenURL resolver address must be no more than 255 characters long.\n";
     my $uri_obj = URI->new($uri);
     unless ($uri_obj->scheme =~ /^https?$/) {
-      my $suggestion = uf_uristr($uri_obj);
+      my $suggestion = uf_uri($uri_obj);
       die "Sorry, please use an http or https scheme for your OpenURL resolver address\n"
-	  if !$suggestion or $suggestion eq $uri_obj;
-      $suggestion_callback->($suggestion) if defined $suggestion_callback;
+	  if !defined($suggestion) or "$suggestion" eq "$uri_obj";
+      $suggestion_callback->("$suggestion") if defined $suggestion_callback;
       die "The OpenURL resolver location you have entered doesn\'t look like a full URL. Perhaps you meant:<br />$suggestion<br />If so, please click Update.  If not, please edit the location, making sure you include http or https.\n";
     }
     $uri_obj->host or die "Sorry, your OpenURL resolver address appears to have no host name.\n";
@@ -98,11 +98,12 @@ sub validate_openid {
     length $uri <= 255 or die "Your OpenID address must be no more than 255 characters long.\n";
     my $uri_obj = URI->new($uri);
     unless ($uri_obj->scheme =~ /^https?$/) {
-      my $suggestion = uf_uristr($uri);
+      my $suggestion = uf_uri($uri);
       die "Sorry, please use an http or https scheme for your OpenID address\n"
-	  if !$suggestion or $suggestion eq "$uri_obj";
-      $suggestion_callback->($suggestion) if defined $suggestion_callback;
-      die "The OpenID URL you have entered doesn\'t look like a full URL. Perhaps you meant:<br />$suggestion<br />If so, please click Update.  If not, please edit the location, making sure you include http or https.\n";
+	  if !defined($suggestion) or "$suggestion" eq "$uri_obj";
+      $suggestion->path('/') unless $suggestion->path;  # trailing slash
+      $suggestion_callback->("$suggestion") if defined $suggestion_callback;
+      die "The OpenID you entered doesn\'t look like a full URL. All OpenID\'s are URL\'s although many providers shorten the display (and you can still login to this site with the shorter version). We are suggesting to save this:<br />$suggestion<br />If this is ok, please click Update.  If not, please edit the location, making sure you include http or https.\n";
     }
     $uri_obj->host or die "Sorry, your OpenID address appears to have no host name.\n";
   });
