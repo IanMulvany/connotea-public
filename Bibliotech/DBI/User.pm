@@ -106,6 +106,21 @@ sub create_for_openid {
   return $user;
 }
 
+# simulate the behavior of a field with an external table
+sub openid {
+  my $self = shift;
+  if (@_) {
+    Bibliotech::User_Openid->search(user => $self)->delete_all;
+    my $openid_str_or_obj = shift;
+    defined $openid_str_or_obj or return;
+    my $openid = "$openid_str_or_obj" or return;
+    $self->add_to_openids({openid => $openid});
+    return $openid;
+  }
+  my ($openid) = Bibliotech::User_Openid->search(user => $self);
+  return $openid;
+}
+
 sub is_unnamed_openid {
   my $self = shift;
   return $self->origin eq 'openid' && $self->username =~ /^(?:oi_[a-z0-9]{32}|openid_\d+)$/;

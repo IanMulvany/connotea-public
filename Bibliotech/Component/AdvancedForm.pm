@@ -40,12 +40,12 @@ sub html_content {
     eval {
       die $self->validation_exception('', "You cannot update if you are not logged in.\n")
 	  if $button eq 'Update' and !defined($user);
-      my $openurl_resolver = $cgi->param('openurl_resolver') || undef;
+      my $openurl_resolver = $cgi->param('openurl_resolver');
       $openurl_resolver = undef if $openurl_resolver eq 'http://';
-      my $openurl_name = $cgi->param('openurl_name') || undef;
+      my $openurl_name = $cgi->param('openurl_name');
       $self->validate_openurl($openurl_resolver, $openurl_name, sub { $cgi->param(openurl_resolver => $_[0]); });
       $user->openurl_resolver($openurl_resolver);
-      $user->openurl_name($openurl_name) || undef;
+      $user->openurl_name($openurl_name);
       my $openid = $cgi->param('openid');
       $self->validate_openid($openid, sub { $cgi->param(openid => $_[0]); });
       $user->openid($openid);
