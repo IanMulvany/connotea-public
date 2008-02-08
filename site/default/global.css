@@ -459,3 +459,6 @@ div#service_readonly {
   background: #EEEEEE;
 }
 
+/* openid */
+
+input#openid { background: url(openid-small.png) no-repeat; background-color: white; background-position: 0px 1px; padding-left: 24px; }
