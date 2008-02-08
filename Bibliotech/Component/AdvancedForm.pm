@@ -98,9 +98,9 @@ sub validate_openid {
     length $uri <= 255 or die "Your OpenID address must be no more than 255 characters long.\n";
     my $uri_obj = URI->new($uri);
     unless ($uri_obj->scheme =~ /^https?$/) {
-      my $suggestion = uf_uristr($uri_obj);
+      my $suggestion = uf_uristr($uri);
       die "Sorry, please use an http or https scheme for your OpenID address\n"
-	  if !$suggestion or $suggestion eq $uri_obj;
+	  if !$suggestion or $suggestion eq "$uri_obj";
       $suggestion_callback->($suggestion) if defined $suggestion_callback;
       die "The OpenID URL you have entered doesn\'t look like a full URL. Perhaps you meant:<br />$suggestion<br />If so, please click Update.  If not, please edit the location, making sure you include http or https.\n";
     }
