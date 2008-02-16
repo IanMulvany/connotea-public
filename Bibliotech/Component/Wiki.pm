@@ -14,8 +14,10 @@ use Wiki::Toolkit::Store::MySQL;
 use Wiki::Toolkit::Formatter::Default;
 use Wiki::Toolkit::Plugin::Diff;
 use Encode qw/decode_utf8 encode_utf8 is_utf8/;
+use List::MoreUtils qw/uniq/;
 use Bibliotech::DBI;
 use Bibliotech::Util;
+use Bibliotech::Antispam;
 
 our $WIKI_DBI_CONNECT  = __PACKAGE__->cfg_required('DBI_CONNECT');
 our $WIKI_DBI_USERNAME = __PACKAGE__->cfg('DBI_USERNAME');
@@ -191,6 +193,7 @@ sub html_content {
   }
 
   my $pp;
+  my $edit_validation;
 
   if ($action_real eq 'display') {
 
@@ -236,10 +239,37 @@ sub html_content {
 			     });
 
   }
-  elsif ($action_real eq 'edit') {
+  elsif ($action_real eq 'commit') {
+
+    my $submitted_content = $self->cleanparam($cgi->param('content'));
+    my $checksum          = $self->cleanparam($cgi->param('checksum'));  # as in, the old checksum
+    my $comment           = $self->cleanparam($cgi->param('comment'));
+    my %metadata          = (username => $username, comment => $comment);
+
+    $submitted_content =~ s/\r\n/\n/g;
+    eval { _validate_submitted_content($submitted_content); };
+    if ($@) {
+      $edit_validation = $@;
+      $action_real = 'edit';
+    }
+    else {
+      if ($submitted_content) {
+	eval { $wiki->write_node("$node", $submitted_content, $checksum, \%metadata) or die 'conflict'; };
+	die "wiki commit, write node \"$node\" (".length($submitted_content || '')." length, $checksum checksum): $@" if $@;
+      }
+      else {
+	eval { $wiki->delete_node("$node") if $wiki->node_exists("$node"); };
+	die "wiki commit, deleting because no content: $@" if $@;
+      }
+      $referent->mark_updated if defined $referent;  # notify other components to recalc
+      die "Location: ${location}wiki/$node\n";
+    }
+  }
+  if ($action_real eq 'edit') {
 
     my ($content, $checksum, $preview_html, $updated);
     if ($content = $self->cleanparam($cgi->param('content'))) {
+      $content =~ s/\r\n/\n/g;
       $cgi->param(content => $content);  # save the utf8 version so the edit form box works
       $checksum = $self->cleanparam($cgi->param('checksum'));
       if (my $comment = $self->cleanparam($cgi->param('comment'))) {
@@ -263,25 +293,8 @@ sub html_content {
 				 checksum => $checksum,
 				 preview  => $preview_html,
 				 updated  => $updated,
+				 error    => $edit_validation,
 			        });
-
-  }
-  elsif ($action_real eq 'commit') {
-
-    my $submitted_content = $self->cleanparam($cgi->param('content'));
-    my $checksum          = $self->cleanparam($cgi->param('checksum'));  # as in, the old checksum
-    my $comment           = $self->cleanparam($cgi->param('comment'));
-    my %metadata          = (username => $username, comment => $comment);
-    if ($submitted_content) {
-      eval { $wiki->write_node("$node", $submitted_content, $checksum, \%metadata) or die 'conflict'; };
-      die "wiki commit, write node \"$node\" (".length($submitted_content || '')." length, $checksum checksum): $@" if $@;
-    }
-    else {
-      eval { $wiki->delete_node("$node") if $wiki->node_exists("$node"); };
-      die "wiki commit, deleting because no content: $@" if $@;
-    }
-    $referent->mark_updated if defined $referent;  # notify other components to recalc
-    die "Location: ${location}wiki/$node\n";
 
   }
   elsif ($action eq 'diff') {
@@ -298,9 +311,6 @@ sub html_content {
 			      wiki          => $wiki,
 			     });
 
-  }
-  else {
-    die "Unknown action (action_stated=\"$action_stated\", action=\"$action\", action_real=\"$action_real\").\n";
   }
 
   my $main_content = $pp->content;
@@ -335,6 +345,98 @@ sub html_content {
 		      },
 	title => undef,
       });
+}
+
+sub _validate_submitted_content {
+  local $_ = shift or return;
+  length($_) > 40000
+      and die "Sorry, each wiki page source text is limited to 40,000 characters at maximum.\n";
+  do { my @count = uniq(/(?:https?|ftp:[^\]\|\s]+)/g); scalar @count; } > 75
+      and die "Sorry, too many external hyperlinks.\n";  # antispam, intentionally omit http/https/ftp or number
+  s/[-_]/ /g;  # for next test...
+  foreach my $bad (@{$Bibliotech::Antispam::TAG_REALLY_BAD_PHRASE_LIST || []}) {
+    m/\b\Q$bad\E\b/i and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit trigger phrase
+  }
+  s/\[[^\]]*\]//gs;
+  s/\s+//gs;
+  length($_) == 0
+      and die "Sorry, a wiki page may not consist solely of explicit links.\n";
+}
+
+sub plain_content {
+  my ($self, $class, $verbose) = @_;
+
+  my $bibliotech    = $self->bibliotech;
+  my $location      = $bibliotech->location;
+  my $prefix        = $location.'wiki/';
+  my $cgi           = $bibliotech->cgi;
+  my $user          = $bibliotech->user;
+  my $username      = defined $user ? $user->username : undef;
+  my $wiki          = $self->wiki_obj;
+  my $action_stated = $self->cleanparam($cgi->param('action'));
+  my $action        = $action_stated || 'display';
+  my $action_real   = $action;
+  my $node_stated   = Bibliotech::Component::Wiki::NodeName-> new
+                          ($bibliotech->command->wiki_path || $self->cleanparam($cgi->param('node')));
+  my $node          = Bibliotech::Component::Wiki::NodeName->new($node_stated || $WIKI_HOME_NODE);
+  my $node_real     = $node->clone;
+  my $version       = do { my $v = $self->cleanparam($cgi->param('version')); $v ? int($v) : undef; };
+
+  die "HTTP 404\n" unless $node->is_valid;
+
+  # force bookmark prefixes to be the hash and not the URL
+  if ($node->is_referent_bookmark) {
+    unless (Bibliotech::Bookmark::is_hash_format($node->base)) {
+      die "HTTP 404\n";   
+    }
+  }
+
+  # check that user, tag, bookmark prefixed nodes are really in the database
+  my $referent;
+  if ($node->is_referent and $node->base) {
+    unless ($referent = Bibliotech::DBI::class_for_name($node->prefix)->new($node->base)) {
+      die "HTTP 404\n";   
+    }
+  }
+
+  if (defined $user and !$user->active) {
+    die "HTTP 403\n";
+  }
+
+  # info page for User: and System: nodes
+  if ($action eq 'display' and $node->prefix and !$node->base) {
+    $node_real = Bibliotech::Component::Wiki::NodeName->new('Generate:PageList');
+    $cgi->param(prefix => $node->prefix);
+  }
+
+  if ($action_real eq 'display') {
+
+    $node_real     = $self->test_node_for_retrieval($wiki, $node_real) || $node_real;
+    my %raw        = $self->retrieve_node($wiki, $node_real, $version);
+    $node          = $node_real if lc($node) eq lc($node_real);          # correct capitalization
+    my $version    = $raw{version};
+    my $current    = $raw{current_version};
+    my $content    = $raw{content};
+
+    unless ($raw{content}) {
+      $node_real   = $self->system_redirect_for_no_content($version, $current, 0);
+      $version     = undef;
+      %raw         = $self->retrieve_node($wiki, $node_real, $version);
+      $version     = $raw{version};
+      $current     = $raw{current_version};
+      $content     = $raw{content};
+    }
+
+    return $content;
+  }
+  else {
+    die "Only display action is support in txt or plain modes.\n";
+  }
+}
+
+sub txt_content {
+  my $self = shift;
+  return $self->plain_content(@_);
 }
 
 sub text_format {
@@ -751,6 +853,7 @@ sub print_editform {
   my $checksum 	 = $options->{checksum};
   my $preview 	 = $options->{preview};
   my $updated 	 = $options->{updated};
+  my $error 	 = $options->{error};
   my $formaction = "${location}wiki";
   my $formname   = 'wiki';
   my $main       = 1;
@@ -761,7 +864,9 @@ sub print_editform {
 			 -action => $formaction,
 			 -name   => $formname);
 
-  if ($preview) {
+  $o .= $cgi->div({class => 'errormsg'}, $error) if $error;
+
+  if ($preview and !$error) {
     my $closejs = "getElementById(\'wikipreviewwrapper\').style.display = \'none\'";
     $o .= $cgi->div({id => 'wikipreviewwrapper'},
 		    $cgi->div({class => 'wikipreviewclose'},
@@ -1042,9 +1147,9 @@ implicit_link_inner     : prefixed_wikiword_link | wikiword_link
 
 explicit_link 	       	: '[' explicit_link_inner ']'
               	       	  { $item[2] }
-explicit_link_inner    	: explicit_link                         # redundant brackets: [[http://...]]
-                       	| url_or_local / ?\| ?/ explicit_link_name   #/ (emacs font-lock)
+explicit_link_inner    	: url_or_local / ?\| ?/ explicit_link_name   #/ (emacs font-lock)
                        	  { "<a href=\"$item[1]\">$item[3]</a>" }
+                       	| explicit_link                         # redundant brackets: [[http://...]]
                        	| implicit_link ...!/ ?\|/ ...!'?'      # superfluous brackets: [WikiWord]
                        	  { $item[1] }
                        	| url_or_local
@@ -1058,7 +1163,7 @@ url_or_local 	       	: url
 local_url 	       	: node node_params(?)
           	       	  { join('', $item[1], @{$item[2]}) }
                         | /[\/\#][^|\]]*[^|\] ]/
-url                    	: /[a-z]{1,10}:[^|\]]*[^|\] ]/
+url                    	: /[a-z]{1,8}:[^|\]]*[^|\] ]/
 node_params            	: /\?[\w:=%&;]+/
 
 wikilink 	       	: 'wikilink=' <commit> node wikilink_version(?) wikilink_base(?) '=' wikilink_name(?)
@@ -1114,8 +1219,9 @@ token_stream 		: spacing(?) <leftop: token spacing token >
 # bubbles up to a context which is interested in the whitespace
 # between tokens anyway (see 'token_stream') so it's ok
 token                   : quick_tokens
+                        | explicit_link | implicit_link | wikilink
                         | escaped_token
-                        | implicit_link | explicit_link | wikilink | image | macro | biblink | embeddable_token
+                        | image | macro | biblink | embeddable_token
 
 escaped_token           : "\\" escapable_part
 escapable_part          : "\\" ...escapable_part
@@ -1404,6 +1510,7 @@ sub format {
   $content =~ s/\r/\n/g;           	  # Mac endings to Unix
   $content =~ s/([^\n])\z/$1\n/m;  	  # append a final line ending to source if not there
   $content =~ s/([^[:ascii:]])/'-UTF8:char'.ord($1).'-'/ge;  # Parse::RecDescent cannot handle utf8 so quote it
+  $content =~ s/\[ ?([a-z]{1,8}:[^|\]]*[^|\] ]) ?\| ?\1 ?\]/[$1]/g;  # speed optimization: [url|url] -> [url]
   my $cooked = $self->parse($content);
   my $prd = $PARSER;
   $cooked =~ s/{:::TOC:::}/my $toc = $prd->{for_toc}; $prd->{for_toc} = []; $self->format_contents($toc)/eg;
