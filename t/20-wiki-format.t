@@ -2,7 +2,7 @@
 
 # Test script that compares wiki formatter input to known output.
 
-use Test::More tests => 84;
+use Test::More tests => 87;
 use Test::Exception;
 use strict;
 use warnings;
