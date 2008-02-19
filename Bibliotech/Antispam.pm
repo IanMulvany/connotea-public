@@ -312,7 +312,7 @@ sub _tag_bad_phrase_list {
   my ($tags_ref, $phrase_list, $score) = @_;
   return 0 if !$score;
   foreach my $tag (@{$tags_ref}) {
-    #$tag =~ s/\W//g;
+    $tag =~ s/[-_]/ /g;
     return $score if any { $tag =~ /^\Q$_\E$/i } @{$phrase_list};
   }
   return 0;
