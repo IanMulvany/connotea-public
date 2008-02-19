@@ -71,7 +71,7 @@ sub create_for_openid {
       };
     }
     unless ($username) {
-      $user->username('openid_'.$user->user_id);
+      $user->username('openid'.$user->user_id);
       $user->update;
     }
     if ($email) {
@@ -123,7 +123,7 @@ sub openid {
 
 sub is_unnamed_openid {
   my $self = shift;
-  return $self->origin eq 'openid' && $self->username =~ /^(?:oi_[a-z0-9]{32}|openid_\d+)$/;
+  return $self->origin eq 'openid' && $self->username =~ /^(?:oi_[a-z0-9]{32}|openid_?\d+)$/;
 }
 
 sub captcha_karma_not_undef {
