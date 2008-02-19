@@ -736,7 +736,7 @@ sub load_user {
 	  (openid => do { local $_ = $user->openids->first; defined $_ ? $_->openid : undef; }));
 }
 
-# pass in user_id, password, firstname, lastname, email, openurl_resolver, openurl_name, openid, new username
+# pass in user_id, password, firstname, lastname, email, new username
 sub update_user {
   my $self    = shift;
   my $user_id = shift or die "You must specify a userid\n";
@@ -745,7 +745,7 @@ sub update_user {
   $dbh->do('SET AUTOCOMMIT=0');
   eval {
     my $user = Bibliotech::User->retrieve($user_id) or die "cannot find user $user_id\n";
-    foreach (qw/password firstname lastname email openurl_resolver openurl_name/) {
+    foreach (qw/password firstname lastname email/) {
       last unless @_;
       my $current = $user->$_;
       my $new = shift;
@@ -758,13 +758,6 @@ sub update_user {
       $user->$_($new);
     }
     $user->update;
-    Bibliotech::User_Openid->search(user => $user)->delete_all;
-    if (my $openid = shift) {
-      foreach my $single_openid (ref($openid) eq 'ARRAY' ? @{$openid} : ($openid)) {
-	my $uri = UNIVERSAL::isa($single_openid, 'URI') ? $single_openid : URI->new($single_openid);
-	$user->add_to_openids({openid => $uri});
-      }
-    }
     if (my $new_username = shift) {
       if ($user->is_unnamed_openid) {
 	Bibliotech::User->search(username => $new_username)

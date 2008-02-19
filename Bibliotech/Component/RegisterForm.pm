@@ -62,7 +62,7 @@ sub html_content {
 	  $o = $self->tt('compregisterthanks');
 	}
 	else {
-	  $bibliotech->update_user($user_id, $password, $firstname, $lastname, $email, undef, undef, undef, $username);
+	  $bibliotech->update_user($user_id, $password, $firstname, $lastname, $email, $username);
 	  $o = $self->tt('compupdatethanks');
 	}
       };
