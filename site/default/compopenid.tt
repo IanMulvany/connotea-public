@@ -28,3 +28,7 @@
     <p>Your OpenID will be saved, but will not be displayed to other users.</p>
   </form>
 </div>
+
+<div class="openid-note">
+  <p><a href="[% location %]login">Login with traditional username/password</a></p>
+</div>
