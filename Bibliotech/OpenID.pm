@@ -106,7 +106,7 @@ sub get {
 
 sub set {
   my ($self, $key, $value) = @_;
-  return $self->memcache->set($self->full_key($key), $value, 86400);
+  return $self->memcache->set($self->full_key($key), $value, 3600);
 }
 
 sub delete {
@@ -123,7 +123,9 @@ sub store {
 
 sub retrieve {
   my ($self, $sid) = @_;
-  $self->get($sid) || '';
+  my $value = $self->get($sid);
+  return 0 unless defined $value;
+  return $value;
 }
 
 sub remove {
@@ -131,7 +133,7 @@ sub remove {
   $self->delete($sid);
 }
 
-# travese() is not implemented as this would complicate matters
+# traverse() is not implemented as this would complicate matters
 # greatly and is not required by the JanRain consumer.
 
 
@@ -154,8 +156,8 @@ sub full_key {
 }
 
 sub add {
-  my ($self, $key) = @_;
-  return $self->memcache->add($self->full_key($key));
+  my ($self, $key, $value) = @_;
+  return $self->memcache->add($self->full_key($key), $value, 3600);
 }
 
 sub get {
@@ -165,7 +167,7 @@ sub get {
 
 sub set {
   my ($self, $key, $value) = @_;
-  return $self->memcache->set($self->full_key($key), $value, 86400);
+  return $self->memcache->set($self->full_key($key), $value, 3600);
 }
 
 sub lock {
@@ -176,6 +178,16 @@ sub lock {
 sub unlock {
   my ($self, $key) = @_;
   return $self->memcache->unlock($self->full_key($key));
+}
+
+sub with_lock {
+  my ($self, $key, $action) = @_;
+  $self->lock($key) or die 'lock failed on '.$key;
+  my $ret = eval { $action->() };
+  my $e = $@;
+  $self->unlock($key);
+  die $e if $e;
+  return $ret;
 }
 
 sub getAuthKey {
@@ -191,36 +203,42 @@ sub getAuthKey {
 sub storeAssociation {
   my ($self, $server_url, $association) = @_;
   my $key = '_associations';
-  $self->lock($key) or die 'lock failed on '.$key;
-  $self->set($key => [(grep { $_->[1]->expiresIn > 0 } @{$self->get($key)||[]}),
-		      [$server_url, $association]]);
-  $self->unlock($key);
+  $self->with_lock
+      ($key,
+       sub {
+	 $self->set($key => [(grep { $_->[1]->expiresIn > 0 } @{$self->get($key)||[]}),
+			     [$server_url, $association]]);
+       });
 }
 
 sub getAssociation {
   my ($self, $server_url, $handle) = @_;
   my $key = '_associations';
-  $self->lock($key) or die 'lock failed on '.$key;
-  my @results = sort { $a->{issued} <=> $b->{issued} }
-                map  { $_->[1] }
-                grep { $_->[1]->expiresIn > 0 &&
-		       (not defined $server_url or $_->[0] eq $server_url) &&
-		       (not defined $handle     or $_->[1]->handle eq $handle)
-		     } @{$self->get($key)||[]};
-  $self->unlock($key);
-  return pop @results;
+  $self->with_lock
+      ($key,
+       sub {
+	 my @results = sort { $a->{issued} <=> $b->{issued} }
+	 map  { $_->[1] }
+	 grep { $_->[1]->expiresIn > 0 &&
+		    (not defined $server_url or $_->[0] eq $server_url) &&
+		    (not defined $handle     or $_->[1]->handle eq $handle)
+	 } @{$self->get($key)||[]};
+	 return pop @results;
+       });
 }
 
 sub removeAssociation {
   my ($self, $server_url, $handle) = @_;
   my $key = '_associations';
-  $self->lock($key) or die 'lock failed on '.$key;
-  my @results = grep { $_->[1]->expiresIn > 0 &&
-		       (not defined $server_url or $_->[0] ne $server_url) &&
-		       (not defined $handle     or $_->[1]->handle ne $handle)
-		     } @{$self->get($key)||[]};
-  $self->set($key => \@results);
-  $self->unlock($key);
+  $self->with_lock
+      ($key,
+       sub {
+	 my @results = grep { $_->[1]->expiresIn > 0 &&
+				  (not defined $server_url or $_->[0] ne $server_url) &&
+				  (not defined $handle     or $_->[1]->handle ne $handle)
+	 } @{$self->get($key)||[]};
+	 $self->set($key => \@results);
+       });
 }
 
 sub _expire_nonces {
@@ -235,25 +253,29 @@ sub _expire_nonces {
 sub storeNonce {
   my ($self, $nonce) = @_;
   my $key = '_nonces';
-  $self->lock($key) or die 'lock failed on '.$key;
-  my $time = Bibliotech::Util::time();
-  my %nonces = _expire_nonces($time, %{$self->get($key)||{}});
-  $nonces{$nonce} = $time;
-  $self->set($key => \%nonces);
-  $self->unlock($key);
+  $self->with_lock
+      ($key,
+       sub {
+	 my $time = Bibliotech::Util::time();
+	 my %nonces = _expire_nonces($time, %{$self->get($key)||{}});
+	 $nonces{$nonce} = $time;
+	 $self->set($key => \%nonces);
+       });
 }
 
 sub useNonce {
   my ($self, $nonce) = @_;
   my $key = '_nonces';
-  $self->lock($key) or die 'lock failed on '.$key;
-  my $time = Bibliotech::Util::time();
-  my %nonces = _expire_nonces($time, %{$self->get($key)||{}});
-  my $value = $nonces{$nonce};
-  delete $nonces{$nonce};
-  $self->set($key => \%nonces);
-  $self->unlock($key);
-  return $value ? 1 : 0;
+  $self->with_lock
+      ($key,
+       sub {
+	 my $time = Bibliotech::Util::time();
+	 my %nonces = _expire_nonces($time, %{$self->get($key)||{}});
+	 my $value = $nonces{$nonce};
+	 delete $nonces{$nonce};
+	 $self->set($key => \%nonces);
+	 return $value ? 1 : 0;
+       });
 }
 
 sub isDumb {

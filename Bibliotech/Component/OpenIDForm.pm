@@ -37,15 +37,12 @@ sub html_content {
     my ($url, $user);
     eval {
       if ($button and $button =~ /^login$/i) {
-	my $canonical = uf_uri($openid);
-	die "Please provide an OpenID URL, not an email address.\n" if $canonical->scheme eq 'mailto';
-	$url = $myopenid->start_and_get_url
-	    ($openid,
-	     sub { Bibliotech::User->by_openid(shift) });
+	_validate_openid_is_http($openid);
+	$url = $myopenid->start_and_get_url($openid, sub { Bibliotech::User->by_openid(shift) });
       }
       if ($ret) {
 	$url = $myopenid->login
-	    ({map {$_ => $cgi->param($_)} $cgi->param},
+	    ({map {$_ => $cgi->param($_) || undef} $cgi->param},
 	     sub { my ($openid, $sreg_sub) = @_;
 		   $bibliotech->allow_login_openid($openid, $sreg_sub); },
 	     sub { $user = shift;
@@ -73,6 +70,19 @@ sub html_content {
 
   return Bibliotech::Page::HTML_Content->new({html_parts => {main => $o},
 					      javascript_onload => ($main ? $javascript_first_empty : undef)});
+}
+
+sub _validate_openid_is_http {
+  my $openid = shift;
+  $openid =~ s/\+(.*\@)/$1/;  # plus sign in email address will throw off uf_uri
+  my $canonical = uf_uri($openid);
+  die "Please provide an OpenID URL (hint: http).\n"
+      if !defined($canonical) or ref($canonical) eq 'URI::_generic';
+  my $scheme = $canonical->scheme;
+  return 1 if $scheme eq 'http' or $scheme eq 'https';
+  die "Please provide an OpenID URL (hint: http), not an email address.\n"
+      if $scheme eq 'mailto';
+  die "Please provide an OpenID URL (hint: http).\n";
 }
 
 1;
