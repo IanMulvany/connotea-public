@@ -52,8 +52,8 @@ sub start_and_get_url {
   return do { $instance->addExtensionArg('sreg', 'optional', 'nickname,fullname,email')
 		  unless $in_db_sub->(normalizeUrl($openid));  # request sreg if not in db
 	      $instance->redirectURL($self->root,
-				     $self->root_ret); }      if $status eq 'in_progress';
-  die 'OpenID error: '.$instance->message."\n"                if $status eq 'failure';
+				     $self->root_ret); }            if $status eq 'in_progress';
+  die 'OpenID error: '.($instance->message || 'Unknown error')."\n" if $status eq 'failure';
   die 'bad begin instance status';
 }
 
@@ -68,9 +68,9 @@ sub login {
 	or die "OpenID problem - no user.\n";
     return $do_login_sub->($user);
   }
-  return $instance->setup_url                  if $status eq 'setup_needed';
-  die "OpenID login aborted.\n"                if $status eq 'cancel';
-  die 'OpenID error: '.$instance->message."\n" if $status eq 'failure';
+  return $instance->setup_url                  			    if $status eq 'setup_needed';
+  die "OpenID login aborted.\n"                			    if $status eq 'cancel';
+  die 'OpenID error: '.($instance->message || 'Unknown error')."\n" if $status eq 'failure';
   die 'bad complete instance status';
 }
 

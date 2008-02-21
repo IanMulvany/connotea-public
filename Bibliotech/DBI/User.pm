@@ -51,15 +51,15 @@ sub _without_trailing_slash {
 
 sub create_for_openid {
   my ($class, $openid, $username, $firstname, $lastname, $email) = @_;
-  do {
+  if ($email) {
     my ($existing) = Bibliotech::User->search(email => $email);
-    die "The email address $email is already registered in our user database. Existing users should use normal login and visit Advanced Settings on our footer menu to set an OpenID to enable OpenId login.\n" if defined $existing;
-  };
+    die "The email address $email is already registered in our user database and may be associated with another OpenID.\n" if defined $existing;
+  }
   my $dbh = Bibliotech::DBI::db_Main;
   $dbh->do('SET AUTOCOMMIT=0');
   my $user = eval {
     my $user = Bibliotech::User->create({username => 'oi_'.md5_hex($openid),
-					 password => $openid,
+					 password => substr(md5_hex('password:'.$openid), 0, 10),
 					 origin   => 'openid',
 					});
     if ($username) {

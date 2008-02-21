@@ -759,14 +759,16 @@ sub update_user {
     }
     $user->update;
     if (my $new_username = shift) {
-      if ($user->is_unnamed_openid) {
-	Bibliotech::User->search(username => $new_username)
-	    and die "Sorry, the username $new_username is already registered.\n";
-	$user->username($new_username);
-	$user->update;
-      }
-      else {
-	die "Sorry, you may only rename a user if they have a temporary OpenID username.\n";
+      if ($new_username ne $user->username) {
+	if ($user->is_unnamed_openid) {
+	  Bibliotech::User->search(username => $new_username)
+	      and die "Sorry, the username $new_username is already registered.\n";
+	  $user->username($new_username);
+	  $user->update;
+	}
+	else {
+	  die "Sorry, you may only rename a user if they have a temporary OpenID username.\n";
+	}
       }
     }
   };

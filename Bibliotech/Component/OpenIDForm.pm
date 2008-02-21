@@ -10,6 +10,7 @@
 package Bibliotech::Component::OpenIDForm;
 use strict;
 use base 'Bibliotech::Component';
+use URI::Heuristic qw(uf_uri);
 use Bibliotech::OpenID;
 
 sub last_updated_basis {
@@ -36,6 +37,8 @@ sub html_content {
     my ($url, $user);
     eval {
       if ($button and $button =~ /^login$/i) {
+	my $canonical = uf_uri($openid);
+	die "Please provide an OpenID URL, not an email address.\n" if $canonical->scheme eq 'mailto';
 	$url = $myopenid->start_and_get_url
 	    ($openid,
 	     sub { Bibliotech::User->by_openid(shift) });
