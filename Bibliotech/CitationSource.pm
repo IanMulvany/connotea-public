@@ -130,7 +130,8 @@ sub citations_id {
 }
 
 # all network requests should be via this get sub
-# get sub will return a list: (HTTP::Response object, $charset_decoded_content, $extracted_html_title_if_html)
+# return value in scalar context: $charset_decoded_content_string
+#                in list context: (HTTP::Response object, $charset_decoded_content_string, $extracted_html_title_if_html)
 sub ua_act {
   my ($self, $uri_or_request, $ua) = @_;
   return Bibliotech::Util::get($uri_or_request,
