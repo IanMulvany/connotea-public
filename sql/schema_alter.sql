@@ -370,4 +370,11 @@ CREATE TABLE `user_openid` (
 
 alter table user add origin enum('normal','openid') not null default 'normal' after quarantined;
 
+-- fix issue with citation source module system where some hashes were not correct
+create temporary table tmp_a as select distinct article from bookmark where hash != md5(url) and article is not null;
+alter table tmp_a add key article_idx (article);
+update bookmark set hash = md5(url) where hash != md5(url);
+update article a set hash = (select b1.hash from bookmark b1 where b1.article = a.article_id order by b1.created limit 1) where a.article_id in (select article from tmp_a) and a.hash not in (select b2.hash from bookmark b2 where b2.article = a.article_id);
+drop temporary table tmp_a;
+
 set FOREIGN_KEY_CHECKS = 1;
