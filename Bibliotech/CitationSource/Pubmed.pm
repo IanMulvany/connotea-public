@@ -105,6 +105,19 @@ sub _url_from_pmid {
   return URI->new('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?retmode=xml&db='.$db.'&id='.$id);
 }
 
+sub url_add_tool {
+  my ($self, $url) = @_;
+  my $bibliotech = $self->bibliotech;
+  if (my $sitename = $bibliotech->sitename) {
+    $sitename =~ s/\W/_/g;
+    $url->query_param(tool => $sitename);
+  }
+  if (my $siteemail = $bibliotech->siteemail) {
+    $url->query_param(email => $siteemail);
+  }
+  return $url;
+}
+
 sub _db_and_id_from_url {
   my $uri = shift;
   if (my $path = $uri->path) {
@@ -141,7 +154,8 @@ sub citations_id {
 
   my $io = eval {
     die "do not understand id\'s\n" unless $self->understands_id($id_hashref);
-    my $query_uri = _url_from_pmid('fetch', $id_hashref->{db}, $id_hashref->{pubmed});
+    my $query_uri = $self->url_add_tool(_url_from_pmid('fetch', $id_hashref->{db}, $id_hashref->{pubmed}));
+    #warn "$query_uri\n";
     my $xml = $self->get($query_uri) or die "XML retrieval failed\n";
     die "Error message from Pubmed server ($query_uri): $1\n" if $xml =~ m|<Error[^>]*>(.*)</Error>|si;
     my $obj = Bio::Biblio::IO->new(-data => $xml, -format => 'pubmedxml') or die "IO object false\n";
