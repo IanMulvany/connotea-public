@@ -1,0 +1,34 @@
+#!/bin/bash
+
+. /root/bin/connotea_vars
+bconfig=$CONF
+hconfig=$APCONF
+phtml=$HTML/readonly.html
+htmltime='4 hours ago'
+tmpfile=/tmp/readonly_connotea_temp
+viewer='/usr/bin/links -dump'
+
+# if the html file is older than two hours, warn user that it should be updated
+touch -d "$htmltime" $tmpfile
+if [ "$phtml" -ot "$tmpfile" ]; then
+  echo
+  echo [This is the current readonly message in $phtml:]
+  echo
+  $viewer $phtml
+  echo
+  echo [Please update. If this message is ok, please touch the file timestamp and rerun readonly_connotea.]
+  echo
+  rm -f $tmpfile
+  exit 1
+else
+  rm -f $tmpfile
+fi
+
+rm -f $bconfig.bak
+perl -i.bak -pe 's/(SERVICE_READ_ONLY(?:_SEARCH_TOO)?\s*=\s*)false/${1}true/' $bconfig
+
+rm -f $hconfig.bak
+perl -i.bak -pe 's/#+(ErrorDocument 503 \/readonly.html)/$1/; s/(ErrorDocument 503 \/unavailable.html)/#$1/' $hconfig
+
+echo "Reconfiguration for readonly completed OK."
+exec /root/bin/restart_connotea
