@@ -212,7 +212,7 @@ sub href_hash {
 sub url_never_undef {
   my $url = shift->url;
   return '' unless defined $url;
-  return $url;
+  return "$url";
 }
 
 sub url_chunked {
