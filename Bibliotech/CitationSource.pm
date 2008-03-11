@@ -186,6 +186,21 @@ sub catch_transient_warnstr {
   catch_transient_die(@_, 'warnstr');
 }
 
+sub content_or_set_warnstr {
+  my ($self, $content_sub, $acceptable_content_types) = @_;
+  defined $content_sub and ref($content_sub) eq 'CODE' or die 'no content sub or is not code';
+  my ($ok, $content) = $self->catch_transient_warnstr
+      (sub { my ($response) = $content_sub->();
+	     defined $response or die 'no response object';
+	     $response->is_success or die $response->status_line."\n";
+	     my $content_type = $response->content_type;
+	     grep { $content_type =~ /$_/ } (@{$acceptable_content_types||[]})
+		 or die "Content type is not acceptable ($content_type)\n";
+	     return $response->content;
+       });
+  return $ok ? $content : undef;
+}
+
 package Bibliotech::CitationSource::ResultList;
 use strict;
 use base 'Set::Array';

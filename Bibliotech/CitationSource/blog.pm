@@ -41,18 +41,10 @@ sub understands {
 
   return 0 unless $uri->scheme eq 'http';
 
-  my ($ok, $response) = $self->catch_transient_warnstr
-      (sub { my ($response) = $content_sub->();
-	     $response->is_success or die $response->status_line."\n";
-	     return $response;
-       });
-  $ok or return -1;
+  my $content = $self->content_or_set_warnstr($content_sub, ['text/html', 'application/xhtml+xml'])
+      or return -1;
 
-  my $content_type = $response->content_type;
-  $content_type eq 'text/html' || $content_type eq 'application/xhtml+xml'
-      or return 0;
-
-  my $href = _get_feed_href_from_content($response->content)
+  my $href = _get_feed_href_from_content($content)
       or return 0;
   $self->{feedURL} = URI->new_abs($href, $uri);
 

@@ -41,27 +41,18 @@ sub version {
 }
 
 sub understands {
-  my ($self, $uri, $getURLContent_sub) = @_;
+  my ($self, $uri, $content_sub) = @_;
 
   return 0 unless $uri->scheme eq 'http';
 
-  $self->clearContent;
-	$self->warnstr("");
+  my $content = $self->content_or_set_warnstr($content_sub, ['text/html', 'application/xhtml+xml'])
+      or return -1;
 
-  my ($ok, $response) = $self->catch_transient_warnstr(sub { $self->getURLContent($getURLContent_sub || $uri) });
-  $ok or return -1;
-
-  # check for html
-  my $content_type = $response->content_type;
-  $content_type eq 'text/html' || $content_type eq 'application/xhtml+xml'
-      or return 0;
-  
   # check html for RDF data, else return 0
-  $self->{rdf_content} = getRDFinaComment($response->content)
+  $self->{rdf_content} = getRDFinaComment($content)
       or return 0;
 
-  my $metadata;
-  ($ok, $metadata) = $self->catch_transient_warnstr(sub {
+  my ($ok, $metadata) = $self->catch_transient_warnstr(sub {
     Bibliotech::CitationSource::autodiscovery::Metadata->new($self->{rdf_content}, $uri);
   });
   $ok or return 0;
@@ -69,30 +60,10 @@ sub understands {
   return 0 unless $metadata;
   $self->{metadata} = $metadata;
 
-  # since this is a less specific plug-in, return a 2 in the event a more specific plug-in recognizes this site
-  # the blog plug-in returns 3, so embedded metadata is prefered to linked metadata
+  # since this is a less specific plug-in, return a 2 in the event a
+  # more specific plug-in recognizes this site; the blog plug-in
+  # returns 3, so embedded metadata is prefered to linked metadata
   return 2;
-}
-
-sub clearContent {
-  # noop
-}
-
-sub getURLContent {
-  my ($self, $content_sub_or_uri) = @_;
-
-  my $response = do {
-    if (ref($content_sub_or_uri) eq 'CODE') {
-      ($content_sub_or_uri->())[0];
-    }
-    else {
-      my $ua = $self->ua;
-      scalar $ua->request(GET $content_sub_or_uri);
-    }
-  };
-
-  die $response->status_line."\n" unless $response->is_success;
-  return $response;
 }
 
 sub getRDFinaComment {
