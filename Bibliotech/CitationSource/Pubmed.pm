@@ -15,6 +15,10 @@ package Bibliotech::CitationSource::Pubmed;
 use base 'Bibliotech::CitationSource';
 use URI;
 use URI::QueryParam;
+use Bibliotech::Config;
+
+our $SITE_NAME  = Bibliotech::Config->get('SITE_NAME');
+our $SITE_EMAIL = Bibliotech::Config->get('SITE_EMAIL');
 
 sub api_version {
   1;
@@ -108,11 +112,11 @@ sub _url_from_pmid {
 sub url_add_tool {
   my ($self, $url) = @_;
   my $bibliotech = $self->bibliotech;
-  if (my $sitename = $bibliotech->sitename) {
+  if (my $sitename = defined $bibliotech ? $bibliotech->sitename : $SITE_NAME) {
     $sitename =~ s/\W/_/g;
     $url->query_param(tool => $sitename);
   }
-  if (my $siteemail = $bibliotech->siteemail) {
+  if (my $siteemail = defined $bibliotech ? $bibliotech->siteemail : $SITE_EMAIL) {
     $url->query_param(email => $siteemail);
   }
   return $url;

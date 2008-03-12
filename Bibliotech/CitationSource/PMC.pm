@@ -72,8 +72,7 @@ sub citations
 
 	if ($understands == 2) {
 	  $uri->query =~ m/pubmedid=([0-9]+)/;
-	  my %id = (db => 'pubmed', pubmed => $1);
-	  return $self->citations_id_switch('Pubmed', \%id);
+	  return $self->citations_id_switch('Pubmed', {db => 'pubmed', pubmed => $1});
 	}
      
 	my $art_id = $self->get_art_id($uri);
