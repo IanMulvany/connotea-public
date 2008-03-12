@@ -231,6 +231,19 @@ GENERAL {
   #IMPORT_MAX_COUNT = 1000
 }
 
+AGENT {
+  # options regarding HTTP client that fetches pages on the network
+  # user agent string, defaults to GENERAL > SITE_NAME plus LWP::UserAgent version
+  #STRING = 'Mozilla/5.0'
+  # timeout for entire request
+  #TIMEOUT = 180
+  # hosts that are always allowed to be reached - put LAN addresses in here if necessary
+  # you can do class ranges by leaving off digits, e.g. '192.168.1.'
+  #WHITE_LIST = []
+  # hosts that are never allowed to be reached
+  #BLACK_LIST = []
+}
+
 CLICKS {
   # options regarding click tracking
   # database connection details
