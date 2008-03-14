@@ -9,7 +9,7 @@
 
 package Bibliotech::Profile;
 use strict;
-use Time::HR;
+use Time::HiRes;
 use Carp;
 
 our $ON = 0;
@@ -33,7 +33,7 @@ sub start {
   warn "- START $note\n";
   my $caller = caller;
   $START{$caller} ||= [];
-  push @{$START{$caller}}, [gethrtime, $note];
+  push @{$START{$caller}}, [Time::HiRes::time(), $note];
   return 1;
 }
 
@@ -41,11 +41,11 @@ sub start {
 # start() and stop() are nestable
 sub stop {
   return 0 unless $ON;
-  my $end = gethrtime;
+  my $end = Time::HiRes::time();
   my $caller = caller;
   my $stack = $START{$caller} || do { carp "caller not recognized (\"$caller\")"; [[$end, '?']]; };
   my ($start, $note) = @{pop @{$stack}};
-  my $elapsed = sprintf('%0.4f', ($end - $start) / 1000000000);
+  my $elapsed = sprintf('%0.4f', $end - $start);
   warn "- STOP  $note [$elapsed]\n";
   delete $START{$caller} unless @{$stack};
   return 1;

@@ -406,7 +406,7 @@ MINIMUM REQUIREMENTS
     * Storable
     * Template
     * Test::Exception
-    * Time::HR
+    * Time::HiRes
     * URI
     * URI::Escape
     * URI::Heuristic

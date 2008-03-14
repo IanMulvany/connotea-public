@@ -30,7 +30,7 @@ use Bibliotech::Component::Inc;
 # load ReportProblemForm because it appears in html exception pages
 use Bibliotech::Component::ReportProblemForm;
 use Encode qw/decode_utf8 encode_utf8 is_utf8/;
-use Time::HR;
+use Time::HiRes;
 use HTTP::Date;
 use Data::Dumper;
 
@@ -103,7 +103,7 @@ sub _figure_docroot_path_link_location {
 }
 
 sub handler {
-  my $starthrtime = gethrtime;
+  my $starthrtime = Time::HiRes::time();
   my $r = shift;
   my $pool = $r->pool;
 
@@ -237,7 +237,7 @@ sub handler {
     $self->notify_for_exception(subject => '['.$self->sitename.' exception]', body => $get_report->());
   }
 
-  my $elapsed = sprintf('%0.4f', (gethrtime() - $starthrtime) / 1000000000);
+  my $elapsed = sprintf('%0.4f', Time::HiRes::time() - $starthrtime);
   $load--;  # saved in memcache by cleanup handler registered after getting LOAD
   $LOG->info("completed $canonical_path with code $code in $elapsed secs bringing load to $load");
   $LOG->flush;

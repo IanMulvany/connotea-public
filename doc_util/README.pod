@@ -586,7 +586,7 @@ vendor packages, and you're better off using those.
 
 =item * Test::Exception
 
-=item * Time::HR
+=item * Time::HiRes
 
 =item * URI
 

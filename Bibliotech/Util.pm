@@ -15,7 +15,7 @@ use HTML::Sanitizer;
 use HTML::Entities;
 use DateTime;
 use IO::File;
-use Time::HR;
+use Time::HiRes;
 use Bibliotech::UserAgent;
 # NOTE although we don't load Bibliotech::DBI or Bibliotech::Config:
 # if Bibliotech::DBI *is* loaded:
@@ -590,10 +590,10 @@ sub decode_entities {
 
 sub hrtime {
   my $action = pop;
-  my $start  = gethrtime;
+  my $start  = Time::HiRes::time();
   my $result = $action->();
-  my $end    = gethrtime;
-  return ($result, sprintf('%0.4f', ($end - $start) / 1000000000));
+  my $end    = Time::HiRes::time();
+  return ($result, sprintf('%0.4f', $end - $start));
 }
 
 # for '1-10' return (1, 10)
