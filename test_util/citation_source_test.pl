@@ -1,19 +1,12 @@
 #!/usr/bin/perl
-
 use strict;
 use warnings;
-
-use lib '..';
 use URI;
+use lib '..';
 use Bibliotech::Fake;
 use Bibliotech::Util;
-#use Bibliotech::DBI;
-#use Data::Dumper;
 
-my $plugin = shift @ARGV;
-
-die "No plug-in specified, so I can't do anything\n" unless $plugin;
-
+my $plugin = shift @ARGV or die "No plug-in specified, so I can't do anything\n";
 $plugin = 'Bibliotech::CitationSource::'.$plugin;
 print "Using $plugin\n";
 eval "use $plugin";
@@ -21,47 +14,63 @@ die $@ if $@;
 
 my $b = Bibliotech::Fake->new;
 my $c = $plugin->new($b);
+my $p = sub { process_uri_str(shift, $b, $c) };
+if (@ARGV) {
+  $p->($_) foreach (@ARGV);
+}
+else {
+  print "Ready.\n";
+  $p->(do { chomp; $_; }) while (<>);
+}
 
-print "Ready.\n";
-while (<STDIN>) {
-  chomp;
-  my $uri = URI->new($_);
+sub process_uri_str {
+  my ($uri_str, $b, $c) = @_;
+  my $uri = URI->new($uri_str);
+  process_uri($uri, sub { make_getter(shift, $b) }, $c);
+}
+
+sub make_getter {
+  my ($uri, $b) = @_;
   my $cache;
-  my $get = sub { return Bibliotech::Util::get($uri, $b, \$cache) };
+  return sub { Bibliotech::Util::get($uri, $b, \$cache) };
+}
+
+sub process_uri {
+  my ($uri, $make_get, $c) = @_;
   print "Testing: \'$uri\'\n";
+  my $get = $make_get->($uri);
   my $understands_code = $c->understands($uri, $get);
   show_err_and_warn($c);
   unless ($understands_code) {
     print "Don't understand, skipping.\n\n";
-    next;
+    return;
   }
   if ($understands_code == -1) {
     print "Transient error reported.\n";
-    next;
+    return;
   }
   if ($understands_code != 1) {
     print "URI understood, but lesser score reported (${understands_code})\n";
   }
   my $new_uri = $c->filter($uri, $get);
   show_err_and_warn($c);
-  if(!defined $new_uri) {
+  if (!defined $new_uri) {
     print "No change from filter.\n";
   }
-  elsif($new_uri) {
+  elsif ($new_uri) {
     print "Filter: $new_uri\n";
     $uri = $new_uri;
-    my $new_cache;
-    $get = sub { return Bibliotech::Util::get($uri, $b, \$new_cache) };
+    $get = $make_get->($uri);
   }
   else {
     print "Filter returned empty string - abort.\n";
-    next;
+    return;
   }
   my $citations = $c->citations($uri, $get);
   show_err_and_warn($c);
   unless ($citations) {
     print "No citations.\n\n";
-    next;
+    return;
   }
   my $result = $citations->fetch;
   show_citation($result);
