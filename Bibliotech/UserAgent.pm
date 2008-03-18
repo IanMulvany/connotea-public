@@ -39,6 +39,7 @@ sub new {
   $self->agent($STRING || $sitename.' ');  # trailing space ensures LWP will add version info
   $self->blocked_hosts(_make_qrs(@{$BLACK_LIST}))     if $BLACK_LIST and @{$BLACK_LIST};
   $self->whitelisted_hosts(_make_qrs(@{$WHITE_LIST})) if $WHITE_LIST and @{$WHITE_LIST};
+  $self->cookie_jar({});
   return $self;
 }
 
