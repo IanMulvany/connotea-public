@@ -188,7 +188,7 @@ sub catch_transient_warnstr {
 
 sub content_or_set_warnstr {
   my ($self, $content_sub, $acceptable_content_types) = @_;
-  defined $content_sub and ref($content_sub) eq 'CODE' or die 'no content sub or is not code';
+  die 'no content sub or is not code' unless defined $content_sub and ref($content_sub) eq 'CODE';
   my ($ok, $content) = $self->catch_transient_warnstr
       (sub { my ($response) = $content_sub->();
 	     defined $response or die 'no response object';
