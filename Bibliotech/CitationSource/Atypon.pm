@@ -6,6 +6,41 @@
 #
 # The Bibliotech::CitationSource::Atypon class retrieves citation data
 # for articles on Atypon powered web sites.
+#
+# Supports at least:
+#   www.aluka.org
+#   www.joponline.org
+#   www.anthrosource.net
+#   cerealchemistry.aaccnet.org
+#   pubs.acs.org
+#   apsjournals.apsnet.org
+#   www.jbmronline.org
+#   www.amstat.org
+#   avmajournals.avma.org
+#   arjournals.annualreviews.org
+#   www.bioone.org
+#   www.blackwell-synergy.com
+#   www.cfapubs.org
+#   www.cshl-symposium.org
+#   www.crossref.org
+#   www.eupjournals.com
+#   www.expertopin.com
+#   www.future-drugs.com
+#   www.futuremedicine.com
+#   inscribe.iupress.org
+#   www.ieee.org
+#   www.thejns.org
+#   www.jstor.org
+#   www.leaonline.com
+#   www.liebertonline.com
+#   www.mitpressjournals.org
+#   www.mlajournals.org
+#   publications.epress.monash.edu
+#   www.morganclaypool.com
+#   health.salempress.com
+#   caliber.ucpress.net
+#   www.journals.uchicago.edu
+#   www.degruyter.com
 
 use strict;
 use Bibliotech::CitationSource;
@@ -40,17 +75,22 @@ sub _doi_from_uri {
   return;
 }
 
+sub _query_uri {
+  my ($host, $doi) = @_;
+  my $q = URI->new('http://'.$host.'/action/downloadCitation');
+  $q->query_param(doi     => $doi);
+  $q->query_param(include => 'cit');
+  $q->query_param(format  => 'refman');
+  $q->query_param(submit  => 'Download');
+  return $q;
+}
+
 sub citations {
   my ($self, $uri, $content_sub) = @_;
   my $ris = eval {
     die "do not understand URI\n" unless $self->understands($uri, $content_sub);
     my $doi = _doi_from_uri($uri) or die "no DOI\n";
-    my $q = URI->new('http://'.$uri->host.'/action/downloadCitation');
-    $q->query_param(doi     => $doi);
-    $q->query_param(include => 'cit');
-    $q->query_param(format  => 'refman');
-    $q->query_param(submit  => 'Download');
-    my ($res, $ris_raw) = $self->get($q);
+    my ($res, $ris_raw) = $self->get(_query_uri($uri->host, $doi));
     $res->is_success or 'trying to get RIS: '.$res->status_line."\n";
     my $ris = Bibliotech::CitationSource::NPG::RIS->new($ris_raw) or die "no RIS object\n";
     $ris->has_data or die "RIS file contained no data\n";
