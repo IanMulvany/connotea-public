@@ -91,7 +91,7 @@ sub query_result {
   my ($self, $doi) = @_;
   return $self->{'query_result'}->{$doi} if $self->{'query_result'}->{$doi};
   my $xml = $self->crossref_query($doi);
-  warn "XML:\n$xml\n";
+  #warn "XML:\n$xml\n";
   my $query_result = $self->parse_crossref_xml($xml, $doi);
   return undef unless $query_result;
   $self->{'query_result'}->{$doi} = $query_result;
@@ -144,7 +144,8 @@ sub get_QueryValue {
 }
 
 sub _get_raw_doi_from_uri {
-  my $uri    = shift;
+  my $uri = shift;
+  $uri =~ /^10\./ and return "$uri";
   my $scheme = $uri->scheme;
   local $_   = $uri->path;
   return $_                        if $scheme eq 'doi';
