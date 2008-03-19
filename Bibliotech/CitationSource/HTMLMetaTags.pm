@@ -32,13 +32,13 @@ sub version {
   '1.0';
 }
 
-# simple regex on the document being bookmarked, return 0 or 2
+# simple regex on the document being bookmarked
 sub understands {
   my ($self, $uri, $content_sub) = @_;
-  $uri->scheme eq 'http'      or return 0;
-  local $_ = $content_sub->() or return 0;
-  /<meta name=\"citation_/i   or return 0;
-  return 2;
+  $uri->scheme eq 'http'      	     or return 0;
+  local $_ = $content_sub->() 	     or return 0;
+  /<meta name=\"(?:citation_|dc\.)/i or return 0;
+  return 4;
 }
 
 # put together a citation model
@@ -54,7 +54,7 @@ sub citations {
 }
 
 # in: HTML string
-# out: arrayref of arrayrefs two fields apiece: [meta_tag_name, meta_tag_content]
+# out: MetaTags object (see below)
 # meta_tag_name will be lowercase, and the array is limited to citation meta tags
 # meta_tag_content is already unescaped by HTML::Parser
 # if content="..." is missing then meta_tag_content will be undef
@@ -69,12 +69,14 @@ sub _citation_meta_tags {
 		      my $key = lc($name);
 		      return unless $key =~ /^(citation|dc\.)/;
 		      my $value = $attr{content};
-		      push @citation_meta, [$key => $value];
+		      my %others = %attr;
+		      delete $others{name};
+		      delete $others{content};
+		      push @citation_meta, [$key => $value, \%others];
 		      return; };
-  my $parser = HTML::Parser->new(api_version => 3, start_h => [$new_tag, 'tag,attr']);
-  $parser->parse($html);
-  $parser->eof;
-  return Bibliotech::CitationSource::HTMLMetaTags::MetaTags->new(\@citation_meta);
+  HTML::Parser->new(api_version => 3, start_h => [$new_tag, 'tag,attr'])->parse($html)->eof;
+  return Bibliotech::CitationSource::HTMLMetaTags::MetaTags->new
+      (map { Bibliotech::CitationSource::HTMLMetaTags::MetaTag->new(@{$_}) } @citation_meta);
 }
 
 sub _citation_object {
@@ -82,41 +84,98 @@ sub _citation_object {
   Bibliotech::CitationSource::Result::Simple->new
       ({type   	=> 'HTML Meta Tags',
 	source 	=> 'HTML of Bookmark',
-	doi    	=> $meta->one_or_undef('citation_doi'),
-	pubmed 	=> $meta->one_or_undef('citation_pmid'),
-	title  	=> $meta->one_or_undef('citation_title'),
-	volume 	=> $meta->one_or_undef('citation_volume'),
-	issue  	=> $meta->one_or_undef('citation_issue'),
-	page    => $meta->one_or_undef('citation_firstpage'),
-	pubdate => Bibliotech::Date->new($meta->one_or_undef('citation_date') || $last_modified_raw)->ymd,
-	authors => do { local $_ = $meta->one_or_undef('citation_authors') || ''; [split(/;\s*/)]; },
-	journal => {name => $meta->one_or_undef('citation_journal_title'),
-		    issn => $meta->one_or_undef('citation_issn')},
+	doi    	=> $meta->grep_key('citation_doi')->first_value ||
+                   $meta->grep_key('dc.identifier')->grep_type_or_value(qr(doi)i, qr(^10\.))->first_value,
+	pubmed 	=> $meta->grep_key('citation_pmid')->first_value ||
+	           $meta->grep_key('dc.identifier')->grep_type_or_value(qr(^(pmid|pubmed)$)i, qr(^\d+$))->first_value,
+	title  	=> $meta->grep_key('citation_title')->first_value ||
+	           $meta->grep_key('dc.title')->first_value,
+	volume 	=> $meta->grep_key('citation_volume')->first_value,
+	issue  	=> $meta->grep_key('citation_issue')->first_value,
+	page    => $meta->grep_key('citation_first_valuepage')->first_value,
+	pubdate => Bibliotech::Date->new($meta->grep_key('citation_date')->first_value ||
+					 $meta->grep_key('dc.date')->first_value ||
+					 $last_modified_raw)->ymd,
+	authors => do { local $_ = $meta->grep_key('citation_authors')->first_value;
+			$_ ? [split(/;\s*/)] : $meta->grep_key('dc.creator')->values_arrayref; },
+	journal => do { local $_ = $meta->grep_key('citation_journal_title')->first_value;
+			$_ ? {name => $_,
+			      issn => $meta->grep_key('citation_issn')->first_value} : undef; },
        });
 }
 
 package Bibliotech::CitationSource::HTMLMetaTags::MetaTags;
 
 sub new {
-  my ($class, $meta_ref) = @_;
-  my $self = [@{$meta_ref}];
+  my $class = shift;
+  my $self = [@_];
   return bless $self, ref $class || $class;
 }
 
-sub collect {
-  my $self = shift;
-  my %seen;
-  my @result = map {
-    my $key = $_;
-    grep { !$seen{$_}++ } map { $_->[1] } grep { $_->[0] eq $key } @{$self};
-  } @_;
-  return wantarray ? @result : $result[0];
+sub grep_key {
+  my ($self, $key) = @_;
+  return $self->new(grep { $_->key =~ $key } @{$self}) if ref($key) eq 'Regexp';
+  return $self->new(grep { $_->key eq $key } @{$self});
 }
 
-sub one_or_undef {
-  my ($self, $key) = @_;
-  my $value = $self->collect($key);
-  return $value;
+sub grep_type {
+  my ($self, $type) = @_;
+  return $self->new(grep { $_->type =~ $type } @{$self}) if ref($type) eq 'Regexp';
+  return $self->new(grep { $_->type eq $type } @{$self});
+}
+
+sub grep_value {
+  my ($self, $value) = @_;
+  return $self->new(grep { $_->value =~ $value } @{$self}) if ref($value) eq 'Regexp';
+  return $self->new(grep { $_->value eq $value } @{$self});
+}
+
+sub grep_type_or_value {
+  my ($self, $type, $value) = @_;
+  my $result = $self->grep_type($type);
+  return $result if @{$result};
+  return $self->grep_value($value);
+}
+
+sub first {
+  my $self = shift;
+  return unless @{$self};
+  return $self->[0];
+}
+
+sub first_value {
+  my $self = shift;
+  my $first = $self->first or return undef;
+  return $first->value;
+}
+
+sub values_arrayref {
+  my $self = shift;
+  return [map { $_->value } @{$self}];
+}
+
+package Bibliotech::CitationSource::HTMLMetaTags::MetaTag;
+
+sub new {
+  my ($class, $key, $value, $attr) = @_;
+  return bless [$key, $value, $attr], ref $class || $class;
+}
+
+sub key {
+  shift->[0];
+}
+
+sub value {
+  shift->[1];
+}
+
+sub attr {
+  shift->[2];
+}
+
+sub type {
+  my $attr = shift->attr or return;
+  return $attr->{type};
 }
 
 1;
