@@ -93,6 +93,10 @@ sub is_spam_uri {
   return is_host_on_lists($hostname, $DNS_LISTS, $WHITE_LIST);
 }
 
+sub potential_understands {
+  $SCORE;
+}
+
 # score is an option but 2 is recommended to signal affirmative but
 # not the best score which protects domains recognized by other
 # modules

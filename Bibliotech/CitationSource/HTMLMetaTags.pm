@@ -32,6 +32,10 @@ sub version {
   '1.0';
 }
 
+sub potential_understands {
+  4;
+}
+
 # simple regex on the document being bookmarked
 sub understands {
   my ($self, $uri, $content_sub) = @_;

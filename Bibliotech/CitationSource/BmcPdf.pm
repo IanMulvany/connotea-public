@@ -33,6 +33,10 @@ sub version
   '1.1.2.1';
 }
 
+sub potential_understands {
+  2;
+}
+
 sub understands
 {
     my ($self, $uri) = @_;

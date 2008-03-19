@@ -96,6 +96,11 @@ sub understands_id {
   0;
 }
 
+# the best score that understands() could return 1-10 (don't worry about -1 or 0)
+sub potential_understands {
+  1;
+}
+
 # optionally filter the URI
 # accept a URI object and clean out any "bad" parts, e.g. user identifiers or login names
 # THESE MUST BE BENIGN CHANGES THAT STILL POINT TO THE SAME FINAL DATA (IF THE USER IS AUTHORIZED)

@@ -9,6 +9,8 @@
 package Bibliotech::Plugin;
 use strict;
 use Storable qw(dclone);
+use List::Util qw(reduce);
+use List::MoreUtils qw(all);
 
 our $errstr;
 
@@ -78,14 +80,21 @@ sub scan {
 	next if $@ =~ /^API too old/;
 	die $@;
       }
+      if (@mods) {
+	if ($obj->can('potential_understands')) {
+	  my $potential_score = eval { $obj->potential_understands };
+	  die 'Error from '.ref($obj)."::potential_understands: $@" if $@;
+	  next unless all { $potential_score > $_ } (map { $_->[0] } @mods);  # because we won't beat one that we have
+	}
+      }
       my $score = eval { $obj->understands(_item_copy($item), @{$obj_call_params||[]}); };
       die 'Error from '.ref($obj)."::understands(\'$item\'): $@" if $@;
-      #warn "Bibliotech::Plugin::scan - $class = $score\n";
-      next if $score <= 0;  # because that means does not understand or transient error
+      warn "Bibliotech::Plugin::scan - $class = $score\n";
+      next if !$score or $score <= 0;  # because that means does not understand or transient error
       push @mods, [$score => $obj];
       last if $score == 1;  # because it will win anyway
     }
-    $best_mod = (sort { $a->[0] <=> $b->[0] } @mods)[0] if @mods;
+    $best_mod = reduce { $a->[0] < $b->[0] ? $a : $b } @mods if @mods;
   };
   die "error in plugin scan loop: $@" if $@;
   return unless $best_mod;
