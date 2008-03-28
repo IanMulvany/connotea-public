@@ -56,7 +56,11 @@ sub identifiers
 	  $self->citation->{$_} = $identifiers->{$_};
       }
     }
-  return $self->citation ? {'doi' => $self->citation->{'doi'}, 'pubmed' => $self->citation->{'pubmed'}, 'asin' => $self->citation->{'asin'} }: undef;
+  return $self->citation ? {'doi'    => $self->citation->{'doi'},
+			    'pubmed' => $self->citation->{'pubmed'},
+			    'asin'   => $self->citation->{'asin'},
+			    ($self->citation->{'identifiers'} ? %{$self->citation->{'identifiers'}} : ()),
+                           } : undef;
 }
 
 sub title

@@ -39,9 +39,9 @@ sub potential_understands {
 # simple regex on the document being bookmarked
 sub understands {
   my ($self, $uri, $content_sub) = @_;
-  $uri->scheme eq 'http'      	     or return 0;
-  local $_ = $content_sub->() 	     or return 0;
-  /<meta name=\"(?:citation_|dc\.)/i or return 0;
+  $uri->scheme eq 'http'      or return 0;
+  local $_ = $content_sub->() or return 0;
+  /<meta\s+name=\"(?:citation_|dc\.\w+|prism\.\w+)\"\s/i or return 0;
   return 4;
 }
 
@@ -71,7 +71,7 @@ sub _citation_meta_tags {
 		      my %attr = %{$attr_ref} or return;
 		      my $name = $attr{name} or return;
 		      my $key = lc($name);
-		      return unless $key =~ /^(citation|dc\.)/;
+		      return unless $key =~ /^(citation|dc\.|prism\.)/;
 		      my $value = $attr{content};
 		      my %others = %attr;
 		      delete $others{name};
@@ -88,24 +88,58 @@ sub _citation_object {
   Bibliotech::CitationSource::Result::Simple->new
       ({type   	=> 'HTML Meta Tags',
 	source 	=> 'HTML of Bookmark',
-	doi    	=> $meta->grep_key('citation_doi')->first_value ||
-                   $meta->grep_key('dc.identifier')->grep_type_or_value(qr(doi)i, qr(^10\.))->first_value,
-	pubmed 	=> $meta->grep_key('citation_pmid')->first_value ||
-	           $meta->grep_key('dc.identifier')->grep_type_or_value(qr(^(pmid|pubmed)$)i, qr(^\d+$))->first_value,
+	doi    	=> _without_prefix
+	           ($meta->grep_key('citation_doi')->first_value ||
+		    $meta->grep_key('dc.identifier')->grep_type_or_value(qr(doi)i,
+									 qr(^(?:doi: ?)?10\.)i)->first_value),
+	pubmed 	=> _without_prefix
+	           ($meta->grep_key('citation_pmid')->first_value ||
+		    $meta->grep_key('dc.identifier')->grep_type_or_value(qr(^(?:pm|pmid|pubmed)$)i,
+									 qr(^(?:(?:pm|pmid|pubmed): ?)?\d+$)i)->first_value),
+	asin 	=> _without_prefix
+	           ($meta->grep_key('citation_isbn')->first_value ||
+		    $meta->grep_key('dc.identifier')->grep_type_or_value(qr(^(?:isbn|asin)$)i,
+									 qr(^(?:(?:isbn|asin): ?))i)->first_value),
+	identifiers => do { my @others =
+				$meta->grep_key('dc.identifier')->grep_not_type_or_value
+				(qr(^(?:doi|pm|pmid|pubmed|isbn|asin)$)i,
+				 qr(^(?:doi|pm|pmid|pubmed|isbn|asin): ?)i)
+				->type_values_array;
+			    my %others = map { my ($type, $value) = @{$_};
+					       $value =~ s/^([A-za-z]+): ?//;
+					       my $key = $type || $1;
+					       $key => $value; } @others;
+			    %others ? \%others : undef; },
 	title  	=> $meta->grep_key('citation_title')->first_value ||
 	           $meta->grep_key('dc.title')->first_value,
-	volume 	=> $meta->grep_key('citation_volume')->first_value,
-	issue  	=> $meta->grep_key('citation_issue')->first_value,
-	page    => $meta->grep_key('citation_first_valuepage')->first_value,
+	volume 	=> $meta->grep_key('citation_volume')->first_value ||
+                   $meta->grep_key('prism.volume')->first_value,
+	issue  	=> $meta->grep_key('citation_issue')->first_value ||
+                   $meta->grep_key('prism.number')->first_value ||
+	           $meta->grep_key('prism.issueidentifier')->first_value,
+	page    => $meta->grep_key('citation_first_valuepage')->first_value ||
+                   do { my $sp = $meta->grep_key('prism.startingPage')->first_value;
+			my $ep = $meta->grep_key('prism.endingPage')->first_value;
+			$sp ? ($ep ? $sp.' - '.$ep : $sp) : undef; },
 	pubdate => Bibliotech::Date->new($meta->grep_key('citation_date')->first_value ||
 					 $meta->grep_key('dc.date')->first_value ||
+					 $meta->grep_key('prism.publicationdate')->first_value ||
+					 $meta->grep_key('prism.creationdate')->first_value ||
 					 $last_modified_raw)->ymd,
 	authors => do { local $_ = $meta->grep_key('citation_authors')->first_value;
 			$_ ? [split(/;\s*/)] : $meta->grep_key('dc.creator')->values_arrayref; },
-	journal => do { local $_ = $meta->grep_key('citation_journal_title')->first_value;
+	journal => do { local $_ = $meta->grep_key('citation_journal_title')->first_value ||
+			           $meta->grep_key('prism.publicationName')->first_value;
 			$_ ? {name => $_,
-			      issn => $meta->grep_key('citation_issn')->first_value} : undef; },
+			      issn => $meta->grep_key('citation_issn')->first_value ||
+				      $meta->grep_key('prism.issn')->first_value} : undef; },
        });
+}
+
+sub _without_prefix {
+  local $_ = shift or return undef;
+  s/^[A-za-z]+: ?//;
+  return $_;
 }
 
 package Bibliotech::CitationSource::HTMLMetaTags::MetaTags;
@@ -141,6 +175,23 @@ sub grep_type_or_value {
   return $self->grep_value($value);
 }
 
+sub grep_type_not {
+  my ($self, $type) = @_;
+  return $self->new(grep { $_->type !~ $type } @{$self}) if ref($type) eq 'Regexp';
+  return $self->new(grep { $_->type ne $type } @{$self});
+}
+
+sub grep_value_not {
+  my ($self, $value) = @_;
+  return $self->new(grep { $_->value !~ $value } @{$self}) if ref($value) eq 'Regexp';
+  return $self->new(grep { $_->value ne $value } @{$self});
+}
+
+sub grep_not_type_or_value {
+  my ($self, $type, $value) = @_;
+  return $self->grep_type_not($type)->grep_value_not($value);
+}
+
 sub first {
   my $self = shift;
   return unless @{$self};
@@ -156,6 +207,11 @@ sub first_value {
 sub values_arrayref {
   my $self = shift;
   return [map { $_->value } @{$self}];
+}
+
+sub type_values_array {
+  my $self = shift;
+  return map { [$_->type => $_->value] } @{$self};
 }
 
 package Bibliotech::CitationSource::HTMLMetaTags::MetaTag;
