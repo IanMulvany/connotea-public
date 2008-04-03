@@ -693,6 +693,7 @@ sub tt_general_vars_calc {
 	  sitename           => $bibliotech->sitename,
 	  siteemail          => $bibliotech->siteemail,
 	  codename           => do { local $_ = $bibliotech->sitename; s/\W//g; $_; },
+	  symbolname         => do { local $_ = $bibliotech->sitename; s/\W//g; lc $_; },
 	  user               => $bibliotech->user,
 	  service_paused     => &Bibliotech::Throttle::is_service_paused_at_all,
 	  service_read_only  => &Bibliotech::ReadOnly::is_service_read_only_at_all,
