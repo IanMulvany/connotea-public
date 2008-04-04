@@ -52,12 +52,6 @@ sub query_timed {
   return "$result [$time]";
 }
 
-sub interval {
-  local $_ = shift;
-  /^(\d+)\s*(minute|hour|day)s?$/ or return;
-  return join(' ', 'interval', $1, $2);
-}
-
 sub total_and_new {
   my $cache = shift;
   my $db = shift;
@@ -80,24 +74,41 @@ sub total_and_new {
 sub with_tokens {
   my ($db, $query, $handle, $cache, @tokens) = @_;
   return sub {
+    my ($interval_spec, $yield_sql) = @_;
     my $key = join(',', $handle, @_);
     return $cache->{$key} if defined $cache->{$key};
-    local $_ = $query;
-    s{ \% (\w+) \[ (.*?) \] }{
-      my ($token, $sql_snippet) = (lc($1), $2);
-      ((grep { $token eq $_ } @tokens) ? fixup_sql_snippet($sql_snippet, @_) : '');
-    }gex;
-    s/\b(where\s+)and\s+/where /;
-    s/\s+$//;
-    s/\s+where$//;
-    return $cache->{$key} = query($db, $_);
+    my $sql = eval {
+      local $_ = $query;
+      s{ \% (\w+) \[ (.*?) \] }{
+	my ($token, $sql_snippet) = (lc($1), $2);
+	((grep { $token eq $_ } @tokens) ? _fixup_sql_snippet($sql_snippet, $interval_spec) : '');
+      }gex;
+      s/\b(where\s+)and\s+/where /;
+      s/\s+$//;
+      s/\s+where$//;
+      return $_;
+    };
+    if ($@) {
+      return undef if $@ eq "no interval\n";
+      die $@;
+    }
+    my $value = query($db, $sql);
+    return $cache->{$key} = [$value, $sql] if $yield_sql;
+    return $cache->{$key} = $value;
   };
 }
 
-sub fixup_sql_snippet {
+sub _fixup_sql_snippet {
   local $_ = shift;
-  s/(NOW\(\)\s*-[\s\)]*)$/$1.interval(shift)/e;
+  my $interval_spec = shift;
+  s/(NOW\(\)\s*-[\s\)]*)$/$interval_spec ? $1._interval($interval_spec) : die "no interval\n"/e;
   return $_;
+}
+
+sub _interval {
+  local $_ = shift;
+  /^(\d+)\s*(minute|hour|day)s?$/ or return;
+  return join(' ', 'interval', $1, $2);
 }
 
 sub stat_vars {
