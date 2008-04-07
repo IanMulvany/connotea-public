@@ -205,9 +205,10 @@ sub ua_decode_content {
   }
 
   my $decoded = eval { decode($charset, $content) || $content };
-  if ($@) {
-    return $content if $@ =~ /unknown encoding/i;  # that's usually not our fault
-    die $@;
+  if (my $e = $@) {
+    return $content if $e =~ /unknown encoding/i or  # usually not our fault
+	               $e =~ /unrecognised bom/i;    # not helpful to die on this
+    die $e;
   }
   return $decoded;
 }
