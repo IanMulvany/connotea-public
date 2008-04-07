@@ -1155,7 +1155,9 @@ sub retrieve_ordered {
 sub label {
   my ($self) = @_;
   my $unique = $self->unique or return undef;
-  return $self->$unique;
+  my $label = $self->$unique;
+  return "$label" if ref $label;  # stringify potential object
+  return $label;  # explicit undef possible to match return above
 }
 
 # used for RSS description - gives a more human readable, personalized label than label()
