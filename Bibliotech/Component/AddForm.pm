@@ -136,7 +136,7 @@ sub html_content {
     if (!$bookmark) {
       eval {
 	$bookmark = $bibliotech->preadd(uri => $uri);
-	if ((my $new_uri = $bookmark->url) ne $uri) {
+	if ((my $new_uri = $bookmark->url) ne URI->new($uri)) {
 	  $cgi->param(uri => ($uri = $new_uri));
 	}
       };
