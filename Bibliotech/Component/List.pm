@@ -1048,6 +1048,19 @@ sub ris_content {
   return @output;
 }
 
+sub jsw_content {
+  my ($self, $verbose) = @_;
+  my $bibliotech = $self->bibliotech;
+  my @output;
+  my $iterator = $self->list(main => 1) or return ();
+  my $obj = $iterator->first;
+  while (defined $obj) {
+    push @output, scalar $obj->jsw_content($bibliotech, $verbose);
+    $obj = $iterator->next;
+  }
+  return @output;
+}
+
 sub geo_content {
   my ($self, $verbose) = @_;
   my $bibliotech = $self->bibliotech;

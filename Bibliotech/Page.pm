@@ -508,6 +508,36 @@ sub data_content {
   return YAML::Dump([$obj->list]);
 }
 
+sub jsw_content {
+  my ($self, $verbose) = @_;
+  my $obj = $self->instance($self->main_component);
+
+  my $bibliotech = $self->bibliotech;
+  my $location   = $bibliotech->location;
+  my $command    = $bibliotech->command;
+
+  my $quote = sub { local $_ = shift;
+		    s/\'/\\\'/g;
+		    "\'$_\'"; };
+  my $item  = sub { my ($k, $v) = @_;
+		    join(' ', $k, ':', (ref $v eq 'ARRAY' ? '['.join(',', map { $quote->("$_") } @{$v}).']'
+					                  : $quote->("$v"))); };
+
+  my $title   = $obj->main_title;
+  my $link    = $command->canonical_uri($location, {output => [set => 'html']});
+  my $channel = '{'.join(', ', $item->(link => $link), $item->(title => $title)).'}';
+
+  my @items = $obj->jsw_content($verbose);
+  my $items = '['.join(",\n".(' ' x 15), @items).']';
+
+  return
+  "bibliotech_addLoadEvent(function () {\n".
+  "  var channel = $channel;\n".
+  "  var items = $items;\n".
+  "  bibliotech_showLoaded(channel, items);\n".
+  "});\n";
+}
+
 sub geo_content {
   my ($self) = @_;
 

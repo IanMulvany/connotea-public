@@ -569,30 +569,54 @@ sub _proxit_link {
   return $_;
 }
 
+sub simple_title {
+  return shift->bookmark->label_title;
+}
+
+sub simple_uri {
+  return shift->bookmark->url->as_string;
+}
+
+sub simple_link {
+  my ($self, $bibliotech) = @_;
+  return $self->bookmark->href_hash($bibliotech, {user => $self->user->username});
+}
+
+sub simple_postedby {
+  my ($self, $bibliotech) = @_;
+  return scalar($self->postedby(bibliotech => $bibliotech, main => 1));
+}
+
+sub simple_tags {
+  my $self = shift;
+  return [$self->can('tags') ? (map { $_->label } $self->tags) : ()];
+}
+
+sub simple_date {
+  return shift->created->iso8601_utc;
+}
+
 sub rss_content {
   my ($self, $bibliotech, $verbose) = @_;
-
-  my $bookmark = $self->bookmark;
-  my $user     = $self->user;
   my $location = $bibliotech->location;
-
-  my %item = (title       => $bookmark->label_title,
-	      link        => $bookmark->href_hash($bibliotech, {user => $user->username}),
-	      description => scalar $self->postedby(bibliotech => $bibliotech, main => 1));
-
-  if ($verbose) {
-    $item{dc} = {date    => $self->created->iso8601_utc,
-		 creator => $user->label};
-    $item{dc}->{subject} = [map($_->label, $self->tags)] if $self->can('tags');
-    if (my $html = $self->html_content($bibliotech, 'rssitem', 1, 1)) {
-      my $style = "<link rel=\"stylesheet\" href=\"${location}global.css\" type=\"text/css\" title=\"styled\"/>";
-      $item{content} = {encoded => "<![CDATA[$style$html]]>"};
-    }
-    $item{annotate} = {reference => $location.'comments/uri/'.$bookmark->hash};
-    $item{slash}    = {comments  => $self->comments->count};
-    $item{connotea} = {uri       => $bookmark->biblio_rdf($bibliotech)};
-  }
-
+  my $bookmark = $self->bookmark;
+  my %item = (title       => $self->simple_title,
+	      link        => $self->simple_link($bibliotech),
+	      description => $self->simple_postedby($bibliotech),
+	      ($verbose ?
+	       (dc        => {date    => $self->simple_date,
+			      creator => $self->user->label,
+			      ($self->can('tags') ? (subject => $self->simple_tags) : ())},
+		annotate  => {reference => $location.'comments/uri/'.$bookmark->hash},
+		slash     => {comments  => $self->comments->count},
+		connotea  => {uri       => $bookmark->biblio_rdf($bibliotech)},
+		do {
+		  my $html = $self->html_content($bibliotech, 'rssitem', 1, 1);
+		  $html ? do {
+		    my $style = "<link rel=\"stylesheet\" href=\"${location}global.css\" type=\"text/css\" title=\"styled\"/>";
+		    (content => {encoded => "<![CDATA[$style$html]]>"});
+		  } : (); }
+	       ) : ()));
   return wantarray ? %item : \%item;
 }
 
@@ -604,6 +628,20 @@ sub txt_content {
 sub ris_content {
   my ($self, $bibliotech, $verbose) = @_;
   return $self->bookmark->ris_content($bibliotech, $verbose, $self);
+}
+
+sub jsw_content {
+  my ($self, $bibliotech, $verbose) = @_;
+  my $quote = sub { local $_ = shift;
+		    s/\'/\\\'/g;
+		    "\'$_\'"; };
+  my $item  = sub { my ($k, $v) = @_;
+		    join(' ', $k, ':', (ref $v eq 'ARRAY' ? '['.join(',', map { $quote->("$_") } @{$v}).']'
+					                  : $quote->("$v"))); };
+  return '{'.join(', ', ($item->(uri => $self->simple_uri),
+			 $item->(link => $self->simple_link($bibliotech)),
+			 $item->(title => $self->simple_title),
+			 $item->(tags => $self->simple_tags))).'}';
 }
 
 sub geo_content {

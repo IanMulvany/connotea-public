@@ -560,18 +560,19 @@ sub query_handler {
 # in the case that the format is not known you'll get back appropriate 404
 sub _get_extension_and_type {
   my ($fmt, $result, $rc, $inc_filename) = @_;
-  return ($result, $rc, HTML_EXTENSION,    HTML_MIME_TYPE)    if $fmt eq 'html' and !$inc_filename;
-  return ($result, $rc, RSS_EXTENSION,     RSS_MIME_TYPE)     if $fmt eq 'rss';
-  return ($result, $rc, RIS_EXTENSION,     RIS_MIME_TYPE)     if $fmt eq 'ris';
-  return ($result, $rc, GEO_EXTENSION,     GEO_MIME_TYPE)     if $fmt eq 'geo';
-  return ($result, $rc, HTML_EXTENSION,    HTML_MIME_TYPE)    if $fmt eq 'tt';
-  return ($result, $rc, BIBTEX_EXTENSION,  BIBTEX_MIME_TYPE)  if $fmt eq 'bib';
-  return ($result, $rc, ENDNOTE_EXTENSION, ENDNOTE_MIME_TYPE) if $fmt eq 'end';
-  return ($result, $rc, MODS_EXTENSION,    MODS_MIME_TYPE)    if $fmt eq 'mods';
-  return ($result, $rc, TEXT_EXTENSION,    TEXT_MIME_TYPE)    if $fmt eq 'txt';
-  return ($result, $rc, TEXT_EXTENSION,    TEXT_MIME_TYPE)    if $fmt eq 'plain';
-  return ($result, $rc, WORD_EXTENSION,    WORD_MIME_TYPE)    if $fmt eq 'word';
-  return ($result, $rc, RDF_EXTENSION,     RDF_MIME_TYPE)     if $fmt eq 'data';
+  return ($result, $rc, HTML_EXTENSION,       HTML_MIME_TYPE)       if $fmt eq 'html' and !$inc_filename;
+  return ($result, $rc, RSS_EXTENSION,        RSS_MIME_TYPE)        if $fmt eq 'rss';
+  return ($result, $rc, RIS_EXTENSION,        RIS_MIME_TYPE)        if $fmt eq 'ris';
+  return ($result, $rc, JAVASCRIPT_EXTENSION, JAVASCRIPT_MIME_TYPE) if $fmt eq 'jsw';
+  return ($result, $rc, GEO_EXTENSION,        GEO_MIME_TYPE)        if $fmt eq 'geo';
+  return ($result, $rc, HTML_EXTENSION,       HTML_MIME_TYPE)       if $fmt eq 'tt';
+  return ($result, $rc, BIBTEX_EXTENSION,     BIBTEX_MIME_TYPE)     if $fmt eq 'bib';
+  return ($result, $rc, ENDNOTE_EXTENSION,    ENDNOTE_MIME_TYPE)    if $fmt eq 'end';
+  return ($result, $rc, MODS_EXTENSION,       MODS_MIME_TYPE)       if $fmt eq 'mods';
+  return ($result, $rc, TEXT_EXTENSION,       TEXT_MIME_TYPE)       if $fmt eq 'txt';
+  return ($result, $rc, TEXT_EXTENSION,       TEXT_MIME_TYPE)       if $fmt eq 'plain';
+  return ($result, $rc, WORD_EXTENSION,       WORD_MIME_TYPE)       if $fmt eq 'word';
+  return ($result, $rc, RDF_EXTENSION,        RDF_MIME_TYPE)        if $fmt eq 'data';
   if ($fmt eq 'html' and $inc_filename) {
     my ($ext) = $inc_filename =~ /(\.\w{1,5})$/;
     if ($ext) {
