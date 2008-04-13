@@ -29,8 +29,7 @@ function bibliotech_loadXMLDoc (url)  {
     req.onreadystatechange = function () { bibliotech_processReqChange(req); }
     req.open("GET", url, true);
     req.send(null);
-  }
-  else {
+  } else {
     alert("Unable to use AJAX in this browser.");
   }
 }
@@ -50,7 +49,13 @@ function bibliotech_processXML (res) {
   var items   = bibliotech_getItems(res);
   var div     = bibliotech_getDisplayNode();
   bibliotech_clearDiv(div);
-  bibliotech_updateDiv(div, channel, items);
+  bibliotech_updateDiv(div, channel, items, false);
+}
+
+function bibliotech_showLoaded (channel, items) {
+  var div = bibliotech_getDisplayNode();
+  bibliotech_clearDiv(div);
+  bibliotech_updateDiv(div, channel, items, true);
 }
 
 function bibliotech_getChannel (res) {
@@ -112,17 +117,17 @@ function bibliotech_createHeadNode (channel, cssIdClass) {
   return headNode;
 }
 
-function bibliotech_createItemsNode (items, listCssIdClass, singleCssClass, infoCssClass, tagListCssClass, tagCssClass, headCssId) {
+function bibliotech_createItemsNode (items, listCssIdClass, singleCssClass, infoCssClass, tagListCssClass, tagCssClass, headCssId, hrefNormal) {
   var itemsNode = document.createElement('ul');
   itemsNode.setAttribute('id', listCssIdClass);
   itemsNode.setAttribute('class', listCssIdClass);
   for (var i = 0; i < items.length; i++) {
-    itemsNode.appendChild(bibliotech_createItemNode(items[i], singleCssClass, infoCssClass, tagListCssClass, tagCssClass, headCssId));
+      itemsNode.appendChild(bibliotech_createItemNode(items[i], singleCssClass, infoCssClass, tagListCssClass, tagCssClass, headCssId, hrefNormal));
   }
   return itemsNode;
 }
 
-function bibliotech_createItemNode (item, cssClass, infoCssClass, tagListCssClass, tagCssClass, headCssId) {
+function bibliotech_createItemNode (item, cssClass, infoCssClass, tagListCssClass, tagCssClass, headCssId, hrefNormal) {
   var itemNode = document.createElement('li');
   itemNode.setAttribute('class', cssClass);
   var a = document.createElement('a');
@@ -133,7 +138,7 @@ function bibliotech_createItemNode (item, cssClass, infoCssClass, tagListCssClas
   itemNode.appendChild(document.createTextNode(' '));
   itemNode.appendChild(bibliotech_createItemInfoNode(item, infoCssClass));
   itemNode.appendChild(document.createTextNode(' '));
-  itemNode.appendChild(bibliotech_createItemTagsNode(item.tags, tagListCssClass, tagCssClass, headCssId));
+  itemNode.appendChild(bibliotech_createItemTagsNode(item.tags, tagListCssClass, tagCssClass, headCssId, hrefNormal));
   return itemNode;
 }
 
@@ -150,32 +155,47 @@ function bibliotech_createItemInfoNode (item, cssClass) {
   return infoNode;
 }
 
-function bibliotech_createItemTagsNode (tags, cssClass, tagCssClass, headCssId) {
+function bibliotech_createItemTagsNode (tags, cssClass, tagCssClass, headCssId, hrefNormal) {
   var tagListNode = document.createElement('span');
   tagListNode.setAttribute('class', cssClass);
   tagListNode.appendChild(document.createTextNode('['));
   for (var t = 0; t < tags.length; t++) {
     if (t > 0) tagListNode.appendChild(document.createTextNode(' '));
-    tagListNode.appendChild(bibliotech_createItemTagNode(tags[t], tagCssClass, headCssId));
+    tagListNode.appendChild(bibliotech_createItemTagNode(tags[t], tagCssClass, headCssId, hrefNormal));
   }
   tagListNode.appendChild(document.createTextNode(']'));
   return tagListNode;
 }
 
-function bibliotech_createItemTagNode (tag, cssClass, headCssId) {
+function bibliotech_createItemTagNode (tag, cssClass, headCssId, hrefNormal) {
   var tagNode = document.createElement('a');
   tagNode.setAttribute('class', cssClass);
-  //tagNode.setAttribute('href', bibliotech_tagUrl(tag));
-  tagNode.setAttribute('href', '#');
-  tagNode.setAttribute('onclick', 'bibliotech_sayLoading(document.getElementById(\'' + headCssId + '\')); ' +
-		                  'showFrom[% codename %](\'/tag/' + tag + '\')');
+  if (hrefNormal) {
+    tagNode.setAttribute('href', bibliotech_tagUrl(tag));
+  } else {
+    tagNode.setAttribute('href', '#');
+    tagNode.setAttribute('onclick', 'bibliotech_sayLoading(document.getElementById(\'' + headCssId + '\')); ' +
+			            'showFrom[% codename %](\'/tag/' + tag + '\')');
+  }
   tagNode.setAttribute('title', 'Tag: ' + tag);
   tagNode.appendChild(document.createTextNode(tag));
   return tagNode;
 }
 
-function bibliotech_updateDiv (div, channel, items) {
+function bibliotech_updateDiv (div, channel, items, hrefNormal) {
   var id = div.getAttribute('id');
   div.appendChild(bibliotech_createHeadNode(channel, id + '_head'));
-  div.appendChild(bibliotech_createItemsNode(items, id + '_items', id + '_item', id + '_info', id + '_tags', id + '_tag', id + '_head'));
+  div.appendChild(bibliotech_createItemsNode(items, id + '_items', id + '_item', id + '_info', id + '_tags', id + '_tag', id + '_head', hrefNormal));
+}
+
+function bibliotech_addLoadEvent (func) {
+  if (document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', func, false);
+  } else {
+    document.onreadystatechange = function () {
+      if (document.readyState == 'interactive') {
+	func();
+      }
+    };
+  }
 }
