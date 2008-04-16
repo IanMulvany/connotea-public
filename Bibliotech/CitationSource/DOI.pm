@@ -83,64 +83,44 @@ sub citations {
 sub resolved {
   my ($self, $doi) = @_;
   my $query_result = $self->query_result($doi);
-  return 1 if $query_result->{'status'} && $query_result->{'status'} eq 'resolved';
+  return 1 if defined $query_result && $query_result->{'status'} && $query_result->{'status'} eq 'resolved';
   return 0;
 }
 
 sub query_result {
   my ($self, $doi) = @_;
   return $self->{'query_result'}->{$doi} if $self->{'query_result'}->{$doi};
-  my $xml = $self->crossref_query($doi);
-  #warn "XML:\n$xml\n";
-  my $query_result = $self->parse_crossref_xml($xml, $doi);
-  return undef unless $query_result;
-  $self->{'query_result'}->{$doi} = $query_result;
-  return $query_result;
+  return $self->{'query_result'}->{$doi} = $self->query_result_calc($doi);
+}
+
+sub query_result_calc {
+  my ($self, $doi) = @_;
+  return $self->parse_crossref_xml($self->crossref_query($doi), $doi) || undef;
 }
 
 sub parse_crossref_xml {
   my ($self, $xml, $doi) = @_;
-  return undef unless $xml;
+  return unless $xml;
+
   $xml =~ s/<crossref_result.*?>/<crossref_result>/;
 
-  my $parser = XML::LibXML->new();
-  my $tree = $parser->parse_string($xml);
-  unless ($tree) {
-    $self->errstr('XML parse failed');
-    return undef;
-  }
+  my $tree = XML::LibXML->new->parse_string($xml)   or $self->errstr('XML parse failed'), return;
+  my $root = $tree->getDocumentElement              or $self->errstr('no root'), return;
+  my $node = 'query_result/body/query/';
+  my $val  = sub { $root->findvalue($node.shift) };
+  lc($val->('doi')) eq lc($doi)                     or $self->errstr("DOI mismatch\n"), return;
 
-  my $root = $tree->getDocumentElement;
-  unless ($root) {
-    $self->errstr('no root');
-  }
-
-  #sanity check
-  unless(lc($root->findvalue('query_result/body/query/doi')) eq lc($doi)) {
-    $self->errstr("DOI mismatch\n");
-    return undef;
-  }
-
-  return { status => 'unresolved' } if $root->findvalue('query_result/body/query/@status') eq 'unresolved';	
-
-  #CrossRef XML has double-encoded entities, hence the decode_entities below
+  return {status  => 'unresolved'} if $val->('@status') eq 'unresolved';
   return {status  => 'resolved',
-	  pubdate => $self->get_QueryValue($root, 'year') || undef,
-	  journal => { name => decode_entities($self->get_QueryValue($root, 'journal_title')) || undef,
-		       issn => $self->get_QueryValue($root, 'issn[@type="print"]') || undef,
-	             },
-	  page    => $self->get_QueryValue($root, 'first_page') || undef,
-	  volume  => $self->get_QueryValue($root, 'volume') || undef,
-	  issue   => $self->get_QueryValue($root, 'issue') || undef,
-	  pubdate => $self->get_QueryValue($root, 'year') || undef,
-	  title   => decode_entities($self->get_QueryValue($root, 'article_title')) || undef,
-	  doi     => $doi,
-         }; 
-}
-
-sub get_QueryValue {
-  my ($self, $root, $key) = @_;
-  return $root->findvalue('query_result/body/query/'.$key);
+	  pubdate => $val->('year') || undef,
+	  journal => { name => decode_entities($val->('journal_title')) || undef,
+		       issn => $val->('issn[@type="print"]') || undef},
+	  page    => $val->('first_page') || undef,
+	  volume  => $val->('volume') || undef,
+	  issue   => $val->('issue') || undef,
+	  pubdate => $val->('year') || undef,
+	  title   => decode_entities($val->('article_title')) || undef,
+	  doi     => $doi}; 
 }
 
 sub _get_raw_doi_from_uri {
@@ -148,15 +128,16 @@ sub _get_raw_doi_from_uri {
   $uri =~ /^10\./ and return "$uri";
   my $scheme = $uri->scheme;
   local $_   = $uri->path;
-  return $_                        if $scheme eq 'doi';
-  return do { m|^doi/(.*)$|; $1; } if $scheme eq 'info';
-  return do { m|^/(.*)$|; $1; }    if $scheme eq 'http' and $uri->host eq 'dx.doi.org';
+  return $_                         if $scheme eq 'doi';
+  return do { m|^doi/(.*)$|i; $1; } if $scheme eq 'info';
+  return do { m|^/(.*)$|; $1; }     if $scheme eq 'http' and $uri->host eq 'dx.doi.org';
   return;
 }
 
 sub _clean_raw_doi_from_uri {
   my $doi = shift or return;
-  $doi =~ /^10\./ or return;
+  $doi =~ s/^doi://i;  # sometimes repeated in dx.doi.org URL
+  $doi =~ m/^10\./ or return;
   return lc(uri_unescape($doi));  # URI module escapes unsafe characters
 }
 
@@ -165,38 +146,25 @@ sub get_doi {
   return _clean_raw_doi_from_uri(_get_raw_doi_from_uri($uri));
 }
 
-sub crossref_query {
-  my ($self, $doi) = @_;
-
-  my ($user, $passwd) = $self->crossref_account;
-  my $ua  = $self->ua;
+sub _crossref_query_http_request {
+  my ($user, $password, $query_xml) = @_;
   my $req = HTTP::Request->new(POST => CR_URL);
-
   $req->content_type('application/x-www-form-urlencoded');
   $req->content(join('&',
 		     'usr='.$user,
-		     'pwd='.$passwd,
+		     'pwd='.$password,
 		     'db=mddb',
 		     'report=Brief',
 		     'format=XSD_XML',
-		     'qdata='.uri_escape($self->build_query($doi))));
+		     'qdata='.uri_escape($query_xml)));
+  return $req;
+}
 
-  $ua->timeout(900);
-
-  my $response = $ua->request($req);
-
-  unless ($response->is_success) {
-    $self->errstr($response->status_line);
-    return undef;
-  }
-
-  my $headers = $response->headers;
-  # trap error message from crossref where there are data errors dump to browser
-  if ($headers->title) {
-    $self->errstr($response->content);
-    return undef;
-  }
-
+sub crossref_query {
+  my ($self, $doi) = @_;
+  my $ua = $self->ua;
+  my $response = $ua->request(_crossref_query_http_request($self->crossref_account, $self->build_query($doi)));
+  $response->is_success or $self->errstr($response->status_line), return undef;
   return $response->content;
 }
 
