@@ -78,25 +78,17 @@ sub getRDFinaComment {
 }
 
 sub citations {
-  my ($self, $uri) = @_; 
-
-  # in understands, see if header type html, and has RDF in a comment
-  return undef unless($self->understands($uri));
-
-  my $metadata;
-  eval {
-    $metadata = $self->{metadata};
-    die "RDF obj false\n" unless $metadata;
-    die "RDF file contained no data\n" unless $metadata->{'has_data'};
-  };    
-
+  my ($self, $uri, $content_sub) = @_;
+  my $metadata = eval {
+    die "do not understand URI\n" unless $self->understands($uri, $content_sub);
+    die "RDF obj false\n" unless $self->{metadata};
+    die "RDF file contained no data\n" unless $self->{metadata}->{'has_data'};
+    return $self->{metadata};
+  };
   if ($@) {
     $self->errstr($@);
     return undef;
   }
-
-  return undef unless defined $metadata;
-
   return Bibliotech::CitationSource::ResultList->new(Bibliotech::CitationSource::Result::Simple->new($metadata));
 }
 

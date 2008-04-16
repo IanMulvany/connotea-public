@@ -95,7 +95,7 @@ sub _fix_date {
   return DateTime->from_day_of_year(year => $year, day_of_year => $day)->ymd;
 }
 
-sub _fix_ris_date {
+sub _fix_date_in_ris {
   local $_ = shift;
   s|^(Y1  - )(\d+/\d+/\d+)|$1._fix_date($2)|em;
   return $_;
@@ -108,7 +108,7 @@ sub citations {
     my $doi = _doi_from_uri($uri) or die "no DOI\n";
     my ($res, $ris_raw) = $self->get(_query_uri($uri->host, $doi));
     $res->is_success or 'trying to get RIS: '.$res->status_line."\n";
-    my $ris = Bibliotech::CitationSource::NPG::RIS->new(_fix_ris_date($ris_raw)) or die "no RIS object\n";
+    my $ris = Bibliotech::CitationSource::NPG::RIS->new(_fix_date_in_ris($ris_raw)) or die "no RIS object\n";
     $ris->has_data or die "RIS file contained no data\n";
     return $ris;
   };
