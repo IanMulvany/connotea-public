@@ -74,8 +74,11 @@ sub html_content {
 
 sub _validate_openid_is_http {
   my $openid = shift;
-  $openid =~ s/\+(.*\@)/$1/;  # plus sign in email address will throw off uf_uri
-  my $canonical = uf_uri($openid);
+  # common user typos:
+  $openid =~ m|^\s|         and die "Please remove leading spaces from the URL.\n";
+  $openid =~ m|^https?//|   and die "Looks like a colon is missing after the URL scheme!\n";
+  $openid =~ m|^https?:/\w| and die "Looks like a slash is missing after the URL scheme!\n";
+  my $canonical = uf_uri(do { local $_ = $openid; s/\+(.*\@)/$1/; $_; });  # plus sign in email will throw it off
   die "Please provide an OpenID URL (hint: http).\n"
       if !defined($canonical) or ref($canonical) eq 'URI::_generic';
   my $scheme = $canonical->scheme;
