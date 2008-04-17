@@ -38,6 +38,18 @@ sub from_name_str {
       });
 }
 
+# some citationsource modules use Bibliotech::Util::parse_author() and
+# Bibliotech::CitationSource::Simple and this bridges the gap for
+# individual author names to be backed out of an object to a hash
+sub as_hash {
+  my $self = shift;
+  return {firstname  => $self->firstname  || undef,
+	  forename   => $self->forename   || undef,
+	  initials   => $self->initials   || undef,
+	  middlename => $self->middlename || undef,
+	  lastname   => $self->lastname   || undef,
+	  suffix     => $self->suffix     || undef};
+}
 
 package Bibliotech::Lingua::EN::NameParse;
 use Lingua::EN::NameParse;

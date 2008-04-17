@@ -626,9 +626,9 @@ sub split_names {
   s/(\w{3,})(?:, |,| )(\w\.( ?\w\.)*)(,|$)/$2 $1;/g;  # correct 'Lund, B.,' to 'B. Lund;'
   s/ *;$//;
   s/; +and +/; /g;
-  return ("$2 $1") if /^(\w+), (\w+)$/;
-  return split(/ *; */) if /;/;
-  return split(/ +and +/) if /, +\w+ +and +\w+,/ or !/,/;
+  return ("$2 $1") if m/^(\w+), (\w+)$/;
+  return split(/ *; */) if m/;/;
+  return split(/ +and +/) if m/, +\w+ +and +\w+,/ or !m/,/;
   return split(/(?:(?: |,) *and +|, *)/);
 }
 
