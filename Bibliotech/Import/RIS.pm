@@ -71,10 +71,9 @@ sub raw_keywords {
 }
 
 sub keywords {
-  shift->split_keywords(qr/[,;\n] */,
+  shift->split_keywords(qr/[,;\n\/] */,
 			'Keyword line starting with "%s" split from original text into several keywords.');
 }
 
 1;
 __END__
-

@@ -18,15 +18,12 @@ sub user_articles {
   return wantarray ? () : Class::DBI::_ids_to_objects('Bibliotech::User_Article', []);
 }
 
-# helper routine for citation web service
-# takes a URI and Bibliotech::Unwritten::Citation and returns a Bibliotech::Unwritten::Article
-# basically just takes care of setting created and hash for you
-sub new_from_url_and_citation {
-  my ($class, $url, $citation) = @_;
-  my $article = $class->construct({url => $url,
+sub new_from_bookmark_and_citation {
+  my ($class, $bookmark, $citation, $tags_ref) = @_;
+  my $article = $class->construct({bookmark => $bookmark,
 				   citation => $citation,
-				   created => Bibliotech::Date->new});
-  $article->set_correct_hash;
+				   created  => Bibliotech::Date->new});
+  $article->hash($bookmark->hash);
   return $article;
 }
 

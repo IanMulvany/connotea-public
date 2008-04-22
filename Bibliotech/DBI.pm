@@ -23,6 +23,7 @@ require Bibliotech::DBI::User_Gang;
 require Bibliotech::DBI::Bookmark;
 require Bibliotech::DBI::Unwritten::Bookmark;
 require Bibliotech::DBI::Tag;
+require Bibliotech::DBI::Unwritten::Tag;
 require Bibliotech::DBI::SpecialTagSet;
 require Bibliotech::DBI::Annotation;
 require Bibliotech::DBI::User_Tag_Annotation;

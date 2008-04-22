@@ -3,18 +3,19 @@ use strict;
 #use Exception;
 use CGI;
 use URI;
+use Bibliotech;
 use Bibliotech::Parser;
 use Bibliotech::Command;
 use Bibliotech::Fake;
-use Bibliotech;
 use Bibliotech::Plugin;
+use Bibliotech::Import;
 
 my ($writable, $writable_user);
 
 # test importer
 
 unless (@ARGV) {
-  die "Test Importer\nDoes not actually import.\nUsage: import autodetect [-w] [filename]\n";
+  die "Test Importer\nDoes not actually import.\nUsage: import autodetect|Module [-w] [filename]\n";
 }
 
 #Exception->debugLevel(Exception::DEBUG_STACK);
@@ -29,6 +30,7 @@ if (@ARGV && $ARGV[0] eq '-w') {
 }
 
 my $doc = do { local $/; <>; } or die "No document.\n";
+$doc =~ s/\r\n?/\n/g;  # un-Windowsify and un-Macify
 
 my $bibliotech = Bibliotech->new({cgi      => new CGI::Fake,
 				  parser   => new Bibliotech::Parser,
@@ -40,37 +42,39 @@ my $importer;
 if ($doc_type) {
   my $class = 'Bibliotech::Import::'.$doc_type;
   eval "use $class"; die "cannot use $class: $@" if $@;
-  $importer = $class->new ({bibliotech => $bibliotech,
-			    doc => $doc,
-			    use_keywords => 1}) or die 'no importer object: '.$doc_type;
+  $importer = $class->new({bibliotech   => $bibliotech,
+			   doc          => $doc,
+			   use_keywords => 1})
+      or die 'no importer object: '.$doc_type;
 }
 else {
-  $importer = Bibliotech::Plugin::Import->scan($doc, [{bibliotech => $bibliotech,
-						       doc => $doc,
-						       use_keywords => 1}]) or die 'no importer object (scan)';
+  $importer = Bibliotech::Plugin::Import->scan($doc, [{bibliotech   => $bibliotech,
+						       doc          => $doc,
+						       use_keywords => 1}])
+      or die 'no importer object (scan)';
 }
 
 my @tags = ('uploaded');
 $importer->given_tags(\@tags);
 $importer->user($writable_user) if $writable;
-my $entries = $writable ? $importer->user_bookmarks_write_bookmarks : $importer->user_bookmarks;
+my $entries = $writable ? $importer->user_articles_write_articles : $importer->user_articles;
 my $count = 0;
 while (my $result = $entries->fetch) {
   $count++;
   report('--- start result');
-  my $user_bookmark = $result->user_bookmark;
-  report(title       		  => $user_bookmark->title);
-  report(description 		  => $user_bookmark->description);
+  my $user_article = $result->user_article;
+  report('title'     		  => $user_article->title);
+  report('description'		  => $user_article->description);
   my $warning = $result->warning;
-  report(warning                  => $warning) if $warning;
+  report('warning'                => $warning) if $warning;
   my $error = $result->error;
   #$error->confess if $error;
-  report(error                    => $error) if $error;
-  report(ref                      => ref $user_bookmark);
-  report('text content'           => $user_bookmark->plain_content($bibliotech, 'add', 1, 1));
-  report('html content as text'   => fix_html($user_bookmark->html_content($bibliotech, 'add', 1, 1)));
+  report('error'                  => $error) if $error;
+  report('ref'                    => ref $user_article);
+  report('text content'           => $user_article->plain_content($bibliotech, 'add', 1, 1));
+  report('html content as text'   => fix_html($user_article->html_content($bibliotech, 'add', 1, 1)));
   report('authoritative citation' => do { $writable
-					      ? do { my $citation = $user_bookmark->bookmark->citation;
+					      ? do { my $citation = $user_article->article->citation;
 						     $citation
 							 ? join("\n",
 								'line: '.$citation->citation_line($bibliotech),
@@ -78,7 +82,7 @@ while (my $result = $entries->fetch) {
 								'source: '.($citation->cs_source || 'unrecorded'))
 							 : undef; }
 					      : '[cannot get authoritative metadata without writing to db]'; });
-  report('personal citation'      => do { my $personal_citation = $user_bookmark->citation;
+  report('personal citation'      => do { my $personal_citation = $user_article->citation;
 					  $personal_citation
 					      ? join("\n",
 						     'line: '.$personal_citation->citation_line($bibliotech),
@@ -97,7 +101,7 @@ sub report {
   }
   my $print_kv = sub { print sprintf("%26s %s\n", @_); };
   if ($value) {
-    my @lines = split(/\n/, $value);
+    my @lines = split(/\n+/, $value);
     $print_kv->($label.' =' => shift @lines);
     $print_kv->('' => $_) foreach (@lines);
   }

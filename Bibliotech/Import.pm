@@ -249,11 +249,17 @@ sub generate_user_articles {
       }
     }
     if ($construct_all) {
+      my $uri_obj   = URI->new("$uri" || 'NO_URI');
+      my $bookmark  = Bibliotech::Unwritten::Bookmark->construct({url => $uri_obj});
+      my $article   = Bibliotech::Unwritten::Article->new_from_bookmark_and_citation($bookmark, undef);
       $user_article = Bibliotech::Unwritten::User_Article->construct
 	  ({user        => $user,
-	    bookmark    => Bibliotech::Unwritten::Bookmark->construct({url => URI->new("$uri" || 'NO_URI')}),
+	    article     => $article,
+	    bookmark    => $bookmark,
 	    title       => $title,
-	    description => $description});
+	    description => $description,
+	   });
+      $user_article->tags([map { Bibliotech::Unwritten::Tag->new({name => $_}) } @tags]);
       $user_article->bookmark->for_user_article($user_article);
       $noncommital = 1;
     }
@@ -369,6 +375,7 @@ sub _entry_collect_tags {
   if ($use_keywords) {
     my ($original_keywords_ref, $keywords_info_ref) = $entry->keywords;
     $info_sub->(@{$keywords_info_ref}) if @{$keywords_info_ref};
+    my %asterisk_info;
     foreach my $original_keyword (@{$original_keywords_ref}) {
       next unless $original_keyword;
       if (my $renamed = $invalid_renamed_ref->{$original_keyword}) {
@@ -376,6 +383,7 @@ sub _entry_collect_tags {
       }
       else {
 	my $keyword = $original_keyword;
+	my @info;
 	my @tested = $parse_tag_list_sub->("\"$keyword\"");
 	unless (@tested == 1) {
 	  $keyword =~ s/[,\/\+\"\?\']//g;
@@ -389,9 +397,19 @@ sub _entry_collect_tags {
 	    }
 	  }
 	  $invalid_renamed_ref->{$original_keyword} = $tested[0];
-	  $info_sub->('The '.$self->keyword_noun." \"$original_keyword\" will become tag \"$tested[0]\" to accommodate tag naming rules.\n");
+	  push @info, 'The '.$self->keyword_noun." \"$original_keyword\" will become tag \"$tested[0]\" to accommodate tag naming rules.\n";
 	}
-	push @keywords, $tested[0];
+	my $selected = $tested[0];
+	if ($selected =~ s/^\*//) {
+	  unless ($asterisk_info{$selected}) {
+	    $asterisk_info{$selected} = 1;
+	    $info_sub->('The '.$self->keyword_noun." \"$original_keyword\" has had a leading asterisk removed.\n");
+	  }
+	}
+	unless (grep { $selected eq $_ } @keywords) {
+	  push @keywords, $selected;
+	  $info_sub->($_) foreach @info;
+	}
       }
     }
     push @tags, @keywords;
@@ -440,15 +458,14 @@ sub raw_keywords {
 }
 
 sub split_keywords {
-  my ($self, $regex, $error) = @_;
-  $regex ||= qr/,\s*/;
-  $error ||= "Keyword starting with \"%s\" split.";
-  $error =~ s/(?<!\n)$/\n/;
+  my ($self, $split_regex, $split_error) = @_;
+  $split_regex ||= qr/[,;\/]\s*/;
+  $split_error ||= 'Keyword starting with "%s" split.';
   my @keywords;
   my @info;
   foreach my $raw_keyword ($self->raw_keywords) {
-    my @parts = split($regex, $raw_keyword);
-    push @info, sprintf($error, $parts[0]) if @parts > 1;
+    my @parts = split($split_regex, $raw_keyword);
+    push @info, sprintf($split_error, $parts[0]) if @parts > 1;
     push @keywords, @parts;
   }
   return (\@keywords, \@info);
