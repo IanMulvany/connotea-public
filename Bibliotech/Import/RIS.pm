@@ -70,9 +70,18 @@ sub raw_keywords {
   return Set::Array->new(shift->data->keywords)->flatten;
 }
 
+sub allow_commas_embedded_in_keywords {
+  my @kw = shift->raw_keywords;
+  my @lines = split(/\n+/, join("\n", @kw));  # elements of @kw may have had \n's in them - unify
+  return 1 if @lines >= 3 && !grep { length $_ > 60 } @lines;  # simple heuristic!
+  return 0;
+}
+
 sub keywords {
-  shift->split_keywords(qr/[,;\n\/] */,
-			'Keyword line starting with "%s" split from original text into several keywords.');
+  my $self  = shift;
+  my $regex = $self->allow_commas_embedded_in_keywords ? qr/[;\n\/]+ */ : qr/[,;\n\/]+ */;
+  my $msg   = 'Keyword line starting with "%s" split from original text into several keywords.';
+  return $self->split_keywords($regex, $msg);
 }
 
 1;

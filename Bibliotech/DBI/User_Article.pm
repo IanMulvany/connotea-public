@@ -316,7 +316,11 @@ sub bookmark_or_article_label {
 
 sub label {
   my $self = shift;
-  return $self->user->label.' -> '.$self->bookmark_or_article_label.' ['.join(',', map($_->name, $self->tags)).']';
+  return join(' ',
+	      $self->user->label,
+	      '->',
+	      $self->bookmark_or_article_label,
+	      '['.join(',', map { $_ = $_->label; /[ ,]/ ? "\"$_\"" : $_; } $self->tags).']');
 }
 
 sub label_title {  # used for RSS description

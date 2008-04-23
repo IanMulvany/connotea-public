@@ -173,7 +173,7 @@ sub html_content {
 	  if ($edit) {
 	    $cgi->param(usertitle => $user_article->title);
 	    $cgi->param(description => $user_article->description);
-	    $cgi->param(tags => join(' ', map { /\s/ ? "\"$_\"" : $_ } map { $_->name } $user_article->tags));
+	    $cgi->param(tags => join(' ', map { /[\s,]/ ? "\"$_\"" : $_ } map { $_->name } $user_article->tags));
 	    my $lastcomment = $user_article->last_comment;
 	    if ($lastcomment) {
 	      my $entry = $lastcomment->entry;
@@ -369,7 +369,7 @@ function addtag(tag, clear) {
   tagsBox.value = '';
 
   function append(t) {
-    if(t.match(/\S\s\S/)) {
+    if(t.match(/\S[\s,]+\S/)) {
       t = '"'+t+'"';
      } 
     if(tagsBox.value == '') {
@@ -512,7 +512,10 @@ function analyseTagString(tagString, caretPos) {
       }
     }
     else if (c == ',') {
-      if (inTag) {
+      if (inQuote) {
+	// noop
+      }
+      else if (inTag) {
 	tagParts.push(part);
 	part = { text: '', currentlyediting: false };
 	inTag = inQuote = false;

@@ -71,7 +71,7 @@ while (my $result = $entries->fetch) {
   #$error->confess if $error;
   report('error'                  => $error) if $error;
   report('ref'                    => ref $user_article);
-  report('text content'           => $user_article->plain_content($bibliotech, 'add', 1, 1));
+  report('plain content'          => $user_article->plain_content($bibliotech, 'add', 1, 1));
   report('html content as text'   => fix_html($user_article->html_content($bibliotech, 'add', 1, 1)));
   report('authoritative citation' => do { $writable
 					      ? do { my $citation = $user_article->article->citation;

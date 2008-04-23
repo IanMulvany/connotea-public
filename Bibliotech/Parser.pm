@@ -77,7 +77,7 @@ gang_part : ...!keyword_for_gang ...!gang_part_banned_prefix /[A-Za-z_][\w \-]{2
 
 tag_part_nospace : ...!keyword_for_tag /[^\s,\/\+\"\'\?][^\s,\/\+\"\?]*(?<!\')/
 
-tag_part         : ...!keyword_for_tag /[^,\/\+\"\'\?]([^,\/\+\"\?](?! \'))*(?<!\')/
+tag_part         : ...!keyword_for_tag /[^\/\+\"\'\?]([^\/\+\"\?](?! \'))*(?<!\')/
 
 user_part_create : /^/ user_part /$/
 { $item[2] }
