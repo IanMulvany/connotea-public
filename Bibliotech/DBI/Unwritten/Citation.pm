@@ -174,7 +174,7 @@ sub from_hash_of_text_values {
 	cs_module     => 'User Edit',
 	cs_type       => undef,
 	cs_source     => undef,
-	cd_score      => undef,
+	cs_score      => undef,
        },
        undef, 'construct');
 
@@ -191,10 +191,24 @@ sub from_hash_of_text_values {
 
 sub json_content {
   my $self = shift;
-  my $hash = $self->SUPER::json_content;
-  $hash->{authors} = $hash->{x_authors};
-  delete $hash->{x_authors};
-  return $hash;
+  return {title         => $self->title || undef,
+	  volume        => $self->volume || undef,
+	  issue         => $self->issue || undef,
+	  pubmed        => $self->pubmed || undef,
+	  doi           => $self->doi || undef,
+	  asin          => $self->asin || undef,
+	  journal       => $self->journal,
+	  authors       => do { my $a = $self->{x_authors}; defined $a ? [map { $_->json_content } @{$a}] : [] },
+	  raw_date      => $self->raw_date || undef,
+	  date          => do { local $_ = $self->date; defined $_ ? $_->iso8601_utc : undef; },
+	  start_page    => $self->start_page || undef,
+	  end_page      => $self->end_page || undef,
+	  ris_type      => $self->ris_type || undef,
+	  cs_module     => $self->cs_module || undef,
+	  cs_type       => $self->cs_type || undef,
+	  cs_source     => $self->cs_source || undef,
+	  cs_score      => $self->cs_score || undef,
+  };
 }
 
 1;

@@ -30,5 +30,13 @@ sub new_from_url_and_citation {
   return $bookmark;
 }
 
+# used for JSON output in WebCite
+sub json_content {
+  my $self = shift;
+  return {url      => $self->url->as_string,
+	  hash     => $self->hash,
+	  citation => $self->citation->json_content};
+}
+
 1;
 __END__

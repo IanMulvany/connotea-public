@@ -51,6 +51,10 @@ sub as_hash {
 	  suffix     => $self->suffix     || undef};
 }
 
+sub json_content {
+  shift->as_hash;
+}
+
 package Bibliotech::Lingua::EN::NameParse;
 use Lingua::EN::NameParse;
 use base 'Lingua::EN::NameParse';

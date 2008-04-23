@@ -199,7 +199,14 @@ sub json_type {
 }
 
 sub json_content {
-  objToJson(pop, {convblessed => 1, selfconvert => 1, pretty => 1, indent => 2})."\n";
+  my $hash = pop->json_content;
+  JSON->new
+      ->allow_blessed
+      ->convert_blessed
+      ->allow_nonref
+      ->pretty
+      ->encode($hash)."\n";
+  #objToJson(, {convblessed => 1, selfconvert => 1, pretty => 1, indent => 2})
 }
 
 sub none {
@@ -239,43 +246,6 @@ sub log_entry {
 			      $err ? "[$err]" : 'ok',
 			      $cache ? 'load' : 'calc',
 			      $uri)));
-}
-
-
-package JSON::Converter;
-# JSON 1.09 died when encountering URI objects inside nested structures
-# This code fixes the problem.
-# Also submitted a fix to CPAN: http://rt.cpan.org/Public/Bug/Display.html?id=25291
-
-# redefined directly here -- too hard to subclass JSON::Converter
-# because of its usage of non-class sub calls throughout
-no warnings;
-
-# add SCALAR
-sub _blessedToNormal {
-    UNIVERSAL::can($_[0], 'json_content') and return _blessedToNormal($_[0]->json_content);
-    my $type  = _getObjType($_[0]);
-    return $type eq 'HASH'   ? _blessedToNormalHash($_[0])   : 
-           $type eq 'ARRAY'  ? _blessedToNormalArray($_[0])  :
-           $type eq 'SCALAR' ? _blessedToNormalScalar($_[0]) :
-	   $_[0];
-}
-
-# define SCALAR treatment
-sub _blessedToNormalScalar {
-    my ($obj) = @_;
-    my $res;
-
-    die "circle ref!" if(grep { overload::AddrRef($_) eq overload::AddrRef($obj) }
-                          @JSON::Converter::_blessedToNormal::obj_addr);
-
-    push @JSON::Converter::_blessedToNormal::obj_addr, $obj;
-
-    $res = _blessedToNormal($$obj);
-
-    pop @JSON::Converter::_blessedToNormal::obj_addr;
-
-    return $res;  # JSON can't really do scalar refs so it can't be \$res
 }
 
 1;
