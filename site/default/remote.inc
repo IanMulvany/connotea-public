@@ -12,9 +12,24 @@ our remote Javascript facility.</p>
 <b><code>username</code></b> with your [% sitename %] username:</p>
 
 <pre>
-  &lt;script type="text/javascript" src="[% location %]remote.js"&gt;//&lt;/script&gt;
-  &lt;script type="text/javascript" src="[% location %]jsw/user/username"&gt;//&lt;/script&gt;
+&lt;script type="text/javascript" src="[% location %]remote.js"&gt;//&lt;/script&gt;
+&lt;script type="text/javascript" src="[% location %]jsw/user/username"&gt;//&lt;/script&gt;
 </pre>
+
+<p>And in the HTML &lt;head&gt; also place this <code>style</code>
+block or add the rules into an existing <code>style</code> block:</p>
+
+<pre>
+&lt;style&gt;
+.[% symbolname %]      { width: 350px; font-family: arial, helvetica, sans-serif }
+.[% symbolname %]_head { background-color: #eeeeee; padding: 4px 1px 4px 1px }
+&lt;/style&gt;
+</pre>
+
+<p>The CSS is available for your customization. Elements are also
+marked with CSS classes
+for <code>items</code>, <code>item</code>, <code>info</code>, <code>tags</code>,
+<code>tag</code>, etc.</p>
 
 <p>In the HTML &lt;body&gt; place the following HTML element at the
 position where you would like a list of articles:</p>
@@ -40,14 +55,14 @@ on your web site by using our remote Javascript facility.</p>
 <p>In the HTML &lt;head&gt; place the following HTML element:</p>
 
 <pre>
-  &lt;script type="text/javascript" src="[% location %]remote.js"&gt;//&lt;/script&gt;
+&lt;script type="text/javascript" src="[% location %]remote.js"&gt;//&lt;/script&gt;
 </pre>
 
 <p>In the HTML &lt;body&gt; place hyperlinks such as the following
 where you like:</p>
 
 <pre>
-  &lt;a href="javascript:addTo[% codename %]()"&gt;Add To [% sitename %]&lt;/a&gt;
+&lt;a href="javascript:addTo[% codename %]()"&gt;Add To [% sitename %]&lt;/a&gt;
 </pre>
 
 <p>The <code>addTo[% codename %]</code> Javascript function can also
