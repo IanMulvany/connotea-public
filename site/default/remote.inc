@@ -47,7 +47,7 @@ above, you can use other queries that yield articles, such as
 <code>/tag/tagname</code>
 or <code>/user/username/tag/tagname</code>.</p>
 
-<h2>Placing to Add To [% sitename %] Links on Your Web Site</h2>
+<h2>Placing &quot;Add To [% sitename %]&quot; Links on Your Web Site</h2>
 
 <p>You can include &quot;Add To [% sitename %]&quot; hyperlinks
 on your web site by using our remote Javascript facility.</p>
@@ -65,7 +65,8 @@ where you like:</p>
 &lt;a href="javascript:addTo[% codename %]()"&gt;Add To [% sitename %]&lt;/a&gt;
 </pre>
 
-<p>The <code>addTo[% codename %]</code> Javascript function can also
+<p>The <code>addTo[% codename %]()</code> Javascript function can also
 be used in <code>onclick</code> handlers. It optionally accepts a URL
-parameter and a title parameter, although these will default to the
-current page.</p>
+parameter, which will default to the current browser location, and a
+custom title parameter, which if left undefined will be set server-side
+to the HTML title of the added URL.</p>
