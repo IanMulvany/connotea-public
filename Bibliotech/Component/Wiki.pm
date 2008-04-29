@@ -625,7 +625,7 @@ sub generate_recent_changes {
 				"= Recent Changes =\n",
 				"{>RSS}\n",
 				map { $self->version_line($_->{name}, $_) }
-				$wiki->list_recent_changes(last_n_changes => 50))
+				$wiki->list_recent_changes(last_n_changes => 30))
 	  );
 }
 
