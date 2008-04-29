@@ -89,6 +89,14 @@ sub rss_content {
 		   });
 }
 
+sub _standardize_line_endings {
+  local $_ = shift;
+  return $_ unless $_;
+  s/\r\n/\n/g;
+  s/\r/\n/g;
+  return $_;
+}
+
 sub html_content {
   my ($self, $class, $verbose, $main) = @_;
 
@@ -196,7 +204,6 @@ sub html_content {
   my $edit_validation;
 
   if ($action_real eq 'display') {
-
     $node_real     = $self->test_node_for_retrieval($wiki, $node_real) || $node_real;
     my %raw        = $self->retrieve_node($wiki, $node_real, $version);
     $node          = $node_real if lc($node) eq lc($node_real);          # correct capitalization
@@ -237,39 +244,34 @@ sub html_content {
 			      is_admin   => $is_admin,
 			      referent   => $referent,
 			     });
-
   }
   elsif ($action_real eq 'commit') {
-
-    my $submitted_content = $self->cleanparam($cgi->param('content'));
+    my $submitted_content = _standardize_line_endings($self->cleanparam($cgi->param('content')));
     my $checksum          = $self->cleanparam($cgi->param('checksum'));  # as in, the old checksum
     my $comment           = $self->cleanparam($cgi->param('comment'));
     my %metadata          = (username => $username, comment => $comment);
-
-    $submitted_content =~ s/\r\n/\n/g;
-    eval { _validate_submitted_content($submitted_content); };
-    if ($@) {
-      $edit_validation = $@;
+    eval {
+      _validate_submitted_content($submitted_content);
+      if ($submitted_content) {
+	$wiki->write_node("$node", $submitted_content, $checksum, \%metadata) or die "Checksum conflict.\n";
+      }
+      else {
+	$wiki->delete_node("$node") if $wiki->node_exists("$node");
+      }
+    };
+    if (my $e = $@) {
+      die $e if $e =~ / at .* line /;
+      $edit_validation = $e;
       $action_real = 'edit';
     }
     else {
-      if ($submitted_content) {
-	eval { $wiki->write_node("$node", $submitted_content, $checksum, \%metadata) or die 'conflict'; };
-	die "wiki commit, write node \"$node\" (".length($submitted_content || '')." length, $checksum checksum): $@" if $@;
-      }
-      else {
-	eval { $wiki->delete_node("$node") if $wiki->node_exists("$node"); };
-	die "wiki commit, deleting because no content: $@" if $@;
-      }
       $referent->mark_updated if defined $referent;  # notify other components to recalc
       die "Location: ${location}wiki/$node\n";
     }
   }
-  if ($action_real eq 'edit') {
-
+  if ($action_real eq 'edit') {  # not elsif because it can fall into this from commit
     my ($content, $checksum, $preview_html, $updated);
-    if ($content = $self->cleanparam($cgi->param('content'))) {
-      $content =~ s/\r\n/\n/g;
+    if ($content = _standardize_line_endings($self->cleanparam($cgi->param('content')))) {
       $cgi->param(content => $content);  # save the utf8 version so the edit form box works
       $checksum = $self->cleanparam($cgi->param('checksum'));
       if (my $comment = $self->cleanparam($cgi->param('comment'))) {
@@ -295,10 +297,8 @@ sub html_content {
 				 updated  => $updated,
 				 error    => $edit_validation,
 			        });
-
   }
   elsif ($action eq 'diff') {
-
     unless ($version) {
       my %raw = $wiki->retrieve_node("$node");
       $version = $raw{version};
@@ -310,7 +310,6 @@ sub html_content {
 			      right_version => $version,
 			      wiki          => $wiki,
 			     });
-
   }
 
   my $main_content = $pp->content;
@@ -858,7 +857,9 @@ sub print_editform {
   my $formname   = 'wiki';
   my $main       = 1;
 
-  my $o = $cgi->h1({class => 'wikititle'}, $self->main_heading);
+  my $o = $cgi->start_div({class => 'wikibody'});
+
+  $o .= $cgi->h1($self->main_heading);
 
   $o .= $cgi->start_form(-method => 'POST',
 			 -action => $formaction,
@@ -918,6 +919,8 @@ sub print_editform {
 
   $o .= $cgi->end_form;
 
+  $o .= $cgi->end_div;
+
   my $javascript_first_empty = $self->firstempty($cgi, $formname, qw/content/);
 
   return new Bibliotech::Page::HTML_Content ({html_parts => {main => $o},
@@ -961,9 +964,9 @@ sub print_diff {
   };
 
   return Bibliotech::Page::HTML_Content->simple
-      ([$cgi->h1("Differences between $node \#$left_version and \#$right_version"),
-	$cgi->table({class => 'wikidifftable'}, map { $diffrow->($_) } @{$diff{diff}} ),
-	]);
+      ([$cgi->div({class => 'wikibody'},
+		  $cgi->h1("Differences between $node \#$left_version and \#$right_version"),
+		  $cgi->table({class => 'wikidifftable'}, map { $diffrow->($_) } @{$diff{diff}}))]);
 }
 
 sub command_is_for_referent_with_wiki_page {
@@ -1506,16 +1509,20 @@ sub parse {
 sub format {
   my ($self, $content) = @_;
   $content = decode_utf8($content) || decode_utf8(encode_utf8($content)) || $content unless is_utf8($content);
-  $content =~ s/\r\n/\n/g;         	  # Win32 line endings to Unix
-  $content =~ s/\r/\n/g;           	  # Mac endings to Unix
-  $content =~ s/([^\n])\z/$1\n/m;  	  # append a final line ending to source if not there
-  $content =~ s/([^[:ascii:]])/'-UTF8:char'.ord($1).'-'/ge;  # Parse::RecDescent cannot handle utf8 so quote it
+  $content =~ s/\r\n/\n/g;                                   	     # Win to Unix
+  $content =~ s/\r/\n/g;                                     	     # Mac to Unix
+  $content =~ s/([^\n])\z/$1\n/m;  	                     	     # append final line ending if necessary
+  $content =~ s/([^[:ascii:]])/'-UTF8:char'.ord($1).'-'/ge;  	     # Parse::RecDescent cannot handle utf8
   $content =~ s/\[ ?([a-z]{1,8}:[^|\]]*[^|\] ]) ?\| ?\1 ?\]/[$1]/g;  # speed optimization: [url|url] -> [url]
   my $cooked = $self->parse($content);
   my $prd = $PARSER;
   $cooked =~ s/{:::TOC:::}/my $toc = $prd->{for_toc}; $prd->{for_toc} = []; $self->format_contents($toc)/eg;
-  $cooked =~ s/-UTF8:char(\d+)-/chr($1)/ge;    # return quoted utf8 characters to original status
-  return "<div class=\"wikistartdisplay\"></div>\n$cooked\n<div class=\"wikienddisplay\"></div>\n";
+  $cooked =~ s/-UTF8:char(\d+)-/chr($1)/ge;                          # quoted utf8 characters to originals
+  return _format_div($cooked);
+}
+
+sub _format_div {
+  "<div class=\"wikistartdisplay\"></div>\n".shift()."\n<div class=\"wikienddisplay\"></div>\n";
 }
 
 sub format_contents {

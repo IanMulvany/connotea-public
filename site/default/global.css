@@ -25,7 +25,7 @@ pre { font-family: monospace; color: #333399; border: 1px dotted #333399; paddin
 .wikisystem { margin: 0px 10px 8px 0px; padding: 4px; border: 0; background: #EEEEEE }
 .wikidunno { color: silver; border: 1px solid silver; margin: 2px; padding: 1px }
 .wikiedithelppre { font-size: 12px }
-#wikicontentbox { width: 720px; padding: 4px; font-size: 12px }
+#wikicontentbox { width: 680px; padding: 4px; font-size: 12px }
 .wikidifftable { width: 100% }
 .wikidifftable .diffhead { background: #EEEEEE }
 .wikidifftable .diffcell { width: 50%; vertical-align: top }
