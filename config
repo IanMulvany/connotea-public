@@ -40,6 +40,9 @@ GENERAL {
   # memcached server address
   #MEMCACHED_SERVERS = [ '127.0.0.1:11211' ]
 
+  # load key in memcache, set this to LOAD2, etc for slave servers
+  #LOAD_KEY = 'LOAD'
+
   # leave template root blank in most setups
   #TEMPLATE_ROOT = ''
 

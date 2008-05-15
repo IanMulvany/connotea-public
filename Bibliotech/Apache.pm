@@ -50,6 +50,7 @@ our $LOG                          = Bibliotech::Log->new;
 our $MEMCACHE                     = Bibliotech::Cache->new({log => $LOG});
 our $HANDLE_STATIC_FILES	  = Bibliotech::Config->get('HANDLE_STATIC_FILES') || [];
 $HANDLE_STATIC_FILES = [$HANDLE_STATIC_FILES] unless ref $HANDLE_STATIC_FILES;
+our $LOAD_KEY                     = Bibliotech::Config->get('LOAD_KEY') || 'LOAD';
 
 our $USER_ID;
 our $USER;
@@ -171,8 +172,8 @@ sub handler {
   $self->canonical_path($canonical_path);
 
   my $load;
-  $MEMCACHE->add(LOAD => 0);                           # add does nothing if it already exists
-  $load = $MEMCACHE->incr('LOAD');                     # incr only works on existing values, hence the add
+  $MEMCACHE->add($LOAD_KEY => 0);                      # add does nothing if it already exists
+  $load = $MEMCACHE->incr($LOAD_KEY);                  # incr only works on existing values, hence the add
   $pool->cleanup_register(\&cleanup_decr, $MEMCACHE);  # immediately register the mechanism to perform a decr
   $self->load($load);
 
@@ -247,7 +248,7 @@ sub handler {
 
 # registered as a cleanup handler to decrement the load variable
 sub cleanup_decr {
-  shift->decr('LOAD');  # parameter is $MEMCACHE object
+  shift->decr($LOAD_KEY);  # parameter is $MEMCACHE object
   return OK;
 }
 
