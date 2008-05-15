@@ -122,7 +122,7 @@ GENERAL {
   #IMPORT_MAX_COUNT = 1000
 
   # pause web services
-  #SERVICE_PAUSED = true
+  #SERVICE_PAUSED = false
   # takes IP addresses - no wildcards or ranges allowed, must be
   # explicit addresses
   #SERVICE_NEVER_PAUSED_FOR = [ '192.168.1.10', '192.168.1.11' ]
@@ -132,10 +132,19 @@ GENERAL {
   #SERVICE_PAUSED_EARLY = false
 
   # make web services read-only
-  #SERVICE_READ_ONLY = true
+  #SERVICE_READ_ONLY = false
+  # suspend freematch search as well, because that needs the other
+  # database and the main reason for read-only service is that we're
+  # messing with the database
+  #SERVICE_READ_ONLY_SEARCH_TOO = false
   # takes IP addresses - no wildcards or ranges allowed, must be
   # explicit addresses
   #SERVICE_NEVER_READ_ONLY_FOR = [ '192.168.1.10', '192.168.1.11' ]
+  # read-only mode is a flag that can be seen in the templates to show
+  # a banner, but silent mode just sets another flag that the
+  # templates can respect to not admit read-only mode is active;
+  # useful for slaves that only receive read-only requests
+  #SERVICE_READ_ONLY_SILENT = false
 
   # let visitors with a foreign/blank Referer see slightly old data if
   # we are not current in the cache

@@ -1,6 +1,6 @@
 [% IF service_paused %]
 <div id="service_paused">[% sitename %] is currently paused. You have been granted access based on your IP address.</div>
 [% END %]
-[% IF service_read_only %]
+[% IF service_read_only AND NOT service_read_only_silent %]
 <div id="service_readonly">[% sitename %] is currently in read-only mode while we carry out some maintenance.</div>
 [% END %]
