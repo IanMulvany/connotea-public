@@ -41,6 +41,7 @@ our $VERSION = '1.8';
 
 our $SITE_NAME              	= Bibliotech::Config->get_required('SITE_NAME');
 our $SITE_EMAIL             	= Bibliotech::Config->get_required('SITE_EMAIL');
+our $SERVER_ID             	= Bibliotech::Config->get('SERVER_ID');
 our $USER_VERIFYCODE_SECRET 	= Bibliotech::Config->get('USER_VERIFYCODE_SECRET');
 our $IMPORT_MAX_COUNT           = Bibliotech::Config->get('IMPORT_MAX_COUNT') || 500;
 our $EXCEPTION_ERROR_REPORTS_TO = Bibliotech::Config->get('EXCEPTION_ERROR_REPORTS_TO') || $SITE_EMAIL;
@@ -63,6 +64,15 @@ sub sitename {
 
 sub siteemail {
   $SITE_EMAIL;
+}
+
+sub server_id {
+  $SERVER_ID;
+}
+
+sub sitename_plus_server_id {
+  return $SITE_NAME unless $SERVER_ID;
+  return $SITE_NAME.' ('.$SERVER_ID.')';
 }
 
 sub process {
@@ -580,7 +590,7 @@ sub pull_citation_calc {
   if ($errstr) {
     die "Error from ${ref}::citations(\'$uri\'): $errstr" if $die_on_errstr;
     my $report = "Citation module error report:\n\nIn $ref for\n$uri\n\n$errstr\n\n";
-    $self->notify_for_exception(subject => '['.$self->sitename.' citation module error]', body => $report);
+    $self->notify_for_exception(subject => '['.$self->sitename_plus_server_id.' citation module error]', body => $report);
   }
 
   my $module_str;

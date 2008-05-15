@@ -12,11 +12,13 @@ if ! ps axf | grep -v grep | grep -q httpd; then
   echo "ERROR: Process list does not show Apache!"
   exit 10
 fi
-ip=`ifconfig eth0 | perl -ne '/inet addr:(\S+)/ && print "$1\n"'`
-curl -s -H "Host: $HOST" "http://$ip/" > /tmp/web
-if ! grep -q $HOMETEST /tmp/web; then
-  echo "ERROR: Web request for $HOST does not yield proper page!"
-  exit 11
+if [ "$HOMETEST" ]; then
+  ip=`ifconfig eth0 | perl -ne '/inet addr:(\S+)/ && print "$1\n"'`
+  curl -s -H "Host: $HOST" "http://$ip/" > /tmp/web
+  if ! grep -q $HOMETEST /tmp/web; then
+    echo "ERROR: Web request for $HOST does not yield proper page!"
+    exit 11
+  fi
+  rm -f /tmp/web
 fi
-rm -f /tmp/web
 echo "Restart completed OK."

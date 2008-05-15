@@ -722,6 +722,8 @@ sub tt_general_vars_calc {
 	  link               => $bibliotech->link,
 	  sitename           => $bibliotech->sitename,
 	  siteemail          => $bibliotech->siteemail,
+	  server_id          => sub { $bibliotech->server_id },
+	  sitename_plus_server_id => sub { $bibliotech->sitename_plus_server_id },
 	  codename           => do { local $_ = $bibliotech->sitename; s/\W//g; $_; },
 	  symbolname         => do { local $_ = $bibliotech->sitename; s/\W//g; lc $_; },
 	  user               => $bibliotech->user,

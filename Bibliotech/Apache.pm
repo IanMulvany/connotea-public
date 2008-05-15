@@ -235,7 +235,7 @@ sub handler {
       $self->exception_handler($get_report->());
     }
     $LOG->error('exception: '.$e);
-    $self->notify_for_exception(subject => '['.$self->sitename.' exception]', body => $get_report->());
+    $self->notify_for_exception(subject => '['.$self->sitename_plus_server_id.' exception]', body => $get_report->());
   }
 
   my $elapsed = sprintf('%0.4f', Time::HiRes::time() - $starthrtime);

@@ -15,6 +15,9 @@ GENERAL {
   SITE_NAME = 'My Bookmarking Service'
   SITE_EMAIL = 'admin@example.org'
 
+  # leave blank for one server; use 1, 2, 3, etc. for multiple servers
+  #SERVER_ID = ''
+
   # optionally set document root and home page hyperlink, or they can
   # be detected
   #DOCROOT = '/var/www/perl/connotea_code/site/default'
