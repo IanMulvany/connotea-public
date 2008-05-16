@@ -21,7 +21,7 @@ our $SKIP_VALIDATE = 0;
 
 my $grammar = <<'EOG';
 
-auth : 'auth'
+auth : 'auth' | 'pub'
 
 # not really <reject>, set by code in Parser.pm
 output : <reject>

@@ -35,32 +35,34 @@ sub handler {
     return DECLINED;
   }
 
+  my $uri = do { local $_ = $r->uri;
+		 my $location = $r->location;
+		 s|^$location|| if $location && $location ne '/';
+		 $_; };
+
   # optional system - HTTP
-  my $uri = $r->uri;
-  my $location = $r->location;
-  $uri =~ s|^$location|| if $location && $location ne '/';
-  if ($uri =~ m{^/+(auth|data)}) {
+  if ($uri =~ m{^/+(?:auth|data)}) {
+    # /auth is a URI keyword to force an authentication check by HTTP to facilitate RSS readers
+    # /data needs to have HTTP authentication to facilitate programatic access
     my ($status, $password) = $r->get_basic_auth_pw;
     return $status unless $status == OK;
     my $username = $r->user;
-    my $user;
-    eval {
-      $user = Bibliotech->allow_login($username, $password);
-    };
+    my $user = eval { Bibliotech->allow_login($username, $password) };
     return mark_apache_request_for_user($r, $user->user_id, $username, Bibliotech::Util::time())
 	if defined $user;
     $r->note_basic_auth_failure;
     return AUTH_REQUIRED;
   }
 
+  if ($uri =~ m|^/+pub|) {
+    # /pub is a URI keyword to force the system to NOT read the login cookie
+    return NOT_FOUND if $uri =~ m|^/+pub/+data|;  # cheating
+    return OK;
+  }
+
   # mandatory system - cookie
   if (my @data = Bibliotech::Cookie::check_cookie_from_apache_request_object($r)) {
     return mark_apache_request_for_user($r, @data);
-  }
-
-  if ($uri =~ m|^/+data|) {
-    $r->note_basic_auth_failure;
-    return AUTH_REQUIRED;
   }
 
   return OK;

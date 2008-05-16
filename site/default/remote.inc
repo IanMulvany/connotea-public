@@ -13,7 +13,7 @@ our remote Javascript facility.</p>
 
 <pre>
 &lt;script type="text/javascript" src="[% location %]remote.js"&gt;//&lt;/script&gt;
-&lt;script type="text/javascript" src="[% location %]jsw/user/username"&gt;//&lt;/script&gt;
+&lt;script type="text/javascript" src="[% location %]pub/jsw/user/username"&gt;//&lt;/script&gt;
 </pre>
 
 <p>And in the HTML &lt;head&gt; also place this <code>style</code>
