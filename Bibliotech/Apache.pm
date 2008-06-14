@@ -22,7 +22,6 @@ use Bibliotech::WebAPI;
 use Bibliotech::CGI;
 use Bibliotech::Throttle;
 use Bibliotech::ReadOnly;
-use Bibliotech::Clicks;
 use Bibliotech::WebCite;
 use Bibliotech::Profile;
 # load Inc because of its utility to include files as well as directly as a component
@@ -51,6 +50,10 @@ our $MEMCACHE                     = Bibliotech::Cache->new({log => $LOG});
 our $HANDLE_STATIC_FILES	  = Bibliotech::Config->get('HANDLE_STATIC_FILES') || [];
 $HANDLE_STATIC_FILES = [$HANDLE_STATIC_FILES] unless ref $HANDLE_STATIC_FILES;
 our $LOAD_KEY                     = Bibliotech::Config->get('LOAD_KEY') || 'LOAD';
+
+if (Bibliotech::Config->get('CLICKS', 'DBI_CONNECT')) {
+  require Bibliotech::Clicks;
+}
 
 our $USER_ID;
 our $USER;

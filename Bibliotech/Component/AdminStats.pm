@@ -11,7 +11,6 @@ package Bibliotech::Component::AdminStats;
 use strict;
 use base 'Bibliotech::Component';
 use Bibliotech::DBI;
-use Bibliotech::Clicks;
 use Bibliotech::Util qw/hrtime/;
 
 our $ADMIN_USERS = __PACKAGE__->cfg('ADMIN_USERS');
@@ -34,7 +33,7 @@ sub html_content {
 
 sub db {
   my $db = shift || 'main';
-  return Bibliotech::Clicks->db_Main if $db eq 'clicks';
+  return Bibliotech::Clicks->db_Main if $db eq 'clicks' and defined $INC{'Bibliotech/Clicks.pm'};
   return Bibliotech::DBI->db_Main;
 }
 
