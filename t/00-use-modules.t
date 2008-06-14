@@ -47,7 +47,7 @@ sub is_checkable_module {
 }
 
 sub is_apache_dependent_module {
-  shift =~ /^Bibliotech::(?:ApacheProper|Apache|ApacheInit|AuthCookie|Component::(?:LoginForm|LogoutForm|RegisterForm|VerifyForm|ForgotPasswordForm)|WebCite)$/o;
+  shift =~ /^Bibliotech::(?:ApacheProper|Apache|ApacheInit|AuthCookie|Component::(?:LoginForm|LogoutForm|RegisterForm|VerifyForm|ForgotPasswordForm)|WebCite|Clicks)$/o;
 }
 
 sub is_unfinished_module {
