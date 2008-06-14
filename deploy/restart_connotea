@@ -13,7 +13,7 @@ if ! ps axf | grep -v grep | grep -q httpd; then
   exit 10
 fi
 if [ "$HOMETEST" ]; then
-  ip=`ifconfig eth0 | perl -ne '/inet addr:(\S+)/ && print "$1\n"'`
+  ip=`/sbin/ifconfig eth0 | perl -ne '/inet addr:(\S+)/ && print "$1\n"'`
   curl -s -H "Host: $HOST" "http://$ip/" > /tmp/web
   if ! grep -q $HOMETEST /tmp/web; then
     echo "ERROR: Web request for $HOST does not yield proper page!"
