@@ -89,7 +89,7 @@ sub scan {
       }
       my $score = eval { $obj->understands(_item_copy($item), @{$obj_call_params||[]}); };
       die 'Error from '.ref($obj)."::understands(\'$item\'): $@" if $@;
-      warn "Bibliotech::Plugin::scan - $class = $score\n";
+      #warn "Bibliotech::Plugin::scan - $class = $score\n";
       next if !$score or $score <= 0;  # because that means does not understand or transient error
       push @mods, [$score => $obj];
       last if $score == 1;  # because it will win anyway
