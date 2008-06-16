@@ -94,8 +94,9 @@ sub _clean_db_str {
   return $_;
 }
 
-sub _clean_id_str {
+sub _clean_single_id_str {
   local $_ = shift or return;
+  return if m/,/;  # multiple
   s/\%20/ /g;
   s/\D//g;
   return $_;
@@ -104,7 +105,7 @@ sub _clean_id_str {
 sub _url_from_pmid {
   my $purpose = shift;
   my $db = _clean_db_str(shift) || 'pubmed';
-  my $id = _clean_id_str(shift);
+  my $id = _clean_single_id_str(shift);
   return URI->new('http://www.ncbi.nlm.nih.gov/'.$db.'/'.$id) if $purpose eq 'view';
   return URI->new('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?retmode=xml&db='.$db.'&id='.$id);
 }
@@ -125,17 +126,15 @@ sub url_add_tool {
 sub _db_and_id_from_url {
   my $uri = shift;
   if (my $path = $uri->path) {
-    return ($1, $2) if $path =~ m|^/(pubmed)/(\d+)|;
+    return ($1, _clean_single_id_str($2)) if $path =~ m|^/(pubmed)/([\d,]+)|;
   }
   return (_clean_db_str($uri->query_param('db') ||
-			$uri->query_param('Db')) ||
-	  undef,
-	  _clean_id_str($uri->query_param('uid') ||
-			$uri->query_param('list_uids') ||
-			_pmid_in_term($uri->query_param('term') ||
-				      $uri->query_param('Term') ||
-				      $uri->query_param('TermToSearch'))) ||
-	  undef);
+			$uri->query_param('Db')) || undef,
+	  _clean_single_id_str($uri->query_param('uid') ||
+			       $uri->query_param('list_uids') ||
+			       _pmid_in_term($uri->query_param('term') ||
+					     $uri->query_param('Term') ||
+					     $uri->query_param('TermToSearch'))) || undef);
 }
 
 sub _pmid_in_term {
