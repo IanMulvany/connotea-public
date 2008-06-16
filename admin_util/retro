@@ -96,12 +96,19 @@ close $logfh;
 
 sub make_iter {
   my ($url_like_pattern, $only_fill_in_missing) = @_;
-  # The 'used' SQL statement only brings back bookmarks linked by user_bookmark
+  # The 'used' SQL statement only brings back bookmarks linked by user_article
   # in descending popularity by number of posts, then descending creation timestamp
   my (@where, @where_params);
   if ($url_like_pattern) {
-    push @where, 'b.url LIKE ?';
-    push @where_params, $url_like_pattern;
+    if ($url_like_pattern =~ /\%/) {
+      push @where, 'b.url LIKE ?';
+      push @where_params, $url_like_pattern;
+    }
+    else {
+      warn "Warning: -u parameter has no percent sign so interpreting as exact (=) not LIKE, add \% marks if this is wrong.\n";
+      push @where, 'b.url = ?';
+      push @where_params, $url_like_pattern;
+    }
   }
   if ($only_fill_in_missing) {
     push @where, 'b.citation IS NULL';
