@@ -55,13 +55,14 @@ sub citations {
   my $ris;
   eval {
     die "do not understand URI\n" unless $self->understands($article_uri);
-    my $file = $article_uri->query_param('file') || $article_uri->path or die "no file name seen in URI\n";
-    my ($abr, $vol, $iss, $uid)
-	= ($file =~ m!^/([a-z]+)/journal/v(\d+|(?:aop))/n(\d+|(?:current))/.+?/(.+?)(?:_[a-z]+)?\.(?:html|pdf)!i);
-    die "no abbreviated journal name\n" unless $abr;
-    die "no volume\n" unless $vol;
-    die "no issue\n" unless $iss;
-    die "no UID\n" unless $uid;
+    my $file = $article_uri->query_param('file') || $article_uri->path
+	or die "no file name seen in URI\n";
+    $file =~ m!^/([a-z]+)/journal/v(\d+|(?:aop))/n(\d+s?|(?:current))/(?:full|abs|pdf)/(.+?)(?:_[a-z]+)?\.(?:html|pdf)$!i
+	or die "path not recognized ($file)\n";
+    my $abr = $1 or die "no abbreviated journal name\n";
+    my $vol = $2 or die "no volume\n";
+    my $iss = $3 or die "no issue\n";
+    my $uid = $4 or die "no UID\n";
     my $query_uri = URI->new("http://www.nature.com/$abr/journal/v$vol/n$iss/ris/$uid.ris");
     my $ris_raw = $self->get($query_uri);
     $ris = Bibliotech::CitationSource::RIS->new($ris_raw);
