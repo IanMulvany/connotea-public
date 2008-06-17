@@ -582,6 +582,11 @@ sub simple_link {
   return $self->bookmark->href_hash($bibliotech, {user => $self->user->username});
 }
 
+sub simple_bookmark_link {
+  my ($self, $bibliotech) = @_;
+  return $self->bookmark->href_hash($bibliotech);
+}
+
 sub simple_postedby {
   my ($self, $bibliotech) = @_;
   return scalar($self->postedby(bibliotech => $bibliotech, main => 1));
@@ -609,7 +614,9 @@ sub rss_content {
 			      ($self->can('tags') ? (subject => $self->simple_tags) : ())},
 		annotate  => {reference => $location.'comments/uri/'.$bookmark->hash},
 		slash     => {comments  => $self->comments->count},
-		connotea  => {uri       => $bookmark->biblio_rdf($bibliotech)},
+		connotea  => {uri       => $bookmark->biblio_rdf($bibliotech),
+			      post      => $self->simple_link($bibliotech),
+			      bookmark  => $self->simple_bookmark_link($bibliotech)},
 		do {
 		  my $html = $self->html_content($bibliotech, 'rssitem', 1, 1);
 		  $html ? do {
