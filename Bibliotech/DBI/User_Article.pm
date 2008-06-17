@@ -601,7 +601,7 @@ sub rss_content {
   my $location = $bibliotech->location;
   my $bookmark = $self->bookmark;
   my %item = (title       => $self->simple_title,
-	      link        => $self->simple_link($bibliotech),
+	      link        => $self->simple_uri,
 	      description => $self->simple_postedby($bibliotech),
 	      ($verbose ?
 	       (dc        => {date    => $self->simple_date,
