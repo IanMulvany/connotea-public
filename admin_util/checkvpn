@@ -1,0 +1,54 @@
+#!/usr/bin/perl
+use strict;
+use Proc::Daemon;
+use Net::Ping;
+use File::Touch;
+
+my $host = shift @ARGV or die "Please specify remote host.\n";
+my $file = shift @ARGV or die "Please specify flag file.\n";
+my $secs = shift @ARGV || 60;
+my $fore = shift @ARGV || 0;
+
+Proc::Daemon::Init unless $fore;
+
+my $state = 0;
+sub on {
+  if ($state == 0) {
+    touch $file;
+    $state = 1;
+  }
+}
+sub off {
+  if ($state == 1) {
+    unlink $file;
+    $state = 0;
+  }
+}
+
+my $ping = Net::Ping->new('icmp');
+
+my $quit = 0;
+sub quit {
+  $quit++;
+}
+$SIG{TERM} = \&quit;
+$SIG{INT}  = \&quit;
+$SIG{HUP}  = 'IGNORE';
+$SIG{STOP} = 'IGNORE';
+$SIG{TSTP} = 'IGNORE';
+
+sub quittable_sleep {
+  my $total = shift;
+  for (my $i = 0; $i < $total; $i += 0.5) {
+    sleep 0.5;
+    last if $quit;
+  }
+}
+
+while (!$quit) {
+  $ping->ping($host) ? on() : off();
+  quittable_sleep($secs);
+}
+
+off();
+$ping->close;
