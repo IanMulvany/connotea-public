@@ -30,6 +30,7 @@ use Bibliotech::Bookmarklets;
 use Bibliotech::BibUtils qw(ris2bib xml2bib ris2end ris2xml ris2word);
 use Bibliotech::Throttle;
 use Bibliotech::ReadOnly;
+use Bibliotech::Clicks::CGI;
 
 our $TEMPLATE_ROOT    = Bibliotech::Config->get('TEMPLATE_ROOT');
 our $EXPORT_MAX_COUNT = Bibliotech::Config->get('EXPORT_MAX_COUNT') || 1000;

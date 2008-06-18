@@ -11,6 +11,7 @@ use strict;
 
 package Bibliotech::Clicks;
 use base 'Bibliotech::DBI';
+use Bibliotech::Clicks::CGI;
 
 our $DBI_CONNECT  = Bibliotech::Config->get_required('CLICKS', 'DBI_CONNECT');
 our $DBI_USERNAME = Bibliotech::Config->get	    ('CLICKS', 'DBI_USERNAME');
@@ -41,29 +42,4 @@ sub add {
 				   username   => $username,
 				   ip_addr    => $ip_addr});
   return;
-}
-
-package Bibliotech::Clicks::CGI;
-use CGI;
-use URI;
-
-sub onclick {
-  shift @_ if !ref($_[0]) and $_[0] eq __PACKAGE__;
-  my ($location, $source_uri, $dest_uri, $new_window) = @_;
-  my $src    = CGI::escape(URI->new($source_uri)->as_string);
-  my $dest   = CGI::escape(URI->new($dest_uri)->as_string);
-  my $scheme = $location->scheme;
-  (my $rest  = "$location") =~ s|^\Q$scheme\E||;
-  my $script = "\'$scheme\'+\'${rest}click?src=${src}&dest=${dest}\'";
-  return "this.href=${script}; return true;" unless $new_window;
-  #return "window.location=${script}; return false;" unless $new_window;
-  return "window.open(${script},\'\',\'\'); return false;";
-}
-
-sub onclick_bibliotech {
-  shift @_ if !ref($_[0]) and $_[0] eq __PACKAGE__;
-  my ($bibliotech, $dest_uri, $new_window) = @_;
-  my $location = $bibliotech->location;
-  (my $path    = $bibliotech->canonical_path) =~ s|^/||;
-  return onclick($location, $location.$path, $dest_uri, $new_window);
 }
