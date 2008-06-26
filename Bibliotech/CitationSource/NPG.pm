@@ -57,7 +57,7 @@ sub citations {
     die "do not understand URI\n" unless $self->understands($article_uri);
     my $file = $article_uri->query_param('file') || $article_uri->path
 	or die "no file name seen in URI\n";
-    $file =~ m!^/([a-z]+)/journal/v(\d+|(?:aop))/n(\d+s?|(?:current))/(?:full|abs|pdf)/(.+?)(?:_[a-z]+)?\.(?:html|pdf)$!i
+    $file =~ m!^/([a-z]+)/journal/v(\d+|(?:aop))/n(\d+s?|(?:current))/(?:full|abs|pdf)/(.+?)(?:_[a-z]+)?\.(?:html|pdf)!i
 	or die "path not recognized ($file)\n";
     my $abr = $1 or die "no abbreviated journal name\n";
     my $vol = $2 or die "no volume\n";
