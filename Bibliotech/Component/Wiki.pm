@@ -19,12 +19,15 @@ use Bibliotech::DBI;
 use Bibliotech::Util;
 use Bibliotech::Antispam;
 
-our $WIKI_DBI_CONNECT  = __PACKAGE__->cfg_required('DBI_CONNECT');
-our $WIKI_DBI_USERNAME = __PACKAGE__->cfg('DBI_USERNAME');
-our $WIKI_DBI_PASSWORD = __PACKAGE__->cfg('DBI_PASSWORD');
-our $WIKI_ADMIN_USERS  = __PACKAGE__->cfg('ADMIN_USERS');
-our $WIKI_LOCK_TIME    = __PACKAGE__->cfg('LOCK_TIME') || '10 MINUTE';
-our $WIKI_HOME_NODE    = __PACKAGE__->cfg('HOME_NODE') || 'System:Home';
+our $WIKI_DBI_CONNECT   = __PACKAGE__->cfg_required('DBI_CONNECT');
+our $WIKI_DBI_USERNAME  = __PACKAGE__->cfg('DBI_USERNAME');
+our $WIKI_DBI_PASSWORD  = __PACKAGE__->cfg('DBI_PASSWORD');
+our $WIKI_ADMIN_USERS   = __PACKAGE__->cfg('ADMIN_USERS');
+our $WIKI_LOCK_TIME     = __PACKAGE__->cfg('LOCK_TIME') || '10 MINUTE';
+our $WIKI_HOME_NODE     = __PACKAGE__->cfg('HOME_NODE') || 'System:Home';
+our $WIKI_MAX_PAGE_SIZE = __PACKAGE__->cfg('MAX_PAGE_SIZE') || 40000;
+our $WIKI_MAX_EXT_LINKS = __PACKAGE__->cfg('MAX_EXT_LINKS') || 75;
+our $WIKI_SCAN          = __PACKAGE__->cfg('SCAN') || 1;
 
 sub last_updated_basis {
   ('NOW');
@@ -346,19 +349,24 @@ sub html_content {
       });
 }
 
-sub _validate_submitted_content {
-  local $_ = shift or return;
-  length($_) > 40000
-      and die "Sorry, each wiki page source text is limited to 40,000 characters at maximum.\n";
-  do { my @count = uniq(/(?:https?|ftp:[^\]\|\s]+)/g); scalar @count; } > 75
-      and die "Sorry, too many external hyperlinks.\n";  # antispam, intentionally omit http/https/ftp or number
-  s/[-_]/ /g;  # for next test...
-  foreach my $bad (@{$Bibliotech::Antispam::TAG_REALLY_BAD_PHRASE_LIST || []}) {
-    m/\b\Q$bad\E\b/i and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit trigger phrase
-  }
+sub _without_wiki_explicit_links_and_spaces {
+  local $_ = $_;
   s/\[[^\]]*\]//gs;
   s/\s+//gs;
-  length($_) == 0
+  return $_;
+}
+
+sub _validate_submitted_content {
+  local $_ = shift or return;
+  length($_) > $WIKI_MAX_PAGE_SIZE
+      and die "Sorry, each wiki page source text is limited to $WIKI_MAX_PAGE_SIZE characters at maximum.\n";
+  do { my @count = uniq(/(?:https?|ftp:[^\]\|\s]+)/g); scalar @count; } > $WIKI_MAX_EXT_LINKS
+      and die "Sorry, too many external hyperlinks.\n";  # antispam, intentionally omit http/https/ftp or number
+  $WIKI_SCAN == 1 && Bibliotech::Antispam::Util::scan_text_for_really_bad_phrases($_)
+      and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit trigger phrase
+  $WIKI_SCAN == 2 && Bibliotech::Antispam::Util::scan_text_for_bad_phrases($_)
+      and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit trigger phrase
+  length(_without_wiki_explicit_links_and_spaces($_)) == 0
       and die "Sorry, a wiki page may not consist solely of explicit links.\n";
 }
 

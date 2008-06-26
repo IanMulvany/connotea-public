@@ -667,7 +667,7 @@ sub deactivate_notify_user {
 
 sub deactivate_delete_wiki_node {
   my ($self, $reason_code, $bibliotech) = @_;
-  return unless $reason_code eq 'spammer' or $reason_code eq 'empty-wiki';
+  return unless $reason_code eq 'resignation' or $reason_code eq 'spammer' or $reason_code eq 'empty-wiki';
   eval { $self->delete_wiki_node($bibliotech, 1); };
   warn $@ if $@;
 }

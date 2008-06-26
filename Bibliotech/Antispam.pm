@@ -34,6 +34,7 @@ our $TAG_BAD_PHRASE_SCORE         = Bibliotech::Config->get('ANTISPAM', 'TAG_BAD
 our $TAG_REALLY_BAD_PHRASE_LIST   = Bibliotech::Config->get('ANTISPAM', 'TAG_REALLY_BAD_PHRASE_LIST')   || [];
 our $TAG_REALLY_BAD_PHRASE_SCORE  = Bibliotech::Config->get('ANTISPAM', 'TAG_REALLY_BAD_PHRASE_SCORE');
     $TAG_REALLY_BAD_PHRASE_SCORE  = 3 unless defined $TAG_REALLY_BAD_PHRASE_SCORE;
+our $TAG_COMBINED_BAD_PHRASE_LIST = [@{$TAG_BAD_PHRASE_LIST}, @{$TAG_REALLY_BAD_PHRASE_LIST}];
 our $TAGS_TOO_MANY_MAX            = Bibliotech::Config->get('ANTISPAM', 'TAGS_TOO_MANY_MAX');
     $TAGS_TOO_MANY_MAX            = 7 unless defined $TAGS_TOO_MANY_MAX;
 our $TAGS_TOO_MANY_SCORE          = Bibliotech::Config->get('ANTISPAM', 'TAGS_TOO_MANY_SCORE');
@@ -658,4 +659,26 @@ sub report {
   return sprintf("Antispam Score List:\nTotal = %d\n%s",
 		 $self->total,
 		 join('', map { sprintf("%-24s%3d\n", @{$_}) } $self->records));
+}
+
+
+package Bibliotech::Antispam::Util;
+# for use in non-posting situations; wiki, etc.
+
+sub _scan_text_for_really_bad_phrases {
+  my ($text, $phrase_list, $score) = @_;
+  return 0 if !$score;
+  $text =~ s/[-_]/ /g;
+  foreach my $bad (@{$phrase_list}) {
+    $text =~ m/\b\Q$bad\E\b/i and return $score;
+  }
+  return 0;
+}
+
+sub scan_text_for_really_bad_phrases {
+  _scan_text_for_really_bad_phrases(pop, $Bibliotech::Antispam::TAG_REALLY_BAD_PHRASE_LIST, 1);
+}
+
+sub scan_text_for_bad_phrases {
+  _scan_text_for_really_bad_phrases(pop, $Bibliotech::Antispam::TAG_COMBINED_BAD_PHRASE_LIST, 1);
 }

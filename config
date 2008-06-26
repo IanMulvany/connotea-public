@@ -296,6 +296,13 @@ COMPONENT WIKI {
   #ADMIN_USERS = [ 'admin' ]
   #LOCK_TIME = '10 MINUTE'
   #HOME_NODE = 'System:Home'
+  # page size limit is in characters
+  #MAX_PAGE_SIZE = 40000
+  # maximum external hyperlink count, cuts down on spam
+  #MAX_EXT_LINKS = 75
+  # scan: 1 means check text against ANTISPAM > TAG_REALLY_BAD_PHRASE_LIST
+  # scan: 2 means check text against ANTISPAM > TAG_BAD_PHRASE_LIST+TAG_REALLY_BAD_PHRASE_LIST
+  #SCAN = 1
 }
 
 COMPONENT KILLSPAMMER {
