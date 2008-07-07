@@ -63,16 +63,22 @@ sub filter {
 
 sub citations {
   my ($self, $uri) = @_;
+
   return undef unless $self->understands($uri);
 
-  my $doi = $self->get_doi($uri);
-  return undef unless $doi;
+  my $doi = $self->get_doi($uri) or return undef;
 
-  my $query_result = $self->query_result($doi);
-  return undef unless $query_result;
+  return $self->citations_id({doi => $doi});
+}
 
-  #check it's worth returning
-  unless($query_result->{'journal'} && $query_result->{'pubdate'}) {
+sub citations_id {
+  my ($self, $id_hashref) = @_;
+
+  my $doi = $id_hashref->{doi} or return undef;
+
+  my $query_result = $self->query_result($doi) or return undef;
+
+  unless ($query_result->{'journal'} && $query_result->{'pubdate'}) {
     $self->errstr('Insufficient metadata extracted for doi:'.$doi);
     return undef;
   }
