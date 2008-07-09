@@ -98,7 +98,9 @@ sub html_content {
   return Bibliotech::Page::HTML_Content->simple
       ($self->tt('compsearch',
 		 do {
-		   my $in_query      = defined $bibliotech->query && $bibliotech->command->filters_used;
+		   my $in_query      = defined $bibliotech->query &&
+		                       $bibliotech->command->filters_used &&
+				       !$bibliotech->command->is_bookmark_command;
 		   my $in_my_library = $bibliotech->in_my_library;
 		   {show_option_current => $in_query,
 		    default_option      => eval { return 'library' if $in_my_library;
