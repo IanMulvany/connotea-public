@@ -41,6 +41,8 @@ use Bibliotech::BibUtils qw/ris2xml/;
 use Storable qw/lock_store lock_retrieve/;
 use File::Path qw/mkpath/;
 use JSON;
+use URI;
+use URI::Heuristic;
 
 our $CACHE_ENABLED = Bibliotech::Config::get('WEBCITE', 'CACHE_ENABLED'); defined $CACHE_ENABLED or $CACHE_ENABLED = 1;
 our $CACHE_PATH    = Bibliotech::Config::get('WEBCITE', 'CACHE_PATH') || '/var/cache/webcite/';
@@ -57,7 +59,8 @@ sub handler {
     my $uri =    $cgi->unescape($cgi->param('uri')) or return $self->form;
     my $fmt = lc($cgi->unescape($cgi->param('fmt')));
     $fmt =~ /^(?:ris|mods|json)$/ or return $self->form;  # sanity check
-    return $self->dispatch($uri, $fmt);
+    my $obj = URI::Heuristic::uf_uri($uri)->canonical || URI->new($uri);
+    return $self->dispatch($obj, $fmt);
   };
   return $self->fatal_error($@) if $@;
   return $rc;
@@ -113,10 +116,10 @@ sub citation {
 sub uri_to_cache_path {
   my $uri = shift;
   local $_ = UNIVERSAL::isa($uri, 'URI') ? $uri->as_string : $uri;
-  s|^(\w+):|$1|;
+  s|^(\w+):|$1/|;
   s|//+|/|g;
   s|\?|__|g;
-  s|[&=]|_|g;
+  s|[&= :;,<>]|_|g;
   return join('', $CACHE_PATH, $_, '.result');
 }
 

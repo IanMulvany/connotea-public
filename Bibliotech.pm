@@ -17,12 +17,10 @@ Bibliotech - Connotea Code Perl modules
 package Bibliotech;
 use strict;
 use base 'Class::Accessor::Fast';
-use URI::Heuristic;
 use Digest::MD5 qw/md5_hex/;
 use Encode qw/encode_utf8/;
 use Bio::Biblio::IO;
 use Set::Array;
-use Data::Dumper;
 use IO::File;
 use Bibliotech::Const;
 use Bibliotech::Config;

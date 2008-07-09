@@ -4,6 +4,7 @@ use base 'Bibliotech::DBI';
 use Bibliotech::Query;
 use Bibliotech::Util;
 use URI;
+use URI::Heuristic;
 use Digest::MD5 qw/md5_hex/;
 use RDF::Core;
 use RDF::Core::Literal;
