@@ -106,6 +106,7 @@ sub citation {
   my $bookmark   = Bibliotech::Unwritten::Bookmark->construct({url => $uri});
   my ($revised_bookmark, $citations, $module_str) = $bibliotech->pull_citation_calc($bookmark, undef, 0);
   return if not defined $citations;
+  bless $revised_bookmark, 'Bibliotech::Unwritten::Bookmark' if defined $revised_bookmark;
   my $result     = $citations->fetch;
   return if not defined $result;
   my $citation   = Bibliotech::Unwritten::Citation->from_citationsource_result($result, 0, $module_str);
