@@ -57,6 +57,12 @@ sub is_login_or_logout {
   shift->page =~ /^log(in|out)$/
 }
 
+sub is_searchable_query {
+  my $self = shift;
+  my $page = $self->page_or_inc;
+  return $self->filters_used && !$self->is_bookmark_command && grep { $page eq $_ } qw(home recent export);
+}
+
 sub filters_used {
   my $self = shift;
   return grep { my $value = $self->$_; $value && @{$value}; } map($_->{name}, @FILTERS);
