@@ -11,11 +11,6 @@ use strict;
 # base was Bibliotech::Component, but /rss/search?q=xxx didn't
 # work because this is the main component for
 # Bibliotech::Page::Search yet it has no rss_content().
-# We use ListOfRecent explicitly in a search.tpl and then
-# this base to underlay the other *_content() routines.
-# We also had to remove last_updated_basis() because its not
-# fine-grained enough to return a different value for HTML
-# content vs other content.
 use base 'Bibliotech::Component::ListOfRecent';
 use URI;
 use URI::QueryParam;
