@@ -32,7 +32,7 @@ sub understands {
   my ($self, $uri) = @_;
   $self->awsid or return 0;
   return 0 unless $uri->scheme eq 'http';
-  return 0 unless $uri->host =~ m/^www\.amazon\.(?:com|co\.uk|de|fr|co\.jp|ca)$/;
+  return 0 unless $uri->host =~ m/^(?:www\.)?amazon\.(?:com|co\.uk|de|fr|co\.jp|ca)$/;
   return 0 unless $uri->path =~ m!/\d{9}(?:\d|X)/!i;
   return 1;
 }
