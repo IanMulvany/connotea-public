@@ -22,140 +22,105 @@ use XML::LibXML;
 use XML::LibXML::NodeList;
 
 use HTTP::OAI::Harvester;
-use constant VERSION => '2.0'; 					# version for Harvester Identify
-use constant META_PREFIX => 'oai_dc';				# return dublin core metadata
+use constant VERSION => '2.0'; 	        # version for Harvester Identify
+use constant META_PREFIX => 'oai_dc';   # return dublin core metadata
 use constant OAI_BASE => '/perl/oai2';
 
-sub api_version
-{
+sub api_version {
   1;
 }
 
-sub name
-{
+sub name {
   'ePrints';
 }
 
-sub version
-{
+sub version {
   '1.3.2.1';
 }
 
-sub understands
-{
-	my ($self, $uri) = @_;
-
-	#check the host
-#print "scheme " . $uri->scheme . "\n";
-	return 0 unless ($uri->scheme =~ /^http$/i);
-#print "host " . $uri->host . "\n";
-	return 0 unless Bibliotech::CitationSource::ePrints::HostTable::defined($uri->host);
-
-	# check the path
-#print "path " . $uri->path . "\n";
-	return 1 if ($uri->path);
-
-# so far nothing special for ePrints article
-	#return 0 unless ($uri->path =~ m/articlerender\.fcgi/ || 
-			 #$uri->path =~ m/pagerender\.fcgi/ || 
-				#($uri->path =~ m/picrender\.fcgi/ && $uri->query =~ /blobtype=pdf/i));
-	
-#print "bad url\n";
-	return 0;
+sub understands {
+  my ($self, $uri) = @_;
+  return 0 unless $uri->scheme =~ /^http$/i;
+  return 0 unless Bibliotech::CitationSource::ePrints::HostTable::defined($uri->host);
+  return 1 if $uri->path;
+  return 0;
 }
 
-sub citations
-{
-	my ($self, $uri) = @_;
+sub citations {
+  my ($self, $uri) = @_;
 
-	my $understands = $self->understands($uri);
-	return undef unless $understands;
+  my $understands = $self->understands($uri);
+  return undef unless $understands;
 
-	my $art_id = $self->get_art_id($uri);
-	return undef unless $art_id;
+  my $art_id = $self->get_art_id($uri);
+  return undef unless $art_id;
 
-	# OAI set base/prefix
-	my $port = ':' . $uri->port if $uri->port;
-	my $oai_base_url = 'http://' . $uri->host . $port . OAI_BASE;
-	my $oai_prefix = Bibliotech::CitationSource::ePrints::HostTable::getOAIPrefix($uri->host);
+  # OAI set base/prefix
+  my $port = ':' . $uri->port if $uri->port;
+  my $oai_base_url = 'http://' . $uri->host . $port . OAI_BASE;
+  my $oai_prefix = Bibliotech::CitationSource::ePrints::HostTable::getOAIPrefix($uri->host);
 
-	my $metadata = $self->metadata($art_id, $oai_base_url, $oai_prefix);
-	return undef unless $metadata;
+  my $metadata = $self->metadata($art_id, $oai_base_url, $oai_prefix);
+  return undef unless $metadata;
 
-	return new Bibliotech::CitationSource::ResultList(Bibliotech::CitationSource::Result::Simple->new($metadata));
+  return Bibliotech::CitationSource::ResultList->new(Bibliotech::CitationSource::Result::Simple->new($metadata));
 }
 
 #
 # The ePrints OAI service (OAI2) provides access to metadata of all items in any ePrints website, 
 #
-sub metadata
-{
-	my ($self, $art_id, $base, $prefix) = @_;
-	my $xml;
+sub metadata {
+  my ($self, $art_id, $base, $prefix) = @_;
+  my $xml;
 
-	#
-	# harvest the ePrints static repository with the Identify method, at baseURL 
-	#	already know the Identify object
-	# 
-	# set bibliotech object
-	#
-	my $h = HTTP::OAI::Harvester->new(bibliotech=>$self->bibliotech,
-		repository=>HTTP::OAI::Identify->new( baseURL=> $base, version=> VERSION)
-	);
+  #
+  # harvest the ePrints static repository with the Identify method, at baseURL 
+  #	already know the Identify object
+  # 
+  # set bibliotech object
+  #
+  my $h = HTTP::OAI::Harvester->new(bibliotech => $self->bibliotech,
+				    repository => HTTP::OAI::Identify->new( baseURL=> $base, version=> VERSION));
 
-	#
-	# get corresponding record for $art_id from repository
-	#
-	#print "IDENTIFIER " . $prefix . ":" . $art_id . "\n";
-	my($gr) = $h->GetRecord(
-			identifier => $prefix . ":" . $art_id,	# required
-			metadataPrefix => META_PREFIX				# required
-	);
+  #
+  # get corresponding record for $art_id from repository
+  #
+  my ($gr) = $h->GetRecord(identifier => $prefix.':'.$art_id,  # required
+			   metadataPrefix => META_PREFIX);     # required
+  if ($gr->is_error) {
+    $self->errstr('GetRecord Error: '.$gr->message);
+    return undef;
+  }
+  if ($gr->errors) {
+    $self->errstr('GetRecord Error for '.$art_id);
+    return undef;
+  }
 
-	if($gr->is_error) {
-		$self->errstr('GetRecord Error: ' . $gr->message);
-		return undef;
-	}
-	if($gr->errors) {
-		$self->errstr('GetRecord Error for ' . $art_id);
-		return undef;
-	}
+  #
+  # get first record from GetRecord object (first record stored in response)
+  #	??how likely will it be to have multiple records returned for an artid??
+  #
+  my ($rec) = $gr->next;
 
-	#
-	# get first record from GetRecord object (first record stored in response)
-	#	??how likely will it be to have multiple records returned for an artid??
-	#
-	my($rec) = $gr->next;
+  unless ($rec) {
+    $self->errstr("No records");
+    return undef;
+  }
 
-	unless($rec) {
-		$self->errstr("No records");
-		return undef;
-	}
+  # get the parsed DOM tree
+  my ($dom) = $rec->metadata->dom;
 
-	#
-	# could be helpful
-	#
-	#$self->errstr($rec->identifier . " (" . $rec->datestamp . ")");
+  # go get the metadata from tree
+  my $metadata = $self->build_metadata($dom);
+  return undef unless $metadata;
 
-	# get the parsed DOM tree
-	my($dom) = $rec->metadata->dom;
-#print "DOM " . $dom->toString . "\n";;
+  # check that it's worth returning
+  unless($metadata->{'title'} && $metadata->{'pubdate'}) {
+    $self->errstr('Insufficient metadata extracted for artid: '.$art_id);
+    return undef;
+  }
 
-	###DEBUG
-	#return $dom;
-	
-	# go get the metadata from tree
-	my $metadata = $self->build_metadata($dom);
-	return undef unless $metadata;
-
-	# check that it's worth returning
-	unless($metadata->{'title'} && $metadata->{'pubdate'})
-	{
-		$self->errstr('Insufficient metadata extracted for artid: ' . $art_id);
-		return undef;
-	}
-
-	return $metadata;
+  return $metadata;
 }
 
 # eprints URL looks like: 	http://ws.fetter.us:8080/5/
@@ -163,98 +128,84 @@ sub metadata
 # grab what is after the last slash
 # according to eprints website
 sub get_art_id {
-	my ($self, $uri) = @_;
+  my ($self, $uri) = @_;
 
-	my ($path) = $uri->path;
+  my ($path) = $uri->path;
+  ($path) =~ s,/$,,;  # strip trailing slash, if any
 
-	#strip trailing slash, if any
-	($path) =~ s,/$,,;
+  #strip suffix, if any
+  # 	ex. (http://memsic.ccsd.cnrs.fr)
+  #	/mem_00000001.en.html
+  ($path) =~ s,\.(.*?)$,,;
 
-	#strip suffix, if any
-	# 	ex. (http://memsic.ccsd.cnrs.fr)
-	#	/mem_00000001.en.html
-	($path) =~ s,\.(.*?)$,,;
+  $path =~ m,([^/]*)$,;
+  my ($art_id) = $1;
 
-	$path =~ m,([^/]*)$,;
-	my($art_id) = $1;
-
-
-	return $art_id;
+  return $art_id;
 }
 
-sub build_metadata 
-{
-	my ($self, $dom) = @_;
+sub build_metadata {
+  my ($self, $dom) = @_;
 
-	my $root = $dom->getDocumentElement;
+  my $root = $dom->getDocumentElement;
 
-	#print $dom->toString . "\n";
+  unless ($root) {
+    $self->errstr("no root");
+  }
 
-	unless ($root) {
-		$self->errstr("no root");
-	}
+  # ex: <dc:title>Title</dc:title>
+  my $title = getFirstElement($root, 'title');
+  my $date = getFirstElement($root, 'date');
+  my $url = getFirstElement($root, 'identifier');
+  #SUE does 'relation' contain doi?  do a pattern match and return doi or undef
 
-	# ex: <dc:title>Title</dc:title>
-        my $title = getFirstElement($root, 'title');
-	my $date = getFirstElement($root, 'date');
-        my $url = getFirstElement($root, 'identifier');
-#SUE does 'relation' contain doi?  do a pattern match and return doi or undef
+  #		get the author info
+  my ($authors);
+  $authors = &getAuthors($root);
 
-	#		get the author info
-	my($authors);
-        $authors = &getAuthors($root);
+  #convert nodes to strings, checking for undef first.
+  ($title, $date, $url) = map { $_->string_value if $_ } ($title, $date, $url);
 
-	#convert nodes to strings, checking for undef first.
-	($title, $date, $url) = map { $_->string_value if $_ } ($title, $date, $url);
-
-	return { 
-             title => $title,
-	     pubdate => $date,
-	     #doi => $doi,
-	     url => $url,
-	     authors => $authors
-	};
+  return { 
+    title => $title,
+    pubdate => $date,
+    #doi => $doi,
+    url => $url,
+    authors => $authors
+  };
 }
 
 sub getAuthors {
-	my ($root) = @_;
+  my ($root) = @_;
 
-	my(@auList);
+  my(@auList);
 
-	# build names foreach creator
-	#foreach my $c ($root->getElementsByLocalName('creator')->string_value) {
-	foreach my $x ($root->getElementsByLocalName('creator')) {
-		my $c = $x->string_value;
+  # build names foreach creator
+  #foreach my $c ($root->getElementsByLocalName('creator')->string_value) {
+  foreach my $x ($root->getElementsByLocalName('creator')) {
+    my $c = $x->string_value;
 
-		# ex. Toth, Fred
-		my($l, $f) = $c =~ m/(.*?), (.*?)$/;
+    # ex. Toth, Fred
+    my($l, $f) = $c =~ m/(.*?), (.*?)$/;
 
-		my $name;
-		$name->{'forename'} = $f if $f;
-		$name->{'lastname'} = $l if $l;
+    my $name;
+    $name->{'forename'} = $f if $f;
+    $name->{'lastname'} = $l if $l;
 
-		push(@auList, $name) if $name;
-	}
-	return \@auList if @auList;
-	return undef unless @auList;
-	#return "No Authors" unless @auList;
+    push(@auList, $name) if $name;
+  }
+  return \@auList if @auList;
+  return undef unless @auList;
 }
 
 #
 # get the first element in the array returned by getElementsByLocalName
 #
 sub getFirstElement {
-	my ($node, $name) = @_;
-	my @values = $node->getElementsByLocalName($name);
-	return($values[0]);
+  my ($node, $name) = @_;
+  my @values = $node->getElementsByLocalName($name);
+  return($values[0]);
 }
-
-# comment before checking into system
-#sub errstr {
-    #my ($self, $err) = @_;
-
-    #print STDERR $self->name . " " . $err . "\n";
-#}
 
 package Bibliotech::CitationSource::ePrints::HostTable;
 %Bibliotech::CitationSource::ePrints::HostTable::Hosts = (
@@ -439,27 +390,26 @@ package Bibliotech::CitationSource::ePrints::HostTable;
 
 );
 
-my($hRef) = \%Bibliotech::CitationSource::ePrints::HostTable::Hosts;
+my ($hRef) = \%Bibliotech::CitationSource::ePrints::HostTable::Hosts;
 
 sub defined {
-	my($host) = @_;
+  my ($host) = @_;
 
-	return 1 if defined($hRef->{$host});
-	if($host =~ s/^www\.//)
-	{
-		return defined($hRef->{$host});
-	}
+  return 1 if defined($hRef->{$host});
+  if ($host =~ s/^www\.//) {
+    return defined($hRef->{$host});
+  }
 
-	return 0;
+  return 0;
 }
 
 sub getOAIPrefix {
-	my ($host) = @_;
-	
-	return $hRef->{$host} if $hRef->{$host};
-	$host =~ s/^www\.//;
-	return $hRef->{$host};
+  my ($host) = @_;
+
+  return $hRef->{$host} if $hRef->{$host};
+  $host =~ s/^www\.//;
+  return $hRef->{$host};
 }
 
-#true!
 1;
+__END__
