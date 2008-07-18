@@ -48,7 +48,6 @@ sub understands {
 # put together a citation model
 sub citations {
   my ($self, $uri, $content_sub) = @_;
-  return undef unless $self->understands($uri, $content_sub);
   my ($response, $content, $title) = $content_sub->();
   my $last_modified_raw = scalar($response->header('Last-Modified')) ||
                           scalar($response->header('Date')) ||

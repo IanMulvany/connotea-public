@@ -57,9 +57,6 @@ sub citations {
 
   my $ris;
   eval {
-    $self->errstr('do not understand URI'), return undef unless $self->understands($article_uri);
-    #die "do not understand URI\n" unless $self->understands($article_uri);
-
     $ris = $self->get_ris_content($article_uri);
 
     my $doi = $self->get_id($ris->{'UR'});

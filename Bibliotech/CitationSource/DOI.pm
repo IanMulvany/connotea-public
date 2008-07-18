@@ -64,8 +64,6 @@ sub filter {
 sub citations {
   my ($self, $uri) = @_;
 
-  return undef unless $self->understands($uri);
-
   my $doi = $self->get_doi($uri) or return undef;
 
   return $self->citations_id({doi => $doi});

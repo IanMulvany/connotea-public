@@ -76,7 +76,6 @@ sub citations {
 
   my $metadata;
   eval {
-    $self->errstr('do not understand URI'), return undef unless $self->understands($blog_uri, $content_sub);
     my $feed_uri = $self->{feedURL} or die 'no feed link set';
     $metadata = Bibliotech::CitationSource::blog::Feed->new($feed_uri, $blog_uri);
     die "Atom/RSS obj false\n"                   unless $metadata;

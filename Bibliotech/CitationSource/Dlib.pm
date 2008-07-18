@@ -36,8 +36,6 @@ sub understands {
 
 sub citations {
   my ($self, $uri) = @_;
-  return undef unless($self->understands($uri));
-
   my $meta_uri = $self->dlib_meta_uri($uri);
   my $meta_xml;
   eval { $meta_xml = $self->get($meta_uri) };

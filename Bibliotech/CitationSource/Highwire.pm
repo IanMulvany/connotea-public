@@ -48,8 +48,6 @@ sub citations {
       $ris_host = $ris_host->{RIS_PREFIX};	# re-assign this as a scalar
     }
 
-    die "do not understand URI\n" unless $self->understands($article_uri, $ris_host);
-
     my $file = $article_uri->path;
     $file =~ s/(?:#|\?).*//;  # strip fragments or queries
 

@@ -75,7 +75,6 @@ sub getRDFinaComment {
 sub citations {
   my ($self, $uri, $content_sub) = @_;
   my $metadata = eval {
-    die "do not understand URI\n" unless $self->understands($uri, $content_sub);
     die "RDF obj false\n" unless $self->{metadata};
     die "RDF file contained no data\n" unless $self->{metadata}->{'has_data'};
     return $self->{metadata};

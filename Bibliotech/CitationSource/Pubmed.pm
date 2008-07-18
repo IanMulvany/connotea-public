@@ -145,7 +145,6 @@ sub _pmid_in_term {
 
 sub citations {
   my ($self, $article_uri, $content_sub) = @_;
-  return undef unless $self->understands($article_uri, $content_sub);
   my ($db, $id) = _db_and_id_from_url($article_uri);
   $id ||= is_search_page_with_one_result($content_sub);
   return undef unless $db and $id;

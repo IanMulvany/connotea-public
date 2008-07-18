@@ -57,7 +57,6 @@ sub _art_id_from_url {
 
 sub citations {
   my ($self, $uri) = @_;
-  return undef unless $self->understands($uri);
   my $metadata = $self->metadata(_art_id_from_url($uri)) or return undef;
   return Bibliotech::CitationSource::ResultList->new(Bibliotech::CitationSource::Result::Simple->new($metadata));
 }

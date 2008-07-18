@@ -104,7 +104,6 @@ sub _fix_date_in_ris {
 sub citations {
   my ($self, $uri, $content_sub) = @_;
   my $ris = eval {
-    die "do not understand URI\n" unless $self->understands($uri, $content_sub);
     my $doi = _doi_from_uri($uri) or die "no DOI\n";
     my ($res, $ris_raw) = $self->get(_query_uri($uri->host, $doi));
     $res->is_success or 'trying to get RIS: '.$res->status_line."\n";

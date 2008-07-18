@@ -39,8 +39,6 @@ sub citations {
 
   my $io;
   eval {
-    die "do not understand URI\n" unless $self->understands($article_uri);
-
     my $query_uri = URI->new('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?retmode=xml');
     my ($id) = ($article_uri =~ m!uids=(\d+)!);
     $id or die "no uids parameter\n";

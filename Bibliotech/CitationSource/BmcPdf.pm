@@ -43,8 +43,6 @@ sub understands {
 sub citations {
   my ($self, $uri) = @_;
 
-  return undef unless $self->understands($uri);
-
   # translate to abstract URL
   if ($uri->path =~ m/^\/content\/pdf\/(.+?-.+?)-(.+?)-(.+?)\.pdf$/) {
     my $abs_html_url = 'http://' . $uri->host . '/';

@@ -39,7 +39,6 @@ sub understands {
 
 sub citations {
   my ($self, $uri) = @_;
-  return undef unless($self->understands($uri));
 
   my $meta_uri = $self->amazon_meta_uri($uri);
   $self->errstr('Unable to construct AWS URI for'.$uri ) and return undef unless $meta_uri;

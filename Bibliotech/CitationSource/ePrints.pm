@@ -49,9 +49,6 @@ sub understands {
 sub citations {
   my ($self, $uri) = @_;
 
-  my $understands = $self->understands($uri);
-  return undef unless $understands;
-
   my $art_id = $self->get_art_id($uri);
   return undef unless $art_id;
 

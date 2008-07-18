@@ -138,8 +138,6 @@ sub citations {
 
   my $bibtex;
   eval {
-    die "do not understand URI\n" unless $self->understands($article_uri, $content_sub);
-
     my $bibcode = _bibcode_from_uri_or_content_sub($article_uri, $content_sub);
     my $query_uri = URI->new("http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=$bibcode&data_type=BIBTEX");
 

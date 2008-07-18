@@ -48,8 +48,6 @@ sub citations {
   my $ris;
   
   eval {
-    die "do not understand URI\n" unless $self->understands($article_uri);
-
     my $doi;
     if($article_uri->query_param('doi')) {
 	$doi = $article_uri->query_param('doi');

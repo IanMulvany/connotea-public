@@ -39,8 +39,6 @@ sub citations {
 
   my $ris;
   eval {
-    die "do not understand URI\n" unless $self->understands($article_uri);
-
     my $file = $article_uri->path;
 
     die "no file name seen in URI\n" unless $file;

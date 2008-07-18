@@ -112,6 +112,9 @@ sub potential_understands {
 # return: object = replacement URI object (must be different than original - else return undef)
 #             '' = abort, tell the user they cannot add this URI (set errstr to a nice user message if you like)
 #          undef = no change
+#
+# the usage of the API in the codebase guarantees that understands() has already been called and passed
+# so there is no need to call it inside citations() again, although there is no prohbition against doing so
 sub filter {
   undef;
 }
@@ -125,6 +128,9 @@ sub filter {
 #        object = Bibliotech::CitationSource::ResultList (even if only one)
 #
 # note that many implementations may prefer to simply grab identifiers from the URI and call citations_id()
+#
+# the usage of the API in the codebase guarantees that understands() has already been called and passed
+# so there is no need to call it inside citations() again, although there is no prohbition against doing so
 sub citations {
   undef;
 }

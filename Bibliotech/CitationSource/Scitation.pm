@@ -54,8 +54,6 @@ sub citations {
 
   my $bibtex;
   eval {
-    die "do not understand URI\n" unless $self->understands($article_uri);
-
     $bibtex = $self->get_bibtex($article_uri);
 
     die "BibTeX obj false\n" unless $bibtex;
