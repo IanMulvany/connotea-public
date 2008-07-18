@@ -27,14 +27,9 @@ sub version {
 
 sub understands {
   my ($self, $uri, $ris_host) = @_;
-
   return 0 unless $uri->scheme eq 'http';
-
-  #check the host
   return 0 unless Bibliotech::CitationSource::Highwire::HostTable::defined($uri->host);
-  
   return 1 if ($uri->path =~ m!^/cgi/((content/(summary|short|extract|abstract|full))|reprint)/(${ris_host};)?.+!i);
-
   return 0;
 }
 
@@ -47,36 +42,28 @@ sub citations {
     #
     # Some entries will require a login/password; structure in hash is a reference not scalar
     #
-    my($ris_login);
-    if(ref($ris_host)) {
+    my $ris_login;
+    if (ref($ris_host)) {
       $ris_login = $self->highwire_account($ris_host->{ACCT_TYPE});
       $ris_host = $ris_host->{RIS_PREFIX};	# re-assign this as a scalar
     }
 
     die "do not understand URI\n" unless $self->understands($article_uri, $ris_host);
 
-    my $file;
-	$file = $article_uri->path;
-	#strip fragments or queries
-        $file =~ s/(?:#|\?).*//;
+    my $file = $article_uri->path;
+    $file =~ s/(?:#|\?).*//;  # strip fragments or queries
 
     die "no file name seen in URI\n" unless $file;
 
     #find the ID
     my $id;
-    if($file =~ m!^/cgi/(?:(?:content/(?:summary|short|extract|abstract|full))|reprint)/(?:${ris_host};)?(.+)$!i)
-    {
+    if ($file =~ m!^/cgi/(?:(?:content/(?:summary|short|extract|abstract|full))|reprint)/(?:${ris_host};)?(.+)$!i) {
       $id = $1;
     }
-    
+
     die "Couldn't extract Highwire ID\n" unless $id;
 
-
-    my $query_uri = new URI("http://" . $article_uri->host . "/cgi/citmgr?type=refman&gca=" . $ris_host . ";" . $id);
-
-    ## used to be:
-    ## my $query_uri = new URI("http://" . $article_uri->host . "/cgi/citmgr_refman?gca=" . $ris_host . ";" . $id);
-
+    my $query_uri = URI->new('http://'.$article_uri->host.'/cgi/citmgr?type=refman&gca='.$ris_host.';'.$id);
 
     #
     # use query w/ authorization if needed
@@ -84,10 +71,10 @@ sub citations {
     my $ris_raw;
     my $ua;
     my $response;
-    if($ris_login) {
+    if ($ris_login) {
       $ua = $self->ua;
       $response = $ua->request(POST $query_uri, [ 'username' => $ris_login->{USER}, 'code' => $ris_login->{PW}]);
-      if($response->is_success) {
+      if ($response->is_success) {
         $ris_raw = $response->content;
       } else {
         die $response->status_line;
@@ -96,26 +83,26 @@ sub citations {
       $ris_raw = $self->get($query_uri);
     }
 
-   # Note: DOI comes in N1 -- see inline modules below.
+    # Note: DOI comes in N1 -- see inline modules below.
 
-    $ris = new Bibliotech::CitationSource::NPG::RIS ($ris_raw);
+    $ris = Bibliotech::CitationSource::NPG::RIS->new($ris_raw);
 
     if (!$ris->has_data) {
-        # give it one more try 
-        sleep 2;
+      # give it one more try 
+      sleep 2;
 
-        if($ris_login) {
-          $response = $ua->request(POST $query_uri, [ 'username' => $ris_login->{USER}, 'code' => $ris_login->{PW}]);
-          if($response->is_success) {
-            $ris_raw = $response->content;
-          } else {
-            die $response->status_line;
-          }
-        } else {
-          $ris_raw = $self->get($query_uri);
-        }
+      if ($ris_login) {
+	$response = $ua->request(POST $query_uri, [ 'username' => $ris_login->{USER}, 'code' => $ris_login->{PW}]);
+	if($response->is_success) {
+	  $ris_raw = $response->content;
+	} else {
+	  die $response->status_line;
+	}
+      } else {
+	$ris_raw = $self->get($query_uri);
+      }
 
-        $ris = new Bibliotech::CitationSource::NPG::RIS ($ris_raw);
+      $ris = new Bibliotech::CitationSource::NPG::RIS ($ris_raw);
     }
     die "RIS obj false\n" unless $ris;
     die "RIS file contained no data\n" unless $ris->has_data;
@@ -140,27 +127,26 @@ sub citations {
 #   Add other login/pw as needed; follow science model in bibliotech.conf
 #   Then add conditional for new "acct_type"
 #
-sub user 
-{
-	my($self, $var) = @_;
-    shift->cfg($var);
+sub user {
+  my ($self, $var) = @_;
+  shift->cfg($var);
 }
-sub password 
-{
-	my($self, $var) = @_;
-    shift->cfg($var);
+
+sub password {
+  my ($self, $var) = @_;
+  shift->cfg($var);
 }
 
 sub highwire_account {
-    my($self, $acct_type) = @_;
-	
-	my($login);
-	if($acct_type eq 'SCIENCE') {
-		$login->{USER} = $self->user('SCI_USER');
-		$login->{PW} = $self->password('SCI_PASSWORD');
-	}
+  my($self, $acct_type) = @_;
 
-	($login->{USER} && $login->{PW}) ? return $login : return undef;
+  my $login;
+  if ($acct_type eq 'SCIENCE') {
+    $login->{USER} = $self->user('SCI_USER');
+    $login->{PW} = $self->password('SCI_PASSWORD');
+  }
+
+  ($login->{USER} && $login->{PW}) ? return $login : return undef;
 }
 
 
@@ -2621,23 +2607,24 @@ package Bibliotech::CitationSource::Highwire::HostTable;
 ##--- Science --- (doesn't work for RIS yet)
 #  	'sciencemag.org'					=> 'sci',
 );
-my($hRef) = \%Bibliotech::CitationSoure::Highwire::HostTable::Hosts;
+my ($hRef) = \%Bibliotech::CitationSoure::Highwire::HostTable::Hosts;
 
 sub defined {
-	my ($host) = @_;
-        #check with and without www!
-	return 1 if defined($hRef->{$host});
-	if($host =~ s/^www.//)
-	{
-             return defined($hRef->{$host});
-	}
-	return 0;
+  my ($host) = @_;
+  return 1 if defined($hRef->{$host}) || defined($hRef->{_without_www($host)});
+  return 0;
 }
+
 sub getRISPrefix {
-	my ($host) = @_;
-	return $hRef->{$host} if ($hRef->{$host});
-	$host =~ s/^www.//;
-	return $hRef->{$host};
+  my ($host) = @_;
+  return $hRef->{$host} if $hRef->{$host};
+  return $hRef->{_without_www($host)};
+}
+
+sub _without_www {
+  local $_ = shift;
+  s/^www.//;
+  return $_;
 }
 
 1;
