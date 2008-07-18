@@ -74,36 +74,73 @@ sub cfgname {
 }
 
 sub version {
-  '1.1.2.2';
+  '1.2';
 }
 
 sub understands {
-  my ($self, $uri) = @_;
+  my ($self, $uri, $content_sub) = @_;
   return 0 unless $uri->scheme eq 'http';
   return 0 unless $uri->host eq 'adsabs.harvard.edu';
- 
-  return 0 unless $self->bibcode($uri);
+  return 0 unless _bibcode_from_uri_or_content_sub($uri, $content_sub);
   return 1;
 }
 
-sub filter {
-  my ($self, $uri) = @_;
-  my $new_uri = $uri;
-  foreach ($new_uri->query_param) {
-    $new_uri->query_param_delete($_) unless /(?:bibcode|db_key)/i;
-  }
-  return $new_uri unless $new_uri->eq($uri);
+sub _bibcode_from_uri_or_content_sub {
+  my ($uri, $content_sub) = @_;
+  return _bibcode_from_uri($uri) || _bibcode_from_content($uri, $content_sub);
+}
+
+sub _bibcode_from_uri {
+  my $uri = shift;
+  return $1 if $uri->path =~ m!^/(?:abs|full)/(.+)!;
+  return $uri->query if $uri->path eq '/cgi-bin/bib_query';
+  return $uri->query_param('bibcode');
+}
+
+sub _bibcode_from_content {
+  my ($uri, $content_sub) = @_;
+  return _bibcode_from_abstract(scalar($content_sub->())) if $uri->path =~ m!^/doi/!;
+  return _bibcode_from_search_page(scalar($content_sub->())) if $uri->path =~ m!^/cgi-bin/nph-(?:abs|basic)_connect$!;
   return;
 }
 
+sub _bibcode_from_abstract {
+  local $_ = shift;
+  my @codes = m/Bibliographic Code:(?:<.*?>)*([\w\.]+)/g;
+  return $codes[0] if @codes == 1;
+  return;
+}
+
+sub _bibcode_from_search_page {
+  local $_ = shift;
+  my ($codes) = m|<input type="hidden" name="bibcodes" value="([^"]*)">|;
+  return unless $codes;
+  my @codes = split(/;/, $codes);
+  return $codes[0] if @codes == 1;
+  return;
+}
+
+sub filter {
+  my ($self, $uri, $content_sub) = @_;
+  if (_bibcode_from_uri($uri)) {
+    my $new_uri = $uri;
+    foreach ($new_uri->query_param) {
+      $new_uri->query_param_delete($_) unless /^(?:bibcode|db_key)$/i;
+    }
+    return $new_uri unless $new_uri->eq($uri);
+    return;
+  }
+  return URI->new('http://adsabs.harvard.edu/abs/'._bibcode_from_content($uri, $content_sub));
+}
+
 sub citations {
-  my ($self, $article_uri) = @_;
+  my ($self, $article_uri, $content_sub) = @_;
 
   my $bibtex;
   eval {
-    die "do not understand URI\n" unless $self->understands($article_uri);
+    die "do not understand URI\n" unless $self->understands($article_uri, $content_sub);
 
-    my $bibcode = $self->bibcode($article_uri);
+    my $bibcode = _bibcode_from_uri_or_content_sub($article_uri, $content_sub);
     my $query_uri = URI->new("http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=$bibcode&data_type=BIBTEX");
 
     my $bibtex_raw = $self->get($query_uri);
@@ -116,14 +153,6 @@ sub citations {
   die $@ if $@ =~ /at .* line \d+/;
   $self->errstr($@), return undef if $@;
   return $bibtex->make_result(cfgname(), name())->make_resultlist;
-}
-
-sub bibcode {
-    my ($self, $uri) = @_;
-    if ($uri->path =~ m!^/abs/(.+)!) {
-	return $1;
-    }
-    return $uri->query_param('bibcode');
 }
 
 1;
