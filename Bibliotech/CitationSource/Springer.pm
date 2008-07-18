@@ -7,7 +7,6 @@ package Bibliotech::CitationSource::Springer;
 use base 'Bibliotech::CitationSource';
 use URI;
 use URI::QueryParam;
-use Data::Dumper;
 
 #
 # Site depends on session cookie
@@ -16,8 +15,8 @@ use HTTP::Request::Common;
 use HTTP::Cookies;
 
 # ex. http://www.springerlink.com/export.mpx?code=mn2876332r756010&mode=ris
-use constant SPRINGER_HOST => "http://www.springerlink.com/";
-use constant GET_RIS_APP => "export.mpx?";
+use constant SPRINGER_HOST => 'http://www.springerlink.com/';
+use constant GET_RIS_APP => 'export.mpx?';
 
 sub api_version {
   1;
@@ -29,15 +28,13 @@ sub name {
 
 sub understands {
   my ($self, $uri) = @_;
+  return 0 unless $uri->scheme =~ /^http$/i;
+  return 0 unless $uri->host =~ m/^(www\.)?springerlink\.com$/ or $uri->host =~ m/dx.doi.org/;
 
-  #check the host
-  return 0 unless ($uri->scheme =~ /^http$/i);
-  return 0 unless (($uri->host =~ m/^(www\.)?springerlink\.com$/) or ($uri->host =~ m/dx.doi.org/));
-  
-	# ex. http://www.springerlink.com/content/mn2876332r756010/?p=32e7a3b916fa464f9418d96e12c3041e&pi=1
+  # ex. http://www.springerlink.com/content/mn2876332r756010/?p=32e7a3b916fa464f9418d96e12c3041e&pi=1
   #return 1 if ($uri->path =~ m!^/content/.*?/\?p=.+?!i);
-	# SUE books?  other types of content? what is valid?
-  return 1 if ($uri->path =~ m!^/content/.*?/!i or $uri->path =~ m!^/10\.\d{4}/.+!);
+  # SUE books?  other types of content? what is valid?
+  return 1 if $uri->path =~ m!^/content/.*?/!i or $uri->path =~ m!^/10\.\d{4}/.+!;
 
   return 0;
 }
@@ -46,13 +43,13 @@ sub understands {
 # This needs to be used in springer to get UR from ris file, instead of ugly url
 #
 sub filter {
-	my ($self, $uri) = @_;
+  my ($self, $uri) = @_;
 
-	$self->clear_ris_content;
-	my $ris = $self->get_ris_content($uri);
+  $self->clear_ris_content;
+  my $ris = $self->get_ris_content($uri);
 
-	my $url = $ris->{UR};
-	$url ? return new URI($url) : undef;
+  my $url = $ris->{UR};
+  $url ? return new URI($url) : undef;
 }
 
 sub citations {
@@ -60,15 +57,14 @@ sub citations {
 
   my $ris;
   eval {
-		$self->errstr('do not understand URI'), return undef unless $self->understands($article_uri);
+    $self->errstr('do not understand URI'), return undef unless $self->understands($article_uri);
     #die "do not understand URI\n" unless $self->understands($article_uri);
 
-	$ris = $self->get_ris_content($article_uri);
+    $ris = $self->get_ris_content($article_uri);
 
-	my $doi = $self->get_id($ris->{'UR'});
-	$doi =~ s/^doi://;
-	$ris->{M3}=$doi;
-#print "\nRIS: " . Dumper($ris) . "\n";
+    my $doi = $self->get_id($ris->{'UR'});
+    $doi =~ s/^doi://;
+    $ris->{M3}=$doi;
   };    
   die $@ if $@ =~ /at .* line \d+/;
   $self->errstr($@), return undef if $@;
@@ -81,64 +77,59 @@ sub citations {
 #		1) first one is from the first Springer routine, probably not needed
 #		2) second one looks at RIS UR element
 sub get_id {
-	my ($self, $string) = @_;
+  my ($self, $string) = @_;
 
-	my $id;
-	($id) = $string =~ m/&id=(.*?)&/g;
+  my $id;
+  ($id) = $string =~ m/&id=(.*?)&/g;
 
-	#to get doi
-	($id) = $string =~ m!/(10\.\d{4}/.+)! unless $id;
+  # to get doi
+  ($id) = $string =~ m!/(10\.\d{4}/.+)! unless $id;
 
-	return $id;
+  return $id;
 }
 
 sub clear_ris_content {
-	my ($self) = @_;
-	undef $self->{RIS};
+  my ($self) = @_;
+  undef $self->{RIS};
 }
 
 sub get_ris_content {
-	my ($self, $uri) = @_;
+  my ($self, $uri) = @_;
 
-	#
-	# do we already have it?
-	#
-	if($self->{RIS}) {
-		return $self->{RIS};
-	}
+  #
+  # do we already have it?
+  #
+  return $self->{RIS} if $self->{RIS};
 
-    my $file;
-	$file = $uri->path;
+  my $file = $uri->path;
 
-    die "no file name seen in URI\n" unless $file;
+  die "no file name seen in URI\n" unless $file;
 
-	my $cookieJar = new HTTP::Cookies();
-	my($ua) = Bibliotech::Util::ua($self->bibliotech);
-	$ua->cookie_jar($cookieJar);
-	
-	#
-	# set/get session cookie (among others that may be automatically set)
-	#
-	my $res = $ua->request(GET $uri);
+  my $cookieJar = new HTTP::Cookies();
+  my ($ua) = Bibliotech::Util::ua($self->bibliotech);
+  $ua->cookie_jar($cookieJar);
 
-	#
-	# id for code in ris call seems to be the value after "/content/"
-	#
-	my($session) = $file =~  m!/content/(.*?)/!i;
+  #
+  # set/get session cookie (among others that may be automatically set)
+  #
+  my $res = $ua->request(GET $uri);
 
-	# http://www.springerlink.com/export.mpx?code=mn2876332r756010&mode=ris
-	my $query_uri = new URI(SPRINGER_HOST . GET_RIS_APP . "code=". $session . "&mode=ris");
+  #
+  # id for code in ris call seems to be the value after "/content/"
+  #
+  my ($session) = $file =~  m!/content/(.*?)/!i;
 
-    #my $ris_raw = $self->get($query_uri);
-    my $ris_raw = $ua->request(POST $query_uri);
-    my $ris = new Bibliotech::CitationSource::NPG::RIS ($ris_raw->content);
-#print "RIS " . Dumper($ris) . "\n";
+  # http://www.springerlink.com/export.mpx?code=mn2876332r756010&mode=ris
+  my $query_uri = URI->new(SPRINGER_HOST.GET_RIS_APP.'code='.$session.'&mode=ris');
 
-    die "RIS obj false\n" unless $ris;
-    die "RIS file contained no data\n" unless $ris->has_data;
+  my $ris_raw = $ua->request(POST $query_uri);
+  my $ris = new Bibliotech::CitationSource::NPG::RIS ($ris_raw->content);
 
-	bless $self->{RIS} = $ris;
-	return $self->{RIS};
+  die "RIS obj false\n" unless $ris;
+  die "RIS file contained no data\n" unless $ris->has_data;
+
+  bless $self->{RIS} = $ris;
+  return $self->{RIS};
 }
 
 package Bibliotech::CitationSource::Springer::Result;
@@ -177,8 +168,8 @@ sub periodical_abbr  { shift->collect(qw/JO JA J1 J2/); }
 sub journal {
   my ($self) = @_;
   return Bibliotech::CitationSource::Springer::Result::Journal->new($self->justone('journal'),
-							 $self->justone('journal_abbr'),
-							 $self->justone('issn'));
+								    $self->justone('journal_abbr'),
+								    $self->justone('issn'));
 }
 
 sub pubmed  { undef; }
