@@ -17,45 +17,36 @@ package Bibliotech::CitationSource::Result::Simple;
 use Bibliotech::CitationSource;
 use base 'Bibliotech::CitationSource::Result';
 
-sub new
-{
-    my ($class, $citation) = @_;
-    return bless {'citation' => $citation}, $class;
+sub new {
+  my ($class, $citation) = @_;
+  return bless {'citation' => $citation}, $class;
 }
 
-sub citation
-{
-    my ($self, $citation) = @_;
-    $self->{'citation'} = $citation if $citation;
-    return $self->{'citation'};
+sub citation {
+  my ($self, $citation) = @_;
+  $self->{'citation'} = $citation if $citation;
+  return $self->{'citation'};
 }
 
-sub type
-{
-    my ($self, $type) = @_;
-    if($type) {
-	$self->citation->{'type'} = $type;
-    }
-    return $self->citation->{'type'} ? $self->citation->{'type'} : 'Simple CitationSource';
+sub type {
+  my ($self, $type) = @_;
+  $self->citation->{'type'} = $type if $type;
+  return $self->citation->{'type'} ? $self->citation->{'type'} : 'Simple CitationSource';
 }
 
-sub source
-{
-    my ($self, $source) = @_;
-    if($source) {
-	$self->citation->{'source'} = $source;
-    }
-    return $self->citation->{'source'};
+sub source {
+  my ($self, $source) = @_;
+  $self->citation->{'source'} = $source if $source;
+  return $self->citation->{'source'};
 }
 
-sub identifiers
-{
+sub identifiers {
   my ($self, $identifiers) = @_;
-  if($identifiers) {
-      foreach (keys %$identifiers) {
-	  $self->citation->{$_} = $identifiers->{$_};
-      }
+  if ($identifiers) {
+    foreach (keys %$identifiers) {
+      $self->citation->{$_} = $identifiers->{$_};
     }
+  }
   return $self->citation ? {'doi'    => $self->citation->{'doi'},
 			    'pubmed' => $self->citation->{'pubmed'},
 			    'asin'   => $self->citation->{'asin'},
@@ -63,61 +54,46 @@ sub identifiers
                            } : undef;
 }
 
-sub title
-{
-    my ($self, $title) = @_;
-    if($title) {
-	$self->citation->{'title'} = $title;
-    }
-
-    return $self->citation->{'title'};
+sub title {
+  my ($self, $title) = @_;
+  $self->citation->{'title'} = $title if $title;
+  return $self->citation->{'title'};
 }
-
 
 # return an object of author objects: Bibliotech::CitationSource::Result::AuthorList
 sub authors
 {
-    my ($self, $authors) = @_;
-    if($authors) {
-	##TODO
-    }
-    return new Bibliotech::CitationSource::Result::AuthorList(map { Bibliotech::CitationSource::Result::Author::Simple->new($_) } @{$self->citation->{'authors'}} );
+  my ($self, $authors) = @_;
+  if ($authors) {
+    ##TODO
+  }
+  return Bibliotech::CitationSource::Result::AuthorList->new(map { Bibliotech::CitationSource::Result::Author::Simple->new($_) } @{$self->citation->{'authors'}} );
 }
 
 # return a journal object: Bibliotech::CitationSource::Result::Journal
 sub journal {
-    my ($self, $journal) = @_;
-    if($journal) {
-	$self->citation->{'journal'} = $journal;
-    }
+  my ($self, $journal) = @_;
+  $self->citation->{'journal'} = $journal if $journal;
 
-    return Bibliotech::CitationSource::Result::Journal::Simple->new($self->citation->{'journal'}) if $self->citation and $self->citation->{'journal'};
-    return undef;
+  return Bibliotech::CitationSource::Result::Journal::Simple->new($self->citation->{'journal'}) if $self->citation and $self->citation->{'journal'};
+  return undef;
 }
 
 sub volume {
-    my ($self, $volume) = @_;
-    if($volume) {
-	$self->citation->{'volume'} = $volume;
-    }
+  my ($self, $volume) = @_;
+  $self->citation->{'volume'} = $volume if $volume;
   return $self->citation->{'volume'};
 }
 
 sub issue {
-    my ($self, $issue) = @_;
-    if($issue) {
-	$self->citation->{'issue'} = $issue;
-    }
-
+  my ($self, $issue) = @_;
+  $self->citation->{'issue'} = $issue if $issue;
   return $self->citation->{'issue'};
 }
 
 sub page {
-    my ($self, $page) = @_;
-    if($page) {
-	$self->citation->{'page'} = $page;
-    }
-
+  my ($self, $page) = @_;
+  $self->citation->{'page'} = $page if $page;
   return $self->citation->{'page'};
 }
 
@@ -126,20 +102,20 @@ sub page {
 # where MM is digits or 3-letter English month abbreviation
 # and MM and DD as digits do not need to be zero-padded
 sub date {
-    my $self = shift;
-    my $citation = $self->citation or return undef;
-    my $pubdate = $citation->{'pubdate'};
-    return undef unless $pubdate;
-    return $pubdate if $pubdate =~ m!\d{4}(?:-\d{2}){0,2}!;
-    my ($month, $year) = ($self->{'citation'}->{'pubdate'} =~ m!(\w+)\s+(\d+)!);
-    $month = substr($month, 0, 3);
-    return "$year-$month";
+  my $self = shift;
+  my $citation = $self->citation or return undef;
+  my $pubdate = $citation->{'pubdate'};
+  return undef unless $pubdate;
+  return $pubdate if $pubdate =~ m!\d{4}(?:-\d{2}){0,2}!;
+  my ($month, $year) = ($self->{'citation'}->{'pubdate'} =~ m!(\w+)\s+(\d+)!);
+  $month = substr($month, 0, 3);
+  return "$year-$month";
 }
 
 # return date record was created or last modified, same format as date()
 # required - do not return undef
 sub last_modified_date {
-    return shift->date;
+  shift->date;
 }
 
 
@@ -147,73 +123,65 @@ package Bibliotech::CitationSource::Result::Author::Simple;
 use strict;
 use Bibliotech::Util;
 
-sub new
-{
-    my ($class, $authorname) = @_;
-    if (ref $authorname) {
-      return bless {'authorname' => $authorname}, $class;
-    }
-    else {
-      my $unwritten_author_obj = Bibliotech::Util::parse_author($authorname);
-      return bless {'authorname' => undef, 'author' => $unwritten_author_obj}, $class;
-    }
+sub new {
+  my ($class, $authorname) = @_;
+  if (ref $authorname) {
+    return bless {'authorname' => $authorname}, $class;
+  }
+  else {
+    my $unwritten_author_obj = Bibliotech::Util::parse_author($authorname);
+    return bless {'authorname' => undef, 'author' => $unwritten_author_obj}, $class;
+  }
 }
 
-sub firstname
-{
-    my $self = shift;
-    return $self->{'authorname'}->{'firstname'} if ref $self->{'authorname'};
-    return $self->{'author'}->firstname if ref $self->{'author'};
-    return undef;
+sub firstname {
+  my $self = shift;
+  return $self->{'authorname'}->{'firstname'} if ref $self->{'authorname'};
+  return $self->{'author'}->firstname if ref $self->{'author'};
+  return undef;
 }
 
-sub forename
-{
-    my $self = shift;
-    return $self->{'authorname'}->{'forename'} if ref $self->{'authorname'};
-    return $self->{'author'}->forename if ref $self->{'author'};
-    return undef
+sub forename {
+  my $self = shift;
+  return $self->{'authorname'}->{'forename'} if ref $self->{'authorname'};
+  return $self->{'author'}->forename if ref $self->{'author'};
+  return undef;
 }
 
-sub initials
-{
-    my $self = shift;
-    return $self->{'authorname'}->{'initials'} if ref $self->{'authorname'};
-    return $self->{'author'}->initials if ref $self->{'author'};
-    return undef;
+sub initials {
+  my $self = shift;
+  return $self->{'authorname'}->{'initials'} if ref $self->{'authorname'};
+  return $self->{'author'}->initials if ref $self->{'author'};
+  return undef;
 }
 
-sub middlename
-{
-    my $self = shift;
-    return $self->{'authorname'}->{'middlename'} if ref $self->{'authorname'};
-    return $self->{'author'}->middlename if ref $self->{'author'};
-    return undef;
+sub middlename {
+  my $self = shift;
+  return $self->{'authorname'}->{'middlename'} if ref $self->{'authorname'};
+  return $self->{'author'}->middlename if ref $self->{'author'};
+  return undef;
 }
 
-sub middleinitial
-{
-    my $self = shift;
-    return $self->{'authorname'}->{'middleinitial'} if ref $self->{'authorname'};
-    return undef;
+sub middleinitial {
+  my $self = shift;
+  return $self->{'authorname'}->{'middleinitial'} if ref $self->{'authorname'};
+  return undef;
 }
 
-sub lastname
-{
-    my $self = shift;
-    return $self->{'authorname'}->{'lastname'} if ref $self->{'authorname'};
-    return $self->{'author'}->lastname if ref $self->{'author'};
-    return undef;
+sub lastname {
+  my $self = shift;
+  return $self->{'authorname'}->{'lastname'} if ref $self->{'authorname'};
+  return $self->{'author'}->lastname if ref $self->{'author'};
+  return undef;
 }
 
 package Bibliotech::CitationSource::Result::Journal::Simple;
 use strict;
 
-sub new
-{
-    my ($class, $journal) = @_;
-    $journal = {} unless $journal;
-    return bless $journal, $class;
+sub new {
+  my ($class, $journal) = @_;
+  $journal = {} unless $journal;
+  return bless $journal, $class;
 }
 
 # return as many of these strings as possible:
