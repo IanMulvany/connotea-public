@@ -7,7 +7,6 @@ package Bibliotech::CitationSource::PNAS;
 use base 'Bibliotech::CitationSource';
 use URI;
 use URI::QueryParam;
-use Data::Dumper;
 
 sub api_version {
   1;
@@ -23,13 +22,9 @@ sub version {
 
 sub understands {
   my ($self, $uri) = @_;
-
   return 0 unless $uri->scheme eq 'http';
-
-  #check the host
-  return 0 unless ($uri->host =~ m/^(www\.)?pnas\.org$/);
-  #check the path
-  return 1 if ($uri->path =~ m!^/cgi/((content/(short|extract|abstract|full))|reprint)/.+!i);
+  return 0 unless $uri->host =~ m/^(www\.)?pnas\.org$/;
+  return 1 if $uri->path =~ m!^/cgi/((content/(short|extract|abstract|full))|reprint)/.+!i;
   return 0;
 }
 
@@ -40,21 +35,19 @@ sub citations {
   eval {
     die "do not understand URI\n" unless $self->understands($article_uri);
 
-    my $file;
-	$file = $article_uri->path;
-	#strip fragments or queries
-	$file =~ s/(?:#|\?).*//;
+    my $file = $article_uri->path;
+    $file =~ s/(?:#|\?).*//;  # strip fragments or queries
 
     die "no file name seen in URI\n" unless $file;
 
-	#for now assuming id starts with first digit
-	#	ex: cgi/content/abstract/102/18/6251
-	my($id) = $file =~ /(\d.*$)/;
+    #for now assuming id starts with first digit
+    #	ex: cgi/content/abstract/102/18/6251
+    my ($id) = $file =~ /(\d.*$)/;
 
-	my $query_uri = new URI("http://www.pnas.org/cgi/citmgr_refman?gca=pnas;" . $id);
+    my $query_uri = URI->new('http://www.pnas.org/cgi/citmgr_refman?gca=pnas;'.$id);
 
-	my $ris_raw = $self->get($query_uri);
-    $ris = new Bibliotech::CitationSource::NPG::RIS ($ris_raw);
+    my $ris_raw = $self->get($query_uri);
+    $ris = Bibliotech::CitationSource::NPG::RIS->new($ris_raw);
     if (!$ris->has_data) {
       # give it one more try 
       sleep 2;
@@ -107,8 +100,8 @@ sub periodical_abbr  { shift->collect(qw/JO JA J1 J2/); }
 sub journal {
   my ($self) = @_;
   return Bibliotech::CitationSource::PNAS::Result::Journal->new($self->justone('journal'),
-							 $self->justone('journal_abbr'),
-							 $self->justone('issn'));
+								$self->justone('journal_abbr'),
+								$self->justone('issn'));
 }
 
 sub pubmed  { undef; }
