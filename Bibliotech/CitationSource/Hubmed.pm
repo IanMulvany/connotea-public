@@ -41,14 +41,14 @@ sub citations {
   eval {
     die "do not understand URI\n" unless $self->understands($article_uri);
 
-    my $query_uri = new URI ('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?retmode=xml');
+    my $query_uri = URI->new('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?retmode=xml');
     my ($id) = ($article_uri =~ m!uids=(\d+)!);
     $id or die "no uids parameter\n";
     $query_uri->query_param(db => 'pubmed');
     $query_uri->query_param(id => $id);
 
     my $xml = $self->get($query_uri) or die "XML retrieval failed\n";
-    $io = new Bio::Biblio::IO (-data => $xml, -format => 'pubmedxml') or die "IO object false\n";
+    $io = Bio::Biblio::IO->new(-data => $xml, -format => 'pubmedxml') or die "IO object false\n";
   };
   die $@ if $@ =~ /at .* line \d+/;
   $self->errstr($@), return undef if $@;
