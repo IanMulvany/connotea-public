@@ -14,15 +14,10 @@ use strict;
 
 use Bibliotech::CitationSource;
 use base 'Bibliotech::CitationSource';
-
 use Bibliotech::CitationSource::Simple;
-
 use HTTP::Request::Common;
-
 use URI;
 use URI::QueryParam;
-
-use Data::Dumper;
 
 sub api_version {
   1;
@@ -94,8 +89,6 @@ sub citations {
 
 package Bibliotech::CitationSource::autodiscovery::Metadata;
 use base 'Class::Accessor::Fast';
-use Data::Dumper;
-
 use RDF::Core::Storage::Memory;
 use RDF::Core::Model;
 use RDF::Core::Model::Parser;
@@ -117,19 +110,12 @@ use constant PRISM_LOC => 'http://prismstandard.org/namespaces/1.2/basic/';
 sub new {
   my ($class, $rdf_content, $url) = @_;
   my $self = {};
-
-  # store model in memory
-  my $storage = new RDF::Core::Storage::Memory;
-
-  # model to store RDF statements
-  my $model = new RDF::Core::Model(Storage=>$storage);
-
-  # create parser
-  my $parser = new RDF::Core::Model::Parser(Model=>$model,
-					    BaseURI=>$url,
-					    Source=>$rdf_content, 
-					    SourceType=>'string'
-					    );
+  my $storage = RDF::Core::Storage::Memory->new;
+  my $model = RDF::Core::Model->new(Storage => $storage);
+  my $parser = RDF::Core::Model::Parser->new(Model      => $model,
+					     BaseURI    => $url,
+					     Source     => $rdf_content, 
+					     SourceType => 'string');
   bless $self, ref $class || $class;
   $self->has_data(0);
   $self->parse($model, $parser);
@@ -138,17 +124,10 @@ sub new {
 
 sub parse {
   my($self, $model, $parser) = @_;
-
-  # parse
   $parser->parse;
-
-	# to see contents
-	## 11/18/06 print Dumper($parser) . "\n";
-
-	# identifier ought to be: doi, isbn or uri/url
   my $id = $self->getElement($model, DC_LOC, "identifier");
-
-	my $doi = $id if ($id =~ m/doi/);
+  my $doi;
+  $doi = $id if $id =~ m/doi/;
   my $pname = $self->getElement($model, PRISM_LOC, "publicationName");
   my $pdate = $self->getElement($model, DC_LOC, "date");
   my $volume = $self->getElement($model, PRISM_LOC, "volume");
@@ -192,14 +171,14 @@ sub getElement {
 
   my $resource = RDF::Core::Resource->new($resource_loc . "$element");
   my $resource_enum=$model->getStmts(undef, $resource, undef);
-	
-  my $label = "";
+
+  my $label = '';
   my $stmt = $resource_enum->getFirst;
 
-  if(defined $stmt) {
+  if (defined $stmt) {
     $label = $stmt->getObject->getLabel;
   }
-  
+
   return $label;
 }
 
@@ -207,26 +186,25 @@ sub getElement {
 # use this method when multiple instances
 #
 sub getList {
-  my($self, $model, $resource_loc, $element) = @_;
+  my ($self, $model, $resource_loc, $element) = @_;
 
-  my $resource = RDF::Core::Resource->new($resource_loc . "$element");
+  my $resource = RDF::Core::Resource->new($resource_loc."$element");
   my $resource_enum=$model->getStmts(undef, $resource, undef);
 
   my @list;
   my $stmt = $resource_enum->getFirst;
   while (defined $stmt) {
     my $label = $stmt->getObject->getLabel;
-    
+
     push (@list, $label);
     $stmt = $resource_enum->getNext;
   }
-  
-  #print "LIST " . Dumper(\@list);
+
   return @list;
 }
 
 sub getAuthors {
-  my($self, $model, $resource_loc, $element) = @_;
+  my ($self, $model, $resource_loc, $element) = @_;
 
   my @auList;
   my (@list) = $self->getList($model, $resource_loc, $element);
@@ -235,19 +213,16 @@ sub getAuthors {
   # ex. Reguly, Teresa
   foreach my $author (@list) {
     my($l, $f) = $author =~ /^(.*),\s+(.+)$/;
-    
+
     my $name;
     $name->{'forename'} = $f if $f;
     $name->{'lastname'} = $l if $l;
     push(@auList, $name) if $name;
   }
-  
-  #print "AULIST " . Dumper(\@auList) . "\n";
 
   return \@auList if @auList;
   return undef unless @auList;
 }
-
 
 1;
 __END__
