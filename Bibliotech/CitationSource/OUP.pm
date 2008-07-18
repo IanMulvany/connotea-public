@@ -7,7 +7,6 @@ package Bibliotech::CitationSource::OUP;
 use base 'Bibliotech::CitationSource';
 use URI;
 use URI::QueryParam;
-use Data::Dumper;
 
 sub api_version {
   1;
@@ -23,14 +22,9 @@ sub version {
 
 sub understands {
   my ($self, $uri) = @_;
-
   return 0 unless $uri->scheme eq 'http';
-
-  #check the host
-  #print "understands:" .  $uri->host . "\n";
   return 0 unless Bibliotech::CitationSource::OUP::HostTable::defined($uri->host);
-  
-  return 1 if ($uri->path =~ m!^/cgi/((content/(short|extract|abstract|full))|reprint)/.+!i);
+  return 1 if $uri->path =~ m!^/cgi/((content/(short|extract|abstract|full))|reprint)/.+!i;
   return 0;
 }
 
@@ -41,28 +35,20 @@ sub citations {
   eval {
     die "do not understand URI\n" unless $self->understands($article_uri);
 
-    my $file;
-	$file = $article_uri->path;
-	#strip fragments or queries
-	$file =~ s/\.html(?:#|\?).*/.html/;
+    my $file = $article_uri->path;
+    $file =~ s/\.html(?:#|\?).*/.html/;  # strip fragments or queries
 
     die "no file name seen in URI\n" unless $file;
 
-	print "FILE: $file\n";
-
-	#for now assuming id starts with first digit
-	#	ex: cgi/content/abstract/102/18/6251
-	my($id) = $file =~ /(\d.*$)/;
-
-	print "ID: $id\n";
+    #for now assuming id starts with first digit
+    #	ex: cgi/content/abstract/102/18/6251
+    my ($id) = $file =~ /(\d.*$)/;
 
     my $ris_host = Bibliotech::CitationSource::OUP::HostTable::getRISPrefix($article_uri->host);
-	my $query_uri = new URI("http://" . $article_uri->host . "/cgi/citmgr_refman?gca=" . $ris_host . ";" . $id);
-
-	print "QURI: ", $query_uri, "\n";
+    my $query_uri = URI->new('http://'.$article_uri->host.'/cgi/citmgr_refman?gca='.$ris_host.';'.$id);
 
     my $ris_raw = $self->get($query_uri);
-    $ris = new Bibliotech::CitationSource::NPG::RIS ($ris_raw);
+    $ris = Bibliotech::CitationSource::NPG::RIS->new($ris_raw);
     if (!$ris->has_data) {
       # give it one more try 
       sleep 2;
@@ -71,9 +57,8 @@ sub citations {
     }
     die "RIS obj false\n" unless $ris;
     die "RIS file contained no data\n" unless $ris->has_data;
-  };    
+  };
   die $@ if $@ =~ /at .* line \d+/;
-#print Dumper($ris);
   $self->errstr($@), return undef if $@;
   return bless [bless $ris, 'Bibliotech::CitationSource::OUP::Result'], 'Bibliotech::CitationSource::ResultList';
 }
@@ -115,8 +100,8 @@ sub periodical_abbr  { shift->collect(qw/JO JA J1 J2/); }
 sub journal {
   my ($self) = @_;
   return Bibliotech::CitationSource::OUP::Result::Journal->new($self->justone('journal'),
-							 $self->justone('journal_abbr'),
-							 $self->justone('issn'));
+							       $self->justone('journal_abbr'),
+							       $self->justone('issn'));
 }
 
 sub pubmed  { undef; }
@@ -202,16 +187,19 @@ package Bibliotech::CitationSource::OUP::HostTable;
 my($hRef) = \%Bibliotech::CitationSoure::OUP::HostTable::Hosts;
 
 sub defined {
-	my ($host) = @_;
-	$host =~ s/www.//;
-	#print "defined: $host\n";
-    #print "	" . $hRef->{$host} . "\n";
-	return defined($hRef->{$host});
+  my ($host) = @_;
+  return defined($hRef->{_without_www($host)});
 }
+
 sub getRISPrefix {
-	my ($host) = @_;
-	$host =~ s/www.//;
-	return ($hRef->{$host});
+  my ($host) = @_;
+  return $hRef->{_without_www($host)};
+}
+
+sub _without_www {
+  local $_ = shift;
+  s/^www.//;
+  return $_;
 }
 
 1;
