@@ -3,7 +3,6 @@ use Bibliotech::CitationSource;
 
 package Bibliotech::CitationSource::Wiley;
 use base 'Bibliotech::CitationSource';
-use Data::Dumper;
 
 use LWP;
 use HTTP::Request::Common;
@@ -37,12 +36,9 @@ sub name {
 
 sub understands {
   my ($self, $uri) = @_;
-
-  #check the host
-  return 0 unless ($uri->scheme =~ /^http$/i);
-  return 0 unless ($uri->host =~ m/^(www3\.)?interscience\.wiley\.com$/);
-
-  return 1 if ($uri->path =~ m!^/cgi-bin/(abstract|fulltext)/.+!i);
+  return 0 unless $uri->scheme =~ /^http$/i;
+  return 0 unless $uri->host =~ m/^(www3\.)?interscience\.wiley\.com$/;
+  return 1 if $uri->path =~ m!^/cgi-bin/(abstract|fulltext)/.+!i;
   return 0;
 }
 
@@ -57,36 +53,35 @@ sub citations {
 
     die "no file name seen in URI\n" unless $file;
 
-	# for now assuming id starts with first digit, to forward slash
-	#   ex: /cgi-bin/abstract/10049442/ABSTRACT/
-	my($id) = $file =~ /(\d.*?)\//;
+    # for now assuming id starts with first digit, to forward slash
+    #   ex: /cgi-bin/abstract/10049442/ABSTRACT/
+    my ($id) = $file =~ /(\d.*?)\//;
 
-	#
-	# hit form to set cookies
-	#	ID is retained outside of usual form parameters
-	#
-	my $cookieJar = new HTTP::Cookies();
-	my($ua) = $self->ua;
-	$ua->cookie_jar($cookieJar);
+    #
+    # hit form to set cookies
+    #	ID is retained outside of usual form parameters
+    #
+    my $cookieJar = new HTTP::Cookies();
+    my ($ua) = $self->ua;
+    $ua->cookie_jar($cookieJar);
 
-	my $response = $ua->request(GET CIT_APP . APP_FLAGS . "&id=" . $id . "&redirect=" . $file);
+    my $response = $ua->request(GET CIT_APP . APP_FLAGS . "&id=" . $id . "&redirect=" . $file);
 
-	#
-	# now post form with parameters set
-	#
-	my($response) = $ua->request(POST CIT_APP, [
-						'mode'=>'2',
-						'format' => PLAIN_TEXT, 
-						'type' => CITATION, 
-						'file' => PC,
-						'exportCitation' => 'submit'
-					]);
-	if($response->is_success) {
-		my $raw_text = $response->content;
-		$text = new Bibliotech::CitationSource::Wiley::TEXT ($raw_text);
-	} else {
-		die $response->status_line;
-	}
+    #
+    # now post form with parameters set
+    #
+    my ($response) = $ua->request(POST CIT_APP,
+				  ['mode'    	    => '2',
+				   'format'  	    => PLAIN_TEXT, 
+				   'type'    	    => CITATION, 
+				   'file'           => PC,
+				   'exportCitation' => 'submit']);
+    if ($response->is_success) {
+      my $raw_text = $response->content;
+      $text = new Bibliotech::CitationSource::Wiley::TEXT ($raw_text);
+    } else {
+      die $response->status_line;
+    }
   };    
   #die $@ if $@ =~ /at .* line \d+/;
 
@@ -149,60 +144,6 @@ sub parse {
   return $self;
 }
 
-#sub parse {
-  #my ($self, $data) = @_;
-  #my @lines;
-  #{
-    #my @data = ref $data ? map { s/\r?\n$//; $_; } @{$data} : split(/\r?\n/, $data);
-    #my $in_data = 0;
-    #my $double_newlines = 0;
-    #foreach (@data) {
-      #if ($in_data) {
-	    #if (/^ER  - /) {
-	      #$in_data = 0;
-	    #}
-	    #else {
-	      #if (/^\w\w\w?  - /) {
-	         #push @lines, $_;
-	      #}
-	      #else {
-	        #if (@lines) {
-	         #if ($lines[-1] =~ /^TY: /) {
-		       #$double_newlines = 1;
-	         #}
-	         #else {
-		       #$lines[-1] .= $_;
-	         #}
-	        #}
-	      #}
-	    #}
-      #}
-      #elsif (/^TY: /) {
-	   #$in_data = 1;
-	   #$self->has_data(1);
-	   #push @lines, $_;
-      #}
-    #}
-  #}
-  #foreach (@lines) {
-    #my ($key, $value) = /^(\w\w\w?): (.*)$/;
-    #next unless $self->can($key);
-    #my $stored = $self->$key;
-    #if (defined $stored) {
-      #if (ref $stored) {
-	    #push @{$stored}, $value;
-      #}
-      #else {
-	    #$stored = [$stored, $value];
-      #}
-    #}
-    #else {
-      #$stored = $value;
-    #}
-    #$self->$key($stored);
-  #}
-  #return $self;
-#}
 sub collect {
   my ($self, @fields) = @_;
   my $include = $self->inceq;
@@ -282,7 +223,6 @@ sub identification   { shift->collect(qw/doi/); }
 
 package Bibliotech::CitationSource::Wiley::Result;
 use base ('Bibliotech::CitationSource::Wiley::TEXT', 'Bibliotech::CitationSource::Result');
-use Data::Dumper;
 
 sub type {
   'Wiley';
@@ -308,27 +248,23 @@ sub authors {
   my $authors = $self->SUPER::authors;
 
   # for wiley, authors come in comma separated string
-  if($authors =~ ',') {
-#print "orig authors: " . $authors . "\n";
-  	my @a = split(/,/, $authors);
-	$authors = \@a;
+  if ($authors =~ ',') {
+    my @a = split(/,/, $authors);
+    $authors = \@a;
   }
 
   my @authors = map(Bibliotech::CitationSource::Wiley::Result::Author->new($_), ref $authors ? @{$authors} : $authors);
-#print "authors: " . Dumper(\@authors);
   bless \@authors, 'Bibliotech::CitationSource::Result::AuthorList';
 }
 
 sub journal {
-	my ($self) = @_;
-		return Bibliotech::CitationSource::Wiley::Result::Journal->new($self->justone('journal'),
-				$self->justone('journal_abbr'),
-				$self->justone('issn'));
+  my ($self) = @_;
+  return Bibliotech::CitationSource::Wiley::Result::Journal->new($self->justone('journal'),
+								 $self->justone('journal_abbr'),
+								 $self->justone('issn'));
 }
 
 sub pubmed  { undef; }
-#sub doi     { shift->justone('doi'); }
-#sub doi     { shift->justone('misc3'); }
 sub title   { shift->justone('title'); }
 sub volume  { shift->justone('volume'); }
 sub issue   { shift->justone('issue'); }
@@ -336,7 +272,6 @@ sub page    { shift->page_range; }
 sub url     { shift->url; }
 
 sub last_modified_date {
-  #shift->date(@_);			#??
   undef;
 }
 
@@ -351,8 +286,6 @@ sub new {
   bless $self, ref $class || $class;
   my ($lastname, $firstname, $initials);
   $author =~ s/^\s*//;
-#print "new: new author $author\n";
-  #if ($author =~ /^(.+?),\s*(.*)$/) {
   if ($author =~ /^(.+?\s*\w\.)\s+(.*)$/) {
     ($firstname, $lastname) = ($1, $2);
   }
@@ -366,9 +299,7 @@ sub new {
     $lastname = $author;
   }
   $self->forename($firstname) if $firstname;
-#print "new: author $author\n";
   my $initials = join(' ', map { s/^(.).*$/$1/; $_; } split(/\s+/, $firstname)) || undef;
-  #$firstname =~ s/(\s\w\.?)+$//;
   $self->firstname($firstname);
   $self->lastname($lastname);
   $self->initials($initials);
@@ -389,4 +320,6 @@ sub new {
   $self->issn($issn);
   return $self;
 }
+
 1;
+__END__
