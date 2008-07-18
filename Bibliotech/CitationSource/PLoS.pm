@@ -15,9 +15,6 @@ package Bibliotech::CitationSource::PLoS;
 use base 'Bibliotech::CitationSource';
 use URI;
 use URI::QueryParam;
-use Data::Dumper;
-
-our $DEBUG = 0;
 
 sub api_version {
   1;
@@ -37,24 +34,13 @@ sub version {
 
 sub understands {
   my ($self, $uri) = @_;
-
-  return 0 unless ($uri->scheme =~ /^http$/i);
-
-  #check the host
-  return 0 unless ($uri->host =~ /^\w+.plosjournals.org$/);
-
-  #we like PDFs
+  return 0 unless $uri->scheme =~ /^http$/i;
+  return 0 unless $uri->host =~ /^\w+.plosjournals.org$/;
   return 1 if $uri->path =~ m!/pdf/\d{2}\.\d{4}_.+?-[LS]\.pdf$!;
-
-  #check there's a query 
   return 0 unless $uri->query;
-  
-  #finally, check the query for article page request (do we need to test for doi?)
-  return 1 if ($uri->query =~ m/get-document/);
-
+  return 1 if $uri->query =~ m/get-document/;
   return 0;
 }
-
 
 sub citations {
   my ($self, $article_uri) = @_;
@@ -103,44 +89,39 @@ sub source {
   'PLoS RIS file from www.plosjournals.org';
 }
 
-sub identifiers
-{
-  #my $self = shift;
-    #return {'doi' => $self->{'doi'} };
-	  {doi => shift->doi};
+sub identifiers {
+  {doi => shift->doi};
 }
 
-sub title
-{
+sub title {
   my $self = shift;
   my $article_title = decode_entities($self->SUPER::title) or die("Error!");
   return $article_title;
 }
 
-sub page
-{
- shift->collect(qw/starting_page/);
+sub page {
+  shift->collect(qw/starting_page/);
 }
 
 sub justone {
-	my ($self, $field) = @_;
-	my $super = 'SUPER::'.$field;
-	my $stored = $self->$super or return undef;
-	return ref $stored ? $stored->[0] : $stored;
+  my ($self, $field) = @_;
+  my $super = 'SUPER::'.$field;
+  my $stored = $self->$super or return undef;
+  return ref $stored ? $stored->[0] : $stored;
 }
 
 sub authors {
-	my ($self) = @_;
-	my $authors = $self->SUPER::authors;
-	my @authors = map(Bibliotech::CitationSource::PLoS::Result::Author->new($_), ref $authors ? @{$authors} : $authors);
-	bless \@authors, 'Bibliotech::CitationSource::Result::AuthorList';
+  my ($self) = @_;
+  my $authors = $self->SUPER::authors;
+  my @authors = map(Bibliotech::CitationSource::PLoS::Result::Author->new($_), ref $authors ? @{$authors} : $authors);
+  bless \@authors, 'Bibliotech::CitationSource::Result::AuthorList';
 }
 
 sub journal {
-	my ($self) = @_;
-	return Bibliotech::CitationSource::PLoS::Result::Journal->new($self->justone('journal'),
-		$self->justone('journal_abbr'),
-		$self->justone('issn'));
+  my ($self) = @_;
+  return Bibliotech::CitationSource::PLoS::Result::Journal->new($self->justone('journal'),
+								$self->justone('journal_abbr'),
+								$self->justone('issn'));
 }
 
 sub doi     { shift->justone('misc3'); }
@@ -151,27 +132,26 @@ use base 'Class::Accessor::Fast';
 __PACKAGE__->mk_accessors(qw/firstname forename initials lastname/);
 
 sub new {
-	my ($class, $author) = @_;
-	my $self = {};
-	bless $self, ref $class || $class;
-	my ($lastname, $firstname);
-	if ($author =~ /^(.+?),\s*(.*)$/) {
-		($lastname, $firstname) = ($1, $2);
-	}
-	elsif ($author =~ /^(.*)\s+(.+)$/) {
-		($firstname, $lastname) = ($1, $2);
-	}
-	else {
-		$lastname = $author;
-	}
-	my $initials = join(' ', map { s/^(.).*$/$1/; $_; } split(/\s+/, $firstname)) || undef;
-	$self->forename($firstname);
-	$firstname =~ s/(\s\w\.?)+$//;
-	$self->firstname($firstname);
-	$self->lastname($lastname);
-	$self->initials($initials);
-	
-	return $self;
+  my ($class, $author) = @_;
+  my $self = {};
+  bless $self, ref $class || $class;
+  my ($lastname, $firstname);
+  if ($author =~ /^(.+?),\s*(.*)$/) {
+    ($lastname, $firstname) = ($1, $2);
+  }
+  elsif ($author =~ /^(.*)\s+(.+)$/) {
+    ($firstname, $lastname) = ($1, $2);
+  }
+  else {
+    $lastname = $author;
+  }
+  my $initials = join(' ', map { s/^(.).*$/$1/; $_; } split(/\s+/, $firstname)) || undef;
+  $self->forename($firstname);
+  $firstname =~ s/(\s\w\.?)+$//;
+  $self->firstname($firstname);
+  $self->lastname($lastname);
+  $self->initials($initials);
+  return $self;
 }
 
 package Bibliotech::CitationSource::PLoS::Result::Journal;
@@ -180,13 +160,13 @@ use base 'Class::Accessor::Fast';
 __PACKAGE__->mk_accessors(qw/name medline_ta issn/);
 
 sub new {
-my ($class, $name, $medline_ta, $issn) = @_;
-	my $self = {};
-	bless $self, ref $class || $class;
-	$self->name($name);
-	$self->medline_ta($medline_ta);
-	$self->issn($issn);
-	return $self;
+  my ($class, $name, $medline_ta, $issn) = @_;
+  my $self = {};
+  bless $self, ref $class || $class;
+  $self->name($name);
+  $self->medline_ta($medline_ta);
+  $self->issn($issn);
+  return $self;
 }
 
 1;
