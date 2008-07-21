@@ -109,15 +109,20 @@ sub query_result_calc {
 sub parse_crossref_xml {
   my ($self, $xml, $doi) = @_;
   return unless $xml;
-
-  $xml =~ s/<crossref_result.*?>/<crossref_result>/;
-
-  my $tree = eval { XML::LibXML->new->parse_string($xml) } or $self->errstr('XML parse failed'), return;
-  my $root = $tree->getDocumentElement                     or $self->errstr('no root'), return;
-  my $node = 'query_result/body/query/';
-  my $val  = sub { $root->findvalue($node.shift) };
-  lc($val->('doi')) eq lc($doi)                            or $self->errstr("DOI mismatch\n"), return;
-
+  my $lib = XML::LibXML->new;
+  my ($ok, $val) = $self->catch_transient_errstr(sub {
+    local $_ = $xml;
+    s/<crossref_result.*?>/<crossref_result>/;
+    my $tree = eval { $lib->parse_string($_) };
+    $@                                                   and die "CrossRef XML parse failed: $@\n";
+    defined $tree                                         or die "CrossRef XML parse failed\n";
+    my $root = $tree->getDocumentElement                  or die 'no root';
+    my $node = 'query_result/body/query/';
+    my $val_sub = sub { $root->findvalue($node.shift) };
+    lc($val_sub->('doi')) eq lc($doi)                     or die "DOI mismatch\n";
+    return $val_sub;
+  });
+  $ok or return;
   return {status  => 'unresolved'} if $val->('@status') eq 'unresolved';
   return {status  => 'resolved',
 	  pubdate => $val->('year') || undef,
