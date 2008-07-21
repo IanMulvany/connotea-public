@@ -123,12 +123,11 @@ sub _bibcode_from_search_page {
 sub filter {
   my ($self, $uri, $content_sub) = @_;
   if (_bibcode_from_uri($uri)) {
-    my $new_uri = $uri;
+    my $new_uri = $uri->clone;
     foreach ($new_uri->query_param) {
       $new_uri->query_param_delete($_) unless /^(?:bibcode|db_key)$/i;
     }
-    return $new_uri unless $new_uri->eq($uri);
-    return;
+    return $new_uri->eq($uri) ? undef : $new_uri;
   }
   return URI->new('http://adsabs.harvard.edu/abs/'._bibcode_from_content($uri, $content_sub));
 }

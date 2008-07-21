@@ -51,14 +51,17 @@ sub understands {
 sub filter {
   my ($self, $uri) = @_;
   my $doi = $self->get_doi($uri) or return undef;
-  if (!$self->resolved($doi)) {  # do crossref query now, fail if doi unregistered
-    $self->errstr("DOI $doi cannot be resolved.  It may not be in the CrossRef database, or you may have mis-entered it.  Please check it and try again.\n");
-    return '';
-  }
+  $self->errstr(_not_found_message($doi)), return '' unless $self->resolved($doi);
   $doi =~ s!\#!\%23!g;  # in case doi contains a hash
-  my $canonical = URI->new('http://dx.doi.org/'.$doi);
-  return undef if $canonical->eq($uri);
-  return $canonical;
+  my $new_uri = URI->new('http://dx.doi.org/'.$doi);
+  return $new_uri->eq($uri) ? undef : $new_uri;
+}
+
+sub _not_found_message {
+  my $doi = shift;
+  return "DOI $doi cannot be resolved. ".
+         "It may not be in the CrossRef database, or you may have mis-entered it. ".
+	 "Please check it and try again.\n";
 }
 
 sub citations {
