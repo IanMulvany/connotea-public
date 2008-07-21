@@ -26,6 +26,7 @@ use Bibliotech::CitationSource::Simple;
 use XML::LibXML;
 use HTML::Entities;
 use URI::Escape;
+use Encode qw/decode_utf8/;
 use constant CR_URL => 'http://doi.crossref.org/servlet/query';
 
 sub api_version {
@@ -111,11 +112,11 @@ sub parse_crossref_xml {
 
   $xml =~ s/<crossref_result.*?>/<crossref_result>/;
 
-  my $tree = XML::LibXML->new->parse_string($xml)   or $self->errstr('XML parse failed'), return;
-  my $root = $tree->getDocumentElement              or $self->errstr('no root'), return;
+  my $tree = eval { XML::LibXML->new->parse_string($xml) } or $self->errstr('XML parse failed'), return;
+  my $root = $tree->getDocumentElement                     or $self->errstr('no root'), return;
   my $node = 'query_result/body/query/';
   my $val  = sub { $root->findvalue($node.shift) };
-  lc($val->('doi')) eq lc($doi)                     or $self->errstr("DOI mismatch\n"), return;
+  lc($val->('doi')) eq lc($doi)                            or $self->errstr("DOI mismatch\n"), return;
 
   return {status  => 'unresolved'} if $val->('@status') eq 'unresolved';
   return {status  => 'resolved',
@@ -142,10 +143,14 @@ sub _get_raw_doi_from_uri {
 }
 
 sub _clean_raw_doi_from_uri {
-  my $doi = shift or return;
-  $doi =~ s/^doi://i;  # sometimes repeated in dx.doi.org URL
-  $doi =~ m/^10\./ or return;
-  return lc(uri_unescape($doi));  # URI module escapes unsafe characters
+  local $_ = shift or return;
+  s/^doi://i;                  # sometimes repeated in dx.doi.org URL
+  m/^10\./         or return;  # sanity check; if this fails, don't bother
+  $_ = uri_unescape($_);       # resolve %A0 type entities
+  $_ = decode_utf8($_) || $_;  # spec says all printable UCS-2 characters are valid
+  s/[[:cntrl:]]//g;            # remove control characters
+  s/\s+$//g;                   # remove trailing whitespace
+  return lc($_);               # spec says case-insensitive so standardize lower
 }
 
 sub get_doi {
