@@ -40,25 +40,33 @@ sub understands {
   $_[1] =~ /<!DOCTYPE NETSCAPE-Bookmark-file\b/ ? 1 : 0;
 }
 
+sub _fix_empty_headings {
+  local $_ = shift or return;
+  # fill any empty h1 or h3 tag with filler text because Netscape::Bookmarks 1.12 will die otherwise
+  my $count = 0;
+  s|(<h(\d)[^>]*>)(</h\2>)|$1.'Heading Filler ('.++$count.')'.$3|gie;
+  return $_;
+}
+
 sub parse {
-  my $self = shift;
-  my $doc = $self->doc or die 'no document';
-  my $nb = Netscape::Bookmarks::parse_string(\$doc) or die 'no Netscape::Bookmarks object';
+  my $self  = shift;
+  my $doc   = _fix_empty_headings($self->doc) or die 'no document';
+  my $nb    = Netscape::Bookmarks::parse_string(\$doc) or die 'no Netscape::Bookmarks object';
   my @links = $self->parse_category([], $nb);
-  $self->data(new Bibliotech::Import::EntryList (map(new Bibliotech::Import::FirefoxBookmarks::Entry ($_), @links)));
+  $self->data(Bibliotech::Import::EntryList->new (map { Bibliotech::Import::FirefoxBookmarks::Entry->new($_) } @links));
   return 1;
 }
 
 sub parse_category {
-  my $self = shift;
+  my $self                     = shift;
   my $category_path_titles_ref = shift or die 'must provide previous category path titles';
-  my $category = shift or die 'must provide a category';
-  $category->can('elements') or die 'not a Netscape::Bookmarks::Category object';
-  my $elements = $category->elements or return ();
+  my $category                 = shift or die 'must provide a category';
+  $category->can('elements')           or die 'not a Netscape::Bookmarks::Category object';
+  my $elements = $category->elements   or return ();
   my @links;
   foreach my $element (@{$elements}) {
     if ($element->isa('Netscape::Bookmarks::Link')) {
-      push @links, new Bibliotech::Import::FirefoxBookmarks::Entry::Citation ($element, $category_path_titles_ref);
+      push @links, Bibliotech::Import::FirefoxBookmarks::Entry::Citation->new($element, $category_path_titles_ref);
     }
     elsif ($element->isa('Netscape::Bookmarks::Category')) {
       push @links, $self->parse_category([@{$category_path_titles_ref}, $element->title], $element);
