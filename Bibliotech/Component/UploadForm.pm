@@ -110,14 +110,15 @@ sub html_content {
 	  my $type = $cgi->param('type');
 	  push_out_header_to_impatient_browser($bibliotech->request);
 	  ################ IMPORT THE FILE
-	  my $results = $bibliotech->import_file($user,
-						 $type,
-						 $doc,
-						 \@selections,
-						 \@tags,
-						 $use_keywords,
-						 0,
-						 $captcha_status == 2 ? 1 : 0);
+	  my $results = eval { $bibliotech->import_file($user,
+							$type,
+							$doc,
+							\@selections,
+							\@tags,
+							$use_keywords,
+							0,
+							$captcha_status == 2 ? 1 : 0); };
+	  die 'import_file() failure (doc_cache_key='.$doc_cache_key.'): '.$@ if $@;
 	  my @errors = grep($_, map($_->error, @{$results}));
 	  die join("\n", @errors) if @errors;
 	  $memcache->delete($doc_cache_key);
@@ -137,7 +138,15 @@ sub html_content {
 
       if ($button eq '_display') {
 	my $type = $cgi->param('type');
-	my $results = $bibliotech->import_file($user, $type, $doc, undef, \@tags, $use_keywords, 1, $captcha_status == 2 ? 1 : 0);
+	my $results = eval { $bibliotech->import_file($user,
+						      $type,
+						      $doc,
+						      undef,
+						      \@tags,
+						      $use_keywords,
+						      1,
+						      $captcha_status == 2 ? 1 : 0); };
+	die 'import_file() failure (doc_cache_key='.$doc_cache_key.'): '.$@ if $@;
 	my $count_total = $results->length;
 	my $count_errors = grep($_->error, @{$results});
 	my $count_ok = $count_total - $count_errors;
