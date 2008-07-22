@@ -10,4 +10,10 @@ use Cache::Memcached;
 
 my $doc_cache_key = shift @ARGV or die "Please provide doc_cache_key from exception report.\n";
 my $memcache = Cache::Memcached->new({servers => [ '127.0.0.1:11211' ]});
-print $memcache->get($doc_cache_key);
+my $doc = $memcache->get($doc_cache_key);
+if (defined($doc)) {
+  print $doc;
+}
+else {
+  warn 'No entry for cache key \''.$doc_cache_key."\' (maybe expired or memcache restarted)\n";
+}
