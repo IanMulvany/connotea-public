@@ -1,0 +1,13 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Cache::Memcached;
+
+# uploaded files are stored in memcached with a 24-hour expiration,
+# and if an exception is generated on import, the exception report
+# will contain the cache key, and the file will remain available for
+# inspection for the 24-hour duration
+
+my $doc_cache_key = shift @ARGV or die "Please provide doc_cache_key from exception report.\n";
+my $memcache = Cache::Memcached->new({servers => [ '127.0.0.1:11211' ]});
+print $memcache->get($doc_cache_key);
