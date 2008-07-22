@@ -15,6 +15,17 @@ use Bibliotech::Config;
 our $SITE_NAME  = Bibliotech::Config->get_required('SITE_NAME');
 our $LOG_FILE   = Bibliotech::Config->get('LOG_FILE') || '/var/log/bibliotech.log';
 our $LOG_FORMAT = "$SITE_NAME\[%d\] \%s";
+our %LOG_LEVEL  = (none => 0, critical => 1, error => 2, notice => 3, info => 4, debug => 5);
+our $LOG_LEVEL  = _interpret_log_level(Bibliotech::Config->get('LOG_LEVEL') || 'info');
+
+sub _interpret_log_level {
+  my $level = shift;
+  my $word_to_num = $LOG_LEVEL{$level};
+  return $word_to_num if $word_to_num;
+  my $num = int($level);
+  return $num if $num and $num >= 0 and grep { $num == $_ } (values %LOG_LEVEL);
+  return;
+}
 
 sub import {
   my ($class, %options) = @_;
@@ -62,22 +73,27 @@ sub Log {
 }
 
 sub debug {
+  return if $LOG_LEVEL < $LOG_LEVEL{debug};
   shift->Log(debug => @_);
 }
 
 sub info {
+  return if $LOG_LEVEL < $LOG_LEVEL{info};
   shift->Log(info => @_);
 }
 
 sub notice {
+  return if $LOG_LEVEL < $LOG_LEVEL{notice};
   shift->Log(notice => @_);
 }
 
 sub error {
+  return if $LOG_LEVEL < $LOG_LEVEL{error};
   shift->Log(err => @_);
 }
 
 sub critical {
+  return if $LOG_LEVEL < $LOG_LEVEL{critical};
   shift->Log(crit => @_);
 }
 
