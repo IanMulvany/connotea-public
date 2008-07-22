@@ -25,7 +25,9 @@ use Bibliotech::DBI;
 
 our $IMPORT_MAX_COUNT = Bibliotech::Config->get('IMPORT_MAX_COUNT') || 1000;
 
-__PACKAGE__->mk_accessors(qw/bibliotech bibliotech_parser user doc data selections given_tags use_keywords trial_mode captcha/);
+__PACKAGE__->mk_accessors(qw/bibliotech bibliotech_parser
+                             user doc data selections given_tags
+                             use_keywords trial_mode captcha/);
 
 # a human-readable name to refer to the import module as a whole, e.g. 'RIS'
 # if the module can read from multiple sources, use an inclusive name
@@ -33,9 +35,9 @@ sub name {
   undef;
 }
 
-# should return a version number for the source module
-# needs no correlation to the outside, just needs to be different each time the module is substantially changed
-# if you set this to a CVS Revision keyword string in your source file to get a CVS revision number, only the numeric part will be used
+# should return a version number for the source module (needs no
+# correlation to the outside, just needs to be different each time the
+# module is substantially changed)
 sub version {
   'alpha-version';
 }
@@ -85,7 +87,8 @@ sub use_keywords_or_default_to_given_tags {
   shift->use_keywords(2);
 }
 
-# selections is representative of the checkboxes that lets a user deselect certain entries from import after the first pass
+# selections is representative of the checkboxes that lets a user
+# deselect certain entries from import after the first pass
 sub parse_selections {
   my $selections_ref = shift->selections;
   my ($select_all, @selections);
@@ -99,7 +102,8 @@ sub parse_selections {
   return ($select_all, @selections);
 }
 
-# given tags is the list of tags given by the user to serve as a default list (depending on tag logic selected)
+# given tags is the list of tags given by the user to serve as a
+# default list (depending on tag logic selected)
 sub parse_given_tags {
   my $given_tags_ref = shift->given_tags;
   return () unless defined $given_tags_ref;
@@ -114,7 +118,8 @@ sub understands {
 
 # called before all the fetch()'ing
 # there is an accessor called data() that this method is free to use to pass data to fetch()
-# if you bless an array of Bibliotech::Import::Entry's into a Bibliotech::Import::EntryList, you can use the default fetch() method
+# if you bless an array of Bibliotech::Import::Entry's into a Bibliotech::Import::EntryList,
+# you can use the default fetch() method
 sub parse {
   undef;
 }
@@ -151,6 +156,10 @@ sub import_user_articles {
 our $NO   = 'This record will not be added to your library because';
 our $NOPE = 'This record will not be added because';
 
+sub _uploaded_tag_name {
+  'uploaded';
+}
+
 # do the work
 sub generate_user_articles {
   my $self = shift;
@@ -174,7 +183,7 @@ sub generate_user_articles {
     $user = construct Bibliotech::User ({username => 'testuser'});
   }
 
-  @given_tags = ('uploaded') if !$use_keywords and !@given_tags;
+  @given_tags = (_uploaded_tag_name()) if !$use_keywords and !@given_tags;
 
   my %invalid_renamed;
   my $invalid_fallback_count = 'A';
@@ -200,10 +209,7 @@ sub generate_user_articles {
     };
 
     eval {
-      die "Entry \#$count will be skipped ".
-	  "because there is an import limit of $IMPORT_MAX_COUNT entries per file.\n"
-	  if $count_acceptable > $IMPORT_MAX_COUNT;
-
+      die _skip_max_message($count, $IMPORT_MAX_COUNT) if $count_acceptable > $IMPORT_MAX_COUNT;
       $accept->($self->_entry_analyze($entry, $count, $use_keywords, \@given_tags, \@result,
 				      $trial_mode, $user,
 				      \%invalid_renamed, \$invalid_fallback_count,
@@ -221,7 +227,7 @@ sub generate_user_articles {
       $error = $@;
       $count_acceptable--;
     }
-    push @tags, 'uploaded' unless @tags;
+    push @tags, _uploaded_tag_name() unless @tags;
     my $construct_all = 0;
     my $noncommital = $trial_mode || ($error ? 1 : 0);
     if ($noncommital == 2) {
@@ -267,7 +273,7 @@ sub generate_user_articles {
     my $bookmark = $user_article->bookmark;
     die 'no bookmark object' unless defined $bookmark;
     if ($bookmark->citation) {
-      push @info, 'The link associated with this record has been understood and authoritative bibliographic information will be used in place of the data in the '.$self->file_noun.".\n";
+      push @info, _authoritative_citation_message($self->file_noun);
     }
     else {
       if (my $citation = $entry->citation($self)) {
@@ -293,6 +299,25 @@ sub generate_user_articles {
   return Bibliotech::Import::ResultList->new(@result);
 }
 
+sub _skip_max_message {
+  my ($count, $max_count) = @_;
+  join('',
+       'Entry #',
+       $count,
+       ' will be skipped because there is an import limit of ',
+       $max_count,
+       " entries per file.\n");
+}
+
+sub _authoritative_citation_message {
+  my ($file_noun) = @_;
+  join('',
+       'The link associated with this record has been understood and ',
+       'authoritative bibliographic information will be used in place of the data in the ',
+       $file_noun,
+       ".\n");
+}
+
 sub _entry_analyze {
   my ($self, $entry, $count, $use_keywords, $given_tags_ref, $result_ref, $trial_mode, $user,
       $invalid_renamed_ref, $invalid_fallback_count_ref,
@@ -301,7 +326,7 @@ sub _entry_analyze {
   my (@info, $uri, $title, $description, @tags);
 
   $entry->parse($self);
-  die 'Could not parse '.$self->noun." entry \#$count.\n" unless $entry->parse_ok;
+  die _cannot_parse_message($self->noun, $count) unless $entry->parse_ok;
 
   $uri = _uri_array_to_one(_entry_get_or_make_uri($entry));
 
@@ -309,9 +334,8 @@ sub _entry_analyze {
   $description = $entry->description;
 
   if ($trial_mode != 2) {
-    # preadd can actually change the URI
     if (my $bookmark = $preadd_sub->($uri, $title)) {
-      $uri = $bookmark->uri;
+      $uri = $bookmark->uri;  # preadd can actually change the URI
     }
   }
 
@@ -321,10 +345,18 @@ sub _entry_analyze {
 				     $invalid_renamed_ref, $invalid_fallback_count_ref,
 				     $parse_tag_list_sub, sub { push @info, @_; });
 
-  die "$NOPE you already have it in your library.\n"
-      if $trial_mode != 2 && $check_library_sub->($uri, $user);
+  die _already_have_message() if $trial_mode != 2 && $check_library_sub->($uri, $user);
 
   return (\@info, $uri, $title, $description, \@tags);
+}
+
+sub _cannot_parse_message {
+  my ($noun, $count) = @_;
+  join('', 'Could not parse ', $noun, ' entry \#', $count, ".\n");
+}
+
+sub _already_have_message {
+  "$NOPE you already have it in your library.\n";
 }
 
 sub _entry_get_or_make_uri {
@@ -364,13 +396,18 @@ sub _back_check_for_dups {
   my $count = @{$result_ref};
   for (my $i = 0; $i < $count; $i++) {
     my $prior_uri = $result_ref->[$i]->user_article->bookmark->url;
-    die "$NO the link associated with it is a duplicate of another in this batch (see \#".($i+1).").\n"
-	if $prior_uri eq $uri;
+    die _dup_messasge($i+1) if $prior_uri eq $uri;
   }
 }
 
+sub _dup_messasge {
+  my ($prior) = @_;
+  join('', "$NO the link associated with it is a duplicate of another in this batch (see \#", $prior, ").\n");
+}
+
 sub _entry_collect_tags {
-  my ($self, $entry, $use_keywords, $given_tags_ref, $invalid_renamed_ref, $invalid_fallback_count_ref, $parse_tag_list_sub, $info_sub) = @_;
+  my ($self, $entry, $use_keywords, $given_tags_ref, $invalid_renamed_ref,
+      $invalid_fallback_count_ref, $parse_tag_list_sub, $info_sub) = @_;
   my (@keywords, @tags);
   if ($use_keywords) {
     my ($original_keywords_ref, $keywords_info_ref) = $entry->keywords;
@@ -397,13 +434,13 @@ sub _entry_collect_tags {
 	    }
 	  }
 	  $invalid_renamed_ref->{$original_keyword} = $tested[0];
-	  push @info, 'The '.$self->keyword_noun." \"$original_keyword\" will become tag \"$tested[0]\" to accommodate tag naming rules.\n";
+	  push @info, _renaming_message($self->keyword_noun, $original_keyword, $tested[0]);
 	}
 	my $selected = $tested[0];
 	if ($selected =~ s/^\*//) {
 	  unless ($asterisk_info{$selected}) {
 	    $asterisk_info{$selected} = 1;
-	    $info_sub->('The '.$self->keyword_noun." \"$original_keyword\" has had a leading asterisk removed.\n");
+	    $info_sub->(_asterisk_message($self->keyword_noun, $original_keyword));
 	  }
 	}
 	unless (grep { $selected eq $_ } @keywords) {
@@ -416,10 +453,35 @@ sub _entry_collect_tags {
   }
   unshift @tags, @{$given_tags_ref} if $use_keywords != 2 or ($use_keywords == 2 and !@keywords);
 
-  die "$NO no tags can be associated with it.\n"
-      unless @tags;
+  die _no_tags_message() unless @tags;
 
   return @tags;
+}
+
+sub _no_tags_message {
+  "$NO no tags can be associated with it.\n";
+}
+
+sub _renaming_message {
+  my ($keyword_noun, $original_keyword, $replacement_keyword) = @_;
+  join('',
+       'The ',
+       $keyword_noun,
+       " \"",
+       $original_keyword,
+       "\" will become tag \"",
+       $replacement_keyword,
+       "\" to accommodate tag naming rules.\n");
+}
+
+sub _asterisk_message {
+  my ($keyword_noun, $original_keyword) = @_;
+  join('',
+       'The ',
+       $keyword_noun,
+       " \"",
+       $original_keyword,
+       "\" has had a leading asterisk removed.\n");
 }
 
 package Bibliotech::Import::Entry;
@@ -440,19 +502,22 @@ sub new {
   return $self->SUPER::new(@_);
 }
 
-# perform some parsing action and set parse_ok()
-# recieves the importer object as an argument (the Bibliotech::Import derived object)
-# this method is free to read block() and set some data in data() to assist in the following method calls if necessary
+# perform some parsing action and set parse_ok(); recieves the
+# importer object as an argument (the Bibliotech::Import derived
+# object); this method is free to read block() and set some data in
+# data() to assist in the following method calls if necessary
 sub parse {
   shift->parse_ok(1);
 }
 
-# this returns keywords after they have been cleaned up - better to override raw_keywords()
+# this returns keywords after they have been cleaned up - better to
+# override raw_keywords()
 sub keywords {
   shift->split_keywords;
 }
 
-# override this to return a list of keywords, it will still be split by split_keywords()
+# override this to return a list of keywords, it will still be split
+# by split_keywords()
 sub raw_keywords {
   ();
 }
@@ -476,7 +541,8 @@ sub citation {
   my ($self, $importer) = @_;
   my $citation_obj = $self->can('citation_obj') ? $self->citation_obj : $self->data;
   return undef unless defined $citation_obj;
-  return Bibliotech::Unwritten::Citation->from_citationsource_result($citation_obj, 1, $importer->name.' '.$importer->version);
+  return Bibliotech::Unwritten::Citation->from_citationsource_result
+      ($citation_obj, 1, $importer->name.' '.$importer->version);
 }
 
 package Bibliotech::Import::Entry::FromData;
