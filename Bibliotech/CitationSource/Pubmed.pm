@@ -59,7 +59,7 @@ sub is_search_page_with_one_result {
   my $content_sub = shift or return;
   my ($response) = $content_sub->();
   return unless $response->is_success;
-  my $content = $response->content;
+  my $content = $response->decoded_content;
   my @uids;
   while ($content =~ /<dd class="abstract".*PMID: (\d+)/gs) {
     push @uids, $1;

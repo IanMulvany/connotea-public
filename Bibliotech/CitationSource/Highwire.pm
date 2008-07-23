@@ -73,7 +73,7 @@ sub citations {
       $ua = $self->ua;
       $response = $ua->request(POST $query_uri, [ 'username' => $ris_login->{USER}, 'code' => $ris_login->{PW}]);
       if ($response->is_success) {
-        $ris_raw = $response->content;
+        $ris_raw = $response->decoded_content;
       } else {
         die $response->status_line;
       }
@@ -92,7 +92,7 @@ sub citations {
       if ($ris_login) {
 	$response = $ua->request(POST $query_uri, [ 'username' => $ris_login->{USER}, 'code' => $ris_login->{PW}]);
 	if($response->is_success) {
-	  $ris_raw = $response->content;
+	  $ris_raw = $response->decoded_content;
 	} else {
 	  die $response->status_line;
 	}

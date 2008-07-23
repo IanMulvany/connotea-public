@@ -207,7 +207,7 @@ sub content_or_set_warnstr {
 	     my $content_type = $response->content_type;
 	     grep { $content_type =~ /$_/ } (@{$acceptable_content_types||[]})
 		 or die "Content type is not acceptable ($content_type)\n";
-	     return $response->content;
+	     return $response->decoded_content;
        });
   return $ok ? $content : undef;
 }

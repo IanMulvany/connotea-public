@@ -182,7 +182,7 @@ sub crossref_query {
   my $ua = $self->ua;
   my $response = $ua->request(_crossref_query_http_request($self->crossref_account, $self->build_query($doi)));
   $response->is_success or $self->errstr($response->status_line), return undef;
-  return $response->content;
+  return $response->decoded_content;
 }
 
 sub query_xml_template {

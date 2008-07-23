@@ -135,12 +135,7 @@ sub ua_get_response {
     # assume it's a URI - either just a scalar or a URI object
     # in either case deal with a blank one the same way, since that will be a common error
     my $uri_str = "$uri_or_request" or die 'cannot GET a blank URI';
-    if (UNIVERSAL::isa($uri_or_request, 'URI')) {
-      $req = HTTP::Request->new(GET => $uri_or_request);
-    }
-    else {
-      $req = HTTP::Request->new(GET => $uri_str);
-    }
+    $req = HTTP::Request->new(GET => (UNIVERSAL::isa($uri_or_request, 'URI') ? $uri_or_request : $uri_str));
   }
 
   my $ua;
@@ -158,65 +153,10 @@ sub ua_get_response {
   return $response;
 }
 
-# accept a response object and decode the content portion to a Perl string respecting the encoding
-sub ua_decode_content {
-  my $response = shift;
-  my $content  = $response->content;
-
-  return $content if is_utf8($content);
-
-  my @types = ($response->header('Content-Type'));
-
-  # pick up a couple extra non-header variants:
-  my ($first_5_lines) = $content =~ /^((?:.*\n){0,5})/;
-  # you wouldn't think it was necessary to limit to the top lines but cnn.com as one prominent
-  # example has embedded XML in their home page
-  if ($first_5_lines and $first_5_lines =~ /<?xml[^>]+encoding=\"([^\"]+)\"/) {
-    push @types, 'application/xml;charset='.$1;
-  }
-  else {
-    my ($head) = $content =~ m|^.*?(<head.*</head>)|si;
-    # same issue here - limit to <head> where it is supposed to be!
-    if ($head and $head =~ /<meta\s+http-equiv=\"Content-Type\"\s+content=\"([^\"]+)\"/is) {
-      push @types, $1;
-    }
-  }
-
-  # break apart type and charset:
-  my ($type, $charset);
-  foreach (@types) {
-    if (m|^(\w+/[\w+]+)(?:\s*;\s*(?:charset=)?([\w\-]+))|i) {
-      $type = $1;
-      if ($2) {
-	$charset = $2;
-	$charset =~ s/^UTF-8$/utf8/;
-      }
-    }
-  }
-
-  # offer default for charset based on type if necessary:
-  unless ($charset) {
-    if ($type && $type =~ /(?:xml|xhtml|rss|rdf)/) {
-      $charset = 'utf8';
-    }
-    else {
-      $charset = 'iso-8859-1';
-    }
-  }
-
-  my $decoded = eval { decode($charset, $content) || $content };
-  if (my $e = $@) {
-    return $content if $e =~ /unknown encoding/i or  # usually not our fault
-	               $e =~ /unrecognised bom/i;    # not helpful to die on this
-    die $e;
-  }
-  return $decoded;
-}
-
 # request a network document using our special ua object and return just the content or response plus content
 sub ua_get_content_decoded {
   my $response = ua_get_response(@_);
-  my $content  = $response->is_success ? $response->content : undef;  # decoded in Bibliotech::UserAgent
+  my $content  = $response->is_success ? $response->decoded_content : undef;  # decoded in Bibliotech::UserAgent
   return wantarray ? ($response, $content) : $content;
 }
 

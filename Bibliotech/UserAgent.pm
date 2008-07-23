@@ -52,14 +52,11 @@ sub request_handle_foreign {
   return $self->SUPER::request($req, $arg, $size, $previous);
 }
 
-# perform request as normal but afterwards do content type decoding
+# perform request as normal but afterwards rebless response
 sub request {
   my ($self, $req, $arg, $size, $previous) = @_;
   my $response = $self->request_handle_foreign($req, $arg, $size, $previous);
-  if (defined(my $decoded = Bibliotech::Util::ua_decode_content($response))) {
-    $response->content($decoded);
-  }
-  return $response;
+  return bless $response, 'Bibliotech::HTTP::Response';
 }
 
 sub system_hosts_file {
@@ -85,9 +82,57 @@ sub _resolve {
   return $self->SUPER::_resolve($host, $request, $timeout, $depth);
 }
 
+
 # override the user agent used for HTTP::OAI as well
 require HTTP::OAI::UserAgent;
 @HTTP::OAI::UserAgent::ISA = ('Bibliotech::UserAgent');
+
+
+package Bibliotech::HTTP::Response;
+use base 'HTTP::Response';
+
+# supplemented by document-based character set designations
+sub decoded_content {
+  my $response = shift;
+  my $content = $response->content;
+  my @types = ($response->header('Content-Type'));
+
+  # pick up a couple extra non-header variants:
+  my ($first_5_lines) = $content =~ /^((?:.*\n){0,5})/;
+  # you wouldn't think it was necessary to limit to the top lines but cnn.com as one prominent
+  # example has embedded XML in their home page
+  if ($first_5_lines and $first_5_lines =~ /<?xml[^>]+encoding=\"([^\"]+)\"/) {
+    push @types, 'application/xml;charset='.$1;
+  }
+  else {
+    my ($head) = $content =~ m|^.*?(<head.*</head>)|si;
+    # same issue here - limit to <head> where it is supposed to be!
+    if ($head and $head =~ /<meta\s+http-equiv=\"Content-Type\"\s+content=\"([^\"]+)\"/is) {
+      push @types, $1;
+    }
+  }
+
+  # break apart type and charset:
+  my ($type, $charset);
+  foreach (@types) {
+    if (m|^(\w+/[\w+]+)(?:\s*;\s*(?:charset=)?([\w\-]+))|i) {
+      $type = $1;
+      ($charset = $2) =~ s/^UTF-8$/utf8/ if $2;
+    }
+  }
+
+  # offer default for charset based on type if necessary:
+  $charset ||= ($type && $type =~ /(?:xml|xhtml|rss|rdf)/ ? 'utf8' : 'iso-8859-1');
+
+  my $decoded = eval { $response->SUPER::decoded_content
+			   ($content, charset => $charset, raise_error => 1) || $content; };
+  if (my $e = $@) {
+    return $content if $e =~ /unknown encoding/i or  # usually not our fault
+	               $e =~ /unrecognised bom/i;    # not helpful to die on this
+    die $e;
+  }
+  return $decoded;
+}
 
 1;
 __END__

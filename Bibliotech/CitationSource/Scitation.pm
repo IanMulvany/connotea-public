@@ -85,7 +85,7 @@ sub get_bibtex_content {
     if (($uri->path =~ m!/VerityServlet!i) && $uri->query_param('viewabs')) {
       # need to scrape ID
       my $id_stub = $uri->query_param('viewabs');
-      if ($res->content =~ m!<input\s+type="hidden"\s+name="SelectCheck"\s+value="($id_stub.*?)">!is) {
+      if ($res->decoded_content =~ m!<input\s+type="hidden"\s+name="SelectCheck"\s+value="($id_stub.*?)">!is) {
 	$id = $1;
       }
       else {
@@ -106,7 +106,7 @@ sub get_bibtex_content {
 				 'PrefAction' => 'Add Selected',
 				 'SelectCheck' => $id]);
     if ($post_res->is_success) {
-      $bibtex_raw = $post_res->content;
+      $bibtex_raw = $post_res->decoded_content;
       # fix bad bibtex that sometimes gets sent
       $bibtex_raw =~ s/url = {(.+?)}\ndoi/url = {$1},\ndoi/s;
       return $bibtex_raw;

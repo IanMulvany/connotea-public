@@ -120,7 +120,7 @@ sub get_ris_content {
   my $query_uri = URI->new(SPRINGER_HOST.GET_RIS_APP.'code='.$session.'&mode=ris');
 
   my $ris_raw = $ua->request(POST $query_uri);
-  my $ris = new Bibliotech::CitationSource::NPG::RIS ($ris_raw->content);
+  my $ris = Bibliotech::CitationSource::NPG::RIS->new($ris_raw->decoded_content);
 
   die "RIS obj false\n" unless $ris;
   die "RIS file contained no data\n" unless $ris->has_data;
