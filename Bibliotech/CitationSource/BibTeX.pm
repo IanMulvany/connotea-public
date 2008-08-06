@@ -9,12 +9,16 @@
 package Bibliotech::CitationSource::BibTeX;
 use strict;
 use Bibliotech::CitationSource::RIS;
-use Bibliotech::BibUtils qw(bib2ris);
+use Bibliotech::BibUtils qw(bib2xml xml2ris);
 use Bibliotech::Import::BibTeX;
 
 sub new {
   my $bibtex = pop;
-  my $ris = Bibliotech::Import::BibTeX::fix_intermediate_ris(bib2ris($bibtex));
+  my $mods = bib2xml($bibtex);
+  $mods =~ s|&#8217;|__QUOTE__|g;  # bibutils only changes single quotes like this for BibTeX
+  my $ris_raw = xml2ris($mods);
+  $ris_raw =~ s|__QUOTE__|\'|g;
+  my $ris = Bibliotech::Import::BibTeX::fix_intermediate_ris($ris_raw);
   return Bibliotech::CitationSource::RIS->new($ris);
 }
 
