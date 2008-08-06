@@ -190,26 +190,40 @@ sub catch_transient_die {
 }
 
 sub catch_transient_errstr {
-  catch_transient_die(@_, 'errstr');
+  my ($self, $action_sub) = @_;
+  $self->catch_transient_die($action_sub, 'errstr');
 }
 
 sub catch_transient_warnstr {
-  catch_transient_die(@_, 'warnstr');
+  my ($self, $action_sub) = @_;
+  $self->catch_transient_die($action_sub, 'warnstr');
 }
 
-sub content_or_set_warnstr {
-  my ($self, $content_sub, $acceptable_content_types) = @_;
+sub content_or_set {
+  my ($self, $content_sub, $acceptable_content_types, $mutator) = @_;
   die 'no content sub or is not code' unless defined $content_sub and ref($content_sub) eq 'CODE';
-  my ($ok, $content) = $self->catch_transient_warnstr
+  my ($ok, $content) = $self->catch_transient_die
       (sub { my ($response) = $content_sub->();
 	     defined $response or die 'no response object';
 	     $response->is_success or die $response->status_line."\n";
 	     my $content_type = $response->content_type;
-	     grep { $content_type =~ /$_/ } (@{$acceptable_content_types||[]})
-		 or die "Content type is not acceptable ($content_type)\n";
+	     if (defined $acceptable_content_types) {
+	       grep { $content_type =~ /$_/ } (@{$acceptable_content_types})
+		   or die "Content type is not acceptable ($content_type)\n";
+	     }
 	     return $response->decoded_content;
-       });
+       }, $mutator);
   return $ok ? $content : undef;
+}
+
+sub content_or_set_warnstr {
+  my ($self, $content_sub, $acceptable_content_types) = @_;
+  $self->content_or_set($content_sub, $acceptable_content_types, 'warnstr');
+}
+
+sub content_or_set_errstr {
+  my ($self, $content_sub, $acceptable_content_types) = @_;
+  $self->content_or_set($content_sub, $acceptable_content_types, 'errstr');
 }
 
 package Bibliotech::CitationSource::ResultList;

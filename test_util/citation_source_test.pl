@@ -5,15 +5,18 @@ use URI;
 use lib '..';
 use Bibliotech::Fake;
 use Bibliotech::Util;
+use Bibliotech::Plugin;
 
-my $plugin = shift @ARGV or die "No plug-in specified, so I can't do anything\n";
-$plugin = 'Bibliotech::CitationSource::'.$plugin;
-print "Using $plugin\n";
-eval "use $plugin";
-die $@ if $@;
+my $plugin = shift @ARGV or die "No type specified.\n";
+$plugin = undef if $plugin =~ /^(?:auto)?detect$/i;
 
 my $b = Bibliotech::Fake->new;
-my $c = $plugin->new($b);
+my $c;
+if ($plugin) {
+  my $class = 'Bibliotech::CitationSource::'.$plugin;
+  eval "use $class"; die "cannot use $class: $@" if $@;
+  $c = $class->new($b) or die 'no citation source object: '.$plugin;
+}
 my $p = sub { process_uri_str(shift, $b, $c) };
 if (@ARGV) {
   $p->($_) foreach (@ARGV);
@@ -26,7 +29,7 @@ else {
 sub process_uri_str {
   my ($uri_str, $b, $c) = @_;
   my $uri = URI->new($uri_str);
-  process_uri($uri, sub { make_getter(shift, $b) }, $c);
+  process_uri($uri, $b, sub { make_getter(shift, $b) }, $c);
 }
 
 sub make_getter {
@@ -36,9 +39,10 @@ sub make_getter {
 }
 
 sub process_uri {
-  my ($uri, $make_get, $c) = @_;
+  my ($uri, $b, $make_get, $c) = @_;
   print "Testing: \'$uri\'\n";
   my $get = $make_get->($uri);
+  $c = scan_uri($uri, $b, $get) unless defined $c;
   my $understands_code = $c->understands($uri, $get);
   show_err_and_warn($c);
   unless ($understands_code) {
@@ -133,4 +137,11 @@ sub show_err_and_warn {
     $warnstr =~ s/\n$//;
     print "Debug warning from module: $warnstr\n";
   }
+}
+
+sub scan_uri {
+  my ($uri, $b, $get) = @_;
+  my $module = Bibliotech::Plugin::CitationSource->scan($uri, [$b], [$get]) or die 'no citation source object (scan)';
+  print 'Scan returns ', ref($module), " as winner.\n";
+  return $module;
 }

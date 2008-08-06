@@ -55,52 +55,34 @@ sub _item_copy {
 
 sub scan {
   my ($self, $item, $obj_new_params, $obj_call_params) = @_;
-
   die 'must provide a '.$self->noun unless $item;
+  $self->scan_modules_for_normalized_item(do { my $new = $self->normalize($item); defined $new ? $new : $item; },
+					  $obj_new_params, $obj_call_params,
+					  $self->modules);
+}
 
-  my $newitem = $self->normalize($item);
-  $item = $newitem if defined $newitem;
-
-  my @modules = $self->modules or return undef;
-
-  # the various eval's below are not so much to accomplish any programatic feat, but just to encapsulate
-  # calls into the citation modules so that error messages from die's inside those modules can be prepended
-  # with context information from this subroutine
-
-  # select the best citation source module
-  my $best_mod;
-  eval {
-    my @mods;
+sub scan_modules_for_normalized_item {
+  my ($self, $item, $obj_new_params, $obj_call_params, @modules) = @_;
+  my $best = eval {
+    my @ok;
     foreach my $class (@modules) {
-      my $obj;
-      eval {
-	$obj = $self->instance($class, $obj_new_params);
-      };
-      if ($@) {
-	next if $@ =~ /^API too old/;
-	die $@;
-      }
-      if (@mods) {
-	if ($obj->can('potential_understands')) {
-	  my $potential_score = eval { $obj->potential_understands };
-	  die 'Error from '.ref($obj)."::potential_understands: $@" if $@;
-	  next unless all { $potential_score > $_ } (map { $_->[0] } @mods);  # because we won't beat one that we have
-	}
+      my $obj = eval { $self->instance($class, $obj_new_params) };
+      $@ =~ /^API too old/ ? next : die $@ if $@;
+      if (@ok and $obj->can('potential_understands')) {  # some already identified in previous iterations
+	my $potential_score = eval { $obj->potential_understands };
+	die 'Error from '.ref($obj)."::potential_understands: $@" if $@;
+	next unless all { $potential_score > $_ } (map { $_->[1] } @ok);  # because we won't beat one that we have
       }
       my $score = eval { $obj->understands(_item_copy($item), @{$obj_call_params||[]}); };
       die 'Error from '.ref($obj)."::understands(\'$item\'): $@" if $@;
-      #warn "Bibliotech::Plugin::scan - $class = $score\n";
       next if !$score or $score <= 0;  # because that means does not understand or transient error
-      push @mods, [$score => $obj];
+      push @ok, [$obj, $score];
       last if $score == 1;  # because it will win anyway
     }
-    $best_mod = reduce { $a->[0] < $b->[0] ? $a : $b } @mods if @mods;
+    return reduce { $a->[1] < $b->[1] ? $a : $b } @ok;
   };
   die "error in plugin scan loop: $@" if $@;
-  return unless $best_mod;
-  my ($score, $mod) = @{$best_mod};
-  return ($mod, $score) if wantarray;  # object, "understands" score
-  return $mod;                         # object
+  return defined($best) ? (wantarray ? @{$best} : $best->[0]) : undef;
 }
 
 # return a hash suitable for use in CGI forms
