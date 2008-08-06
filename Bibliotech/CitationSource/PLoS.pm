@@ -38,36 +38,21 @@ sub understands {
   return 0 unless $uri->host =~ /^\w+.plosjournals.org$/;
   return 1 if $uri->path =~ m!/pdf/\d{2}\.\d{4}_.+?-[LS]\.pdf$!;
   return 0 unless $uri->query;
-  return 1 if $uri->query =~ m/get-document/;
+  return 1 if $uri->query =~ m/get-document/ and $uri->query_param('doi');
   return 0;
 }
 
 sub citations {
   my ($self, $article_uri) = @_;
-
   my $ris;
-  
   eval {
-    my $doi;
-    if($article_uri->query_param('doi')) {
-	$doi = $article_uri->query_param('doi');
-    }
-    if($article_uri->path =~ m!/pdf/(\d{2}\.\d{4})_(.+?)-[LS]\.pdf$!i) {
-	$doi = $1 . '/' . $2;
-    }
-
-    die "no doi\n" unless $doi;
-    
-    my $query_uri = 'http://' . $article_uri->host . '/perlserv/?request=download-citation&t=refman&doi=' .$doi;
-
+    my $doi = do { $article_uri->path =~ m!/pdf/(\d{2}\.\d{4})_(.+?)-[LS]\.pdf$!i ? $1 : undef } ||
+	      $article_uri->query_param('doi') or die "no doi\n";
+    my $query_uri = 'http://'.$article_uri->host.'/perlserv/?request=download-citation&t=refman&doi='.$doi;
     my $ris_raw = $self->get($query_uri);
-    $ris = new Bibliotech::CitationSource::NPG::RIS ($ris_raw);
-
-    die "RIS obj false\n" unless $ris;
+    $ris = Bibliotech::CitationSource::NPG::RIS->new($ris_raw) or die "RIS obj false\n";
     die "RIS file contained no data\n" unless $ris->has_data;
-    $ris->{M3}=$doi;
-    #$ris->{'doi'}=$doi;
-    #$ris->{'misc3'}=$doi;
+    $ris->{M3} = $doi;
   };    
   die $@ if $@ =~ /at .* line \d+/;
   $self->errstr($@), return undef if $@;
