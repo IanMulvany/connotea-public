@@ -38,7 +38,7 @@ sub name {
 }
 
 sub version {
-  '1.2.2.1';
+  '1.3';
 }
 
 sub understands {
@@ -108,9 +108,9 @@ sub build_metadata {
 
 package HTTP::OAI::UserAgent;
 
-# Redefine exactly as in the module but add a fix for the colons. The
-# module as published seems to not work. Perhaps a dependency (URI?)
-# has changed behaviour in a newer version.
+# Redefine exactly as in the module but add a fix for the colons and
+# slashes. The module as published seems to not work. Perhaps a
+# dependency (URI?)  has changed behaviour in a newer version.
 
 {
   no warnings 'redefine';
@@ -128,6 +128,7 @@ package HTTP::OAI::UserAgent;
     }
     local $_ = $uri->as_string;
     s/\%3A/:/g;
+    s/\%2F/\//g;
     return $_;
   }
 }
