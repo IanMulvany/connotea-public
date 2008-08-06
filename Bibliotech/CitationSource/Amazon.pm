@@ -39,41 +39,30 @@ sub understands {
 
 sub citations {
   my ($self, $uri) = @_;
-
-  my $meta_uri = $self->amazon_meta_uri($uri);
-  $self->errstr('Unable to construct AWS URI for'.$uri ) and return undef unless $meta_uri;
-  my $meta_xml;
-  eval { $meta_xml = $self->get($meta_uri) };
-  if ($@) {
-    $self->errstr($@);
-    return undef;
-  }
-  my $raw_citation = $self->raw_parse_amazon_xml($meta_xml);
-  #check it's worth returning
-  unless($raw_citation->{'title'} && $raw_citation->{'authors'}) {
-    $self->errstr('Insufficient metadata extracted for ' . $uri);
-    return undef;
-  }
+  my $meta_uri = _amazon_meta_uri($uri, $self->awsid)
+      or $self->errstr('Unable to construct AWS URI for '.$uri), return;
+  my $meta_xml = $self->content_or_set_errstr(sub { $self->get($meta_uri) }) or return;
+  my $raw_citation = _raw_parse_amazon_xml($meta_xml);
+  $raw_citation->{'title'} && $raw_citation->{'authors'}
+      or $self->errstr('Insufficient metadata extracted for '.$uri), return;
   $raw_citation->{'uri'} = $uri->as_string;
   $raw_citation->{'meta_uri'} = $meta_uri->as_string;
-
-  return new Bibliotech::CitationSource::ResultList(Bibliotech::CitationSource::Result::Simple->new($raw_citation));
+  return Bibliotech::CitationSource::ResultList->new(Bibliotech::CitationSource::Result::Simple->new($raw_citation));
 }
 
-
-sub amazon_meta_uri {
-  my ($self, $uri) = @_;
-  my ($locale) = ($uri->host =~ m!^www.amazon(.+)$!) or return undef;
-  my ($asin) = ($uri->path =~ m!/(\d{9}(?:\d|X))/!) or return undef;
-
-  return new URI('http://webservices.amazon'.$locale.'/onca/xml?Service=AWSECommerceService&SubscriptionId='.$self->awsid.'&Operation=ItemLookup&IdType=ASIN&ItemId='.$asin.'&ResponseGroup=Small');
+sub _amazon_meta_uri {
+  my ($uri, $awsid) = @_;
+  my ($locale) = ($uri->host =~ m!^(?:www.)?amazon(.+)$!) or return;
+  my ($asin)   = ($uri->path =~ m!/(\d{9}(?:\d|X))/!)     or return;
+  return URI->new('http://webservices.amazon'.$locale.
+		  '/onca/xml?Service=AWSECommerceService&SubscriptionId='.$awsid.
+		  '&Operation=ItemLookup&IdType=ASIN&ItemId='.$asin.'&ResponseGroup=Small');
 }
 
-sub raw_parse_amazon_xml {
-  my ($self, $xml) = @_;
+sub _raw_parse_amazon_xml {
+  my $xml = shift;
 
   my $citation;
-  #temp regex XML parsing
   my @items = ($xml =~ m!<Item>(.*?)</Item>!sg);
   return undef unless scalar(@items) == 1;
 
