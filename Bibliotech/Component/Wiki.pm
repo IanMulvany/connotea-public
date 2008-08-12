@@ -1159,12 +1159,16 @@ implicit_link_inner     : prefixed_wikiword_link | wikiword_link
 explicit_link 	       	: '[' explicit_link_inner ']'
               	       	  { $item[2] }
 explicit_link_inner    	: url_or_local / ?\| ?/ explicit_link_name   #/ (emacs font-lock)
-                       	  { "<a href=\"$item[1]\">$item[3]</a>" }
+                       	  { join('', ('<a ',
+				      $item[1] =~ /^[a-z]{1,8}:/ ? 'rel="nofollow" ' : '',
+				      "href=\"$item[1]\">$item[3]</a>")) }
                        	| explicit_link                         # redundant brackets: [[http://...]]
                        	| implicit_link ...!/ ?\|/ ...!'?'      # superfluous brackets: [WikiWord]
                        	  { $item[1] }
                        	| url_or_local
-                       	  { "<a href=\"$item[1]\">$item[1]</a>" }
+                       	  { join('', ('<a ',
+				      $item[1] =~ /^[a-z]{1,8}:/ ? 'rel="nofollow" ' : '',
+				      "href=\"$item[1]\">$item[1]</a>")) }
 explicit_link_name     	: embeddable_token_stream
 
 url_or_local 	       	: url
