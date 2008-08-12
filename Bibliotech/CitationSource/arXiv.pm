@@ -21,6 +21,7 @@ use XML::LibXML;
 use XML::LibXML::NodeList;
 use HTTP::OAI::Harvester;
 use HTTP::OAI::UserAgent;
+use HTTP::OAI::Identify;
 use Bibliotech::DBI;
 use Bibliotech::UserAgent;
 
@@ -107,6 +108,8 @@ sub build_metadata {
 
 
 package HTTP::OAI::UserAgent;
+use Carp qw(croak);
+use URI;
 
 # Redefine exactly as in the module but add a fix for the colons and
 # slashes. The module as published seems to not work. Perhaps a
