@@ -4,7 +4,9 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 #
-# The Bibliotech::Import class is a base class for import modules
+# The Bibliotech::Import::RIS class provides an import interface for
+# RIS format (see http://www.refman.com/support/risformat_intro.asp)
+# files
 
 package Bibliotech::Import::RIS;
 use strict;

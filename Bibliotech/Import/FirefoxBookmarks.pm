@@ -4,8 +4,8 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 #
-# The Bibliotech::Import::FirefoxBookmarks class imports Firefox
-# bookmarks
+# The Bibliotech::Import::FirefoxBookmarks class provides an import
+# interface for Firefox bookmark files
 
 package Bibliotech::Import::FirefoxBookmarks;
 use strict;

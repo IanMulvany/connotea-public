@@ -4,7 +4,8 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 #
-# The Bibliotech::Import::EndNote class imports silly EndNote text format
+# The Bibliotech::Import::EndNote class provides an import interface
+# for EndNote text format files
 
 package Bibliotech::Import::EndNote;
 use strict;

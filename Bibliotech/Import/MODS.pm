@@ -4,7 +4,8 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 #
-# The Bibliotech::Import::MODS class imports MODS XML (see http://www.loc.gov/standards/mods/)
+# The Bibliotech::Import::MODS class provides an import interface for
+# MODS XML (see http://www.loc.gov/standards/mods/) files
 
 package Bibliotech::Import::MODS;
 use strict;

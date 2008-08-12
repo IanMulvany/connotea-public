@@ -4,7 +4,8 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 #
-# The Bibliotech::Import::ISI attempts to import that rubbish from ISI Web of Knowledge
+# The Bibliotech::Import::ISI class provides an import interface for
+# ISI Web of Knowledge files
 
 package Bibliotech::Import::ISI;
 use strict;

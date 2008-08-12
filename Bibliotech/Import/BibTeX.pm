@@ -4,7 +4,8 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 #
-# The Bibliotech::Import::BibTeX class imports BibTeX
+# The Bibliotech::Import::BibTeX class provides an import interface
+# for BibTeX format files
 
 package Bibliotech::Import::BibTeX;
 use strict;

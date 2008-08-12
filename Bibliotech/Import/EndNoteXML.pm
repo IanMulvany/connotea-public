@@ -4,7 +4,8 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 #
-# The Bibliotech::Import::EndNoteXML class imports EndNote XML
+# The Bibliotech::Import::EndNoteXML class proves an import interface
+# for EndNote XML files
 
 package Bibliotech::Import::EndNoteXML;
 use strict;
