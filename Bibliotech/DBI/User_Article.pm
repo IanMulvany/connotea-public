@@ -605,7 +605,8 @@ sub rss_content {
   my ($self, $bibliotech, $verbose) = @_;
   my $location = $bibliotech->location;
   my $bookmark = $self->bookmark;
-  my %item = (title       => $self->simple_title,
+  my %item = (about       => $self->simple_link($bibliotech),
+	      title       => $self->simple_title,
 	      link        => $self->simple_uri,
 	      description => $self->simple_postedby($bibliotech),
 	      ($verbose ?
