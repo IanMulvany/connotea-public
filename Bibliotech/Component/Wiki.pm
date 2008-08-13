@@ -27,7 +27,10 @@ our $WIKI_LOCK_TIME     = __PACKAGE__->cfg('LOCK_TIME') || '10 MINUTE';
 our $WIKI_HOME_NODE     = __PACKAGE__->cfg('HOME_NODE') || 'System:Home';
 our $WIKI_MAX_PAGE_SIZE = __PACKAGE__->cfg('MAX_PAGE_SIZE') || 40000;
 our $WIKI_MAX_EXT_LINKS = __PACKAGE__->cfg('MAX_EXT_LINKS') || 75;
-our $WIKI_SCAN          = __PACKAGE__->cfg('SCAN') || 1;
+our $WIKI_SCAN          = __PACKAGE__->cfg('SCAN');
+    $WIKI_SCAN          = 1 unless defined $WIKI_SCAN;
+our $WIKI_ALLOW_EDIT    = __PACKAGE__->cfg('ALLOW_EDIT');
+    $WIKI_ALLOW_EDIT    = 1 unless defined $WIKI_ALLOW_EDIT;
 
 sub last_updated_basis {
   ('NOW');
@@ -160,6 +163,11 @@ sub html_content {
       $node_real = Bibliotech::Component::Wiki::NodeName->new('System:PleaseLogin');
       $self->remember_current_uri;
     }
+  }
+
+  if ($action eq 'edit' and !$WIKI_ALLOW_EDIT) {
+    $action_real = 'display';
+    $node_real = Bibliotech::Component::Wiki::NodeName->new('System:NoEdit');
   }
 
   if (defined $user and !$user->active) {
@@ -640,6 +648,7 @@ sub generate_recent_changes {
 sub system_links {
   ('System:Home',            # home page text
    'System:AccessDenied',    # tried to edit a page not allowed to edit
+   'System:NoEdit',          # tried to edit a page but editing is temporarily suspended wiki-wide
    'System:PleaseLogin',     # could maybe edit if were logged in, can't tell
    'System:SystemPrefix',    # asked for System: with no base node
    'System:GeneratePrefix',  # asked for Generate: with no base node

@@ -297,6 +297,7 @@ COMPONENT WIKI {
   #DBI_PASSWORD = 'secret'
   #ADMIN_USERS = [ 'admin' ]
   #LOCK_TIME = '10 MINUTE'
+  #ALLOW_EDIT = true
   #HOME_NODE = 'System:Home'
   # page size limit is in characters
   #MAX_PAGE_SIZE = 40000
