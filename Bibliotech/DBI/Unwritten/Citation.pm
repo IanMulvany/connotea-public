@@ -34,7 +34,7 @@ sub write {
 			       sub { transfer Bibliotech::Journal (shift) });
   my $citation = _write_accept($self,
 			       undef,
-			       sub { transfer Bibliotech::Citation ($self, {journal => $journal}) });
+			       sub { transfer Bibliotech::Citation (shift, {journal => $journal}) });
   my $i = 0;
   foreach my $author_mem ($self->authors) {
     my $author = _write_accept($author_mem,
@@ -156,20 +156,21 @@ sub from_hash_of_text_values {
     Bibliotech::Unwritten::Journal->transfer(undef, {name => $name}, undef, 'construct');
   };
 
+  my %text = %{$text_ref};
   my $citation = Bibliotech::Unwritten::Citation->transfer
       (undef,
-       {title         => $text_ref->{title} || undef,
-	volume        => $text_ref->{volume} || undef,
-	issue         => $text_ref->{issue} || undef,
-	pubmed        => $fix_pubmed->($text_ref->{pubmed}) || undef,
-	doi           => $fix_doi->($text_ref->{doi}) || undef,
-	asin          => $text_ref->{asin} || undef,
-	journal       => $get_journal->($text_ref->{journal}) || undef,
-	raw_date      => $text_ref->{date} || undef,
-	date          => $date_or_die->($text_ref->{date}) || undef,
-	start_page    => $text_ref->{start_page} || undef,
-	end_page      => $text_ref->{end_page} || undef,
-	ris_type      => $text_ref->{ris_type} || $text_ref->{ristype} || undef,
+       {title         => $text{title} || undef,
+	volume        => $text{volume} || undef,
+	issue         => $text{issue} || undef,
+	pubmed        => $fix_pubmed->($text{pubmed}) || undef,
+	doi           => $fix_doi->($text{doi}) || undef,
+	asin          => $text{asin} || undef,
+	journal       => $get_journal->($text{journal}) || undef,
+	raw_date      => $text{date} || undef,
+	date          => $date_or_die->($text{date}) || undef,
+	start_page    => $text{start_page} || $text{startpage} || undef,
+	end_page      => $text{end_page} || $text{endpage} || undef,
+	ris_type      => $text{ris_type} || $text{ristype} || undef,
 	user_supplied => 1,
 	cs_module     => 'User Edit',
 	cs_type       => undef,
@@ -179,12 +180,12 @@ sub from_hash_of_text_values {
        undef, 'construct');
 
   # possibly redefine start_page and end_page using object method:
-  if (my $combined_start_and_end_pages = $text_ref->{pages} || $text_ref->{page} || $text_ref->{page_range}) {
+  if (my $combined_start_and_end_pages = $text{pages} || $text{page} || $text{page_range}) {
     $citation->page($combined_start_and_end_pages);
   }
 
   # define authors using object method:
-  $citation->authors([Bibliotech::Util::split_author_names($text_ref->{authors})]);
+  $citation->authors([Bibliotech::Util::split_author_names($text{authors})]);
 
   return $citation;
 }
