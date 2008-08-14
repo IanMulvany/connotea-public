@@ -81,43 +81,43 @@
       <td class="addformdatacell" id="cristypedatacell">
         [% SET cristype_value = sticky('cristype') %]
         <select name="cristype" class="textctl" id="cristypebox">
-          <option [% IF NOT cristype_value %] selected="selected"[% END %]value=""></option>
-          <option [% IF cristype == 'JOUR' %] selected="selected"[% END %]value="JOUR">Journal article</option>
-          <option [% IF cristype == 'ABST' %] selected="selected"[% END %]value="ABST">Abstract</option>
-          <option [% IF cristype == 'ADVS' %] selected="selected"[% END %]value="ADVS">Audiovisual material</option>
-          <option [% IF cristype == 'ART' %] selected="selected"[% END %]value="ART">Art Work</option>
-          <option [% IF cristype == 'BILL' %] selected="selected"[% END %]value="BILL">Bill/Resolution</option>
-          <option [% IF cristype == 'BOOK' %] selected="selected"[% END %]value="BOOK">Book, Whole</option>
-          <option [% IF cristype == 'CASE' %] selected="selected"[% END %]value="CASE">Case</option>
-          <option [% IF cristype == 'CHAP' %] selected="selected"[% END %]value="CHAP">Book chapter</option>
-          <option [% IF cristype == 'COMP' %] selected="selected"[% END %]value="COMP">Computer program</option>
-          <option [% IF cristype == 'CONF' %] selected="selected"[% END %]value="CONF">Conference proceeding</option>
-          <option [% IF cristype == 'CTLG' %] selected="selected"[% END %]value="CTLG">Catalog</option>
-          <option [% IF cristype == 'DATA' %] selected="selected"[% END %]value="DATA">Data file</option>
-          <option [% IF cristype == 'ELEC' %] selected="selected"[% END %]value="ELEC">Electronic citation</option>
-          <option [% IF cristype == 'GEN' %] selected="selected"[% END %]value="GEN">Generic</option>
-          <option [% IF cristype == 'HEAR' %] selected="selected"[% END %]value="HEAR">Hearing</option>
-          <option [% IF cristype == 'ICOMM' %] selected="selected"[% END %]value="ICOMM">Internet communication</option>
-          <option [% IF cristype == 'INPR' %] selected="selected"[% END %]value="INPR">In Press</option>
-          <option [% IF cristype == 'JFULL' %] selected="selected"[% END %]value="JFULL">Journal (full)</option>
-          <option [% IF cristype == 'MAP' %] selected="selected"[% END %]value="MAP">Map</option>
-          <option [% IF cristype == 'MGZN' %] selected="selected"[% END %]value="MGZN">Magazine article</option>
-          <option [% IF cristype == 'MPCT' %] selected="selected"[% END %]value="MPCT">Motion picture</option>
-          <option [% IF cristype == 'MUSIC' %] selected="selected"[% END %]value="MUSIC">Music score</option>
-          <option [% IF cristype == 'NEWS' %] selected="selected"[% END %]value="NEWS">Newspaper</option>
-          <option [% IF cristype == 'PAMP' %] selected="selected"[% END %]value="PAMP">Pamphlet</option>
-          <option [% IF cristype == 'PAT' %] selected="selected"[% END %]value="PAT">Patent</option>
-          <option [% IF cristype == 'PCOMM' %] selected="selected"[% END %]value="PCOMM">Personal communication</option>
-          <option [% IF cristype == 'RPRT' %] selected="selected"[% END %]value="RPRT">Report</option>
-          <option [% IF cristype == 'SER' %] selected="selected"[% END %]value="SER">Serial (Book, Monograph)</option>
-          <option [% IF cristype == 'SLIDE' %] selected="selected"[% END %]value="SLIDE">Slide</option>
-          <option [% IF cristype == 'SOUND' %] selected="selected"[% END %]value="SOUND">Sound recording</option>
-          <option [% IF cristype == 'STAT' %] selected="selected"[% END %]value="STAT">Statute</option>
-          <option [% IF cristype == 'STD' %] selected="selected"[% END %]value="STD">Standard Citation</option>
-          <option [% IF cristype == 'THES' %] selected="selected"[% END %]value="THES">Thesis/Dissertation</option>
-          <option [% IF cristype == 'UNBIL' %] selected="selected"[% END %]value="UNBIL">Unenacted bill/resolution</option>
-          <option [% IF cristype == 'UNPB' %] selected="selected"[% END %]value="UNPB">Unpublished work</option>
-          <option [% IF cristype == 'VIDEO' %] selected="selected"[% END %]value="VIDEO">Video recording</option>
+          <option[% IF NOT cristype_value %] selected="selected"[% END %] value=""></option>
+          <option[% IF cristype_value == 'JOUR' %] selected="selected"[% END %] value="JOUR">Journal article</option>
+          <option[% IF cristype_value == 'ABST' %] selected="selected"[% END %] value="ABST">Abstract</option>
+          <option[% IF cristype_value == 'ADVS' %] selected="selected"[% END %] value="ADVS">Audiovisual material</option>
+          <option[% IF cristype_value == 'ART' %] selected="selected"[% END %] value="ART">Art Work</option>
+          <option[% IF cristype_value == 'BILL' %] selected="selected"[% END %] value="BILL">Bill/Resolution</option>
+          <option[% IF cristype_value == 'BOOK' %] selected="selected"[% END %] value="BOOK">Book, Whole</option>
+          <option[% IF cristype_value == 'CASE' %] selected="selected"[% END %] value="CASE">Case</option>
+          <option[% IF cristype_value == 'CHAP' %] selected="selected"[% END %] value="CHAP">Book chapter</option>
+          <option[% IF cristype_value == 'COMP' %] selected="selected"[% END %] value="COMP">Computer program</option>
+          <option[% IF cristype_value == 'CONF' %] selected="selected"[% END %] value="CONF">Conference proceeding</option>
+          <option[% IF cristype_value == 'CTLG' %] selected="selected"[% END %] value="CTLG">Catalog</option>
+          <option[% IF cristype_value == 'DATA' %] selected="selected"[% END %] value="DATA">Data file</option>
+          <option[% IF cristype_value == 'ELEC' %] selected="selected"[% END %] value="ELEC">Electronic citation</option>
+          <option[% IF cristype_value == 'GEN' %] selected="selected"[% END %] value="GEN">Generic</option>
+          <option[% IF cristype_value == 'HEAR' %] selected="selected"[% END %] value="HEAR">Hearing</option>
+          <option[% IF cristype_value == 'ICOMM' %] selected="selected"[% END %] value="ICOMM">Internet communication</option>
+          <option[% IF cristype_value == 'INPR' %] selected="selected"[% END %] value="INPR">In Press</option>
+          <option[% IF cristype_value == 'JFULL' %] selected="selected"[% END %] value="JFULL">Journal (full)</option>
+          <option[% IF cristype_value == 'MAP' %] selected="selected"[% END %] value="MAP">Map</option>
+          <option[% IF cristype_value == 'MGZN' %] selected="selected"[% END %] value="MGZN">Magazine article</option>
+          <option[% IF cristype_value == 'MPCT' %] selected="selected"[% END %] value="MPCT">Motion picture</option>
+          <option[% IF cristype_value == 'MUSIC' %] selected="selected"[% END %] value="MUSIC">Music score</option>
+          <option[% IF cristype_value == 'NEWS' %] selected="selected"[% END %] value="NEWS">Newspaper</option>
+          <option[% IF cristype_value == 'PAMP' %] selected="selected"[% END %] value="PAMP">Pamphlet</option>
+          <option[% IF cristype_value == 'PAT' %] selected="selected"[% END %] value="PAT">Patent</option>
+          <option[% IF cristype_value == 'PCOMM' %] selected="selected"[% END %] value="PCOMM">Personal communication</option>
+          <option[% IF cristype_value == 'RPRT' %] selected="selected"[% END %] value="RPRT">Report</option>
+          <option[% IF cristype_value == 'SER' %] selected="selected"[% END %] value="SER">Serial (Book, Monograph)</option>
+          <option[% IF cristype_value == 'SLIDE' %] selected="selected"[% END %] value="SLIDE">Slide</option>
+          <option[% IF cristype_value == 'SOUND' %] selected="selected"[% END %] value="SOUND">Sound recording</option>
+          <option[% IF cristype_value == 'STAT' %] selected="selected"[% END %] value="STAT">Statute</option>
+          <option[% IF cristype_value == 'STD' %] selected="selected"[% END %] value="STD">Standard Citation</option>
+          <option[% IF cristype_value == 'THES' %] selected="selected"[% END %] value="THES">Thesis/Dissertation</option>
+          <option[% IF cristype_value == 'UNBIL' %] selected="selected"[% END %] value="UNBIL">Unenacted bill/resolution</option>
+          <option[% IF cristype_value == 'UNPB' %] selected="selected"[% END %] value="UNPB">Unpublished work</option>
+          <option[% IF cristype_value == 'VIDEO' %] selected="selected"[% END %] value="VIDEO">Video recording</option>
           </select>
           <input type="hidden" name="cristype2" value="[% sticky('cristype2') %]" />
         </td>
