@@ -800,8 +800,8 @@ sub hashref_for_user_citation {
   my ($self, $cgi) = @_;
   my %citation;
   foreach my $c_field (@citation_field_names) {
-    (my $field = $c_field) =~ s/^c//;
     my $value = $self->cleanparam($cgi->param($c_field)) or next;
+    (my $field = $c_field) =~ s/^c//;
     $citation{$field} = $value;
   }
   return \%citation;
