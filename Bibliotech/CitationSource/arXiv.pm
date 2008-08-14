@@ -15,13 +15,11 @@ package Bibliotech::CitationSource::arXiv;
 use base 'Bibliotech::CitationSource';
 use strict;
 use warnings;
-use Bibliotech::Util qw(parse_author);
-use Bibliotech::CitationSource::Simple;
 use XML::LibXML;
 use XML::LibXML::NodeList;
-use HTTP::OAI::Harvester;
-use HTTP::OAI::UserAgent;
-use HTTP::OAI::Identify;
+use HTTP::OAI;
+use Bibliotech::Util qw(parse_author);
+use Bibliotech::CitationSource::Simple;
 use Bibliotech::DBI;
 use Bibliotech::UserAgent;
 
