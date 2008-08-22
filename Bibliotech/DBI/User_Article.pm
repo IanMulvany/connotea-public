@@ -431,17 +431,17 @@ sub comments_html {
 
 sub postedby {
   my ($self, %options) = @_;
-  my $bibliotech = $options{bibliotech} or die 'must pass in bibliotech object';
-  my $article = $self->article;
-  my $bookmark = $self->bookmark;
-  my $adding = $bookmark->adding;
+  my $bibliotech  = $options{bibliotech} or die 'must pass in bibliotech object';
+  my $article     = $self->article;   defined $article  or die 'no article';
+  my $bookmark    = $self->bookmark;  defined $bookmark or die 'no bookmark';
+  my $adding      = $bookmark->adding;
   return wantarray ? () : '' if $adding >= 4;
-  my $main = $options{main};
-  my $cgi = $bibliotech->cgi;
+  my $main        = $options{main};
+  my $cgi         = $bibliotech->cgi;
   my $show_counts = defined $options{show_counts} ? $options{show_counts} : ($adding ? 0 : 1);
-  my $in_html = $options{html} ? 1 : 0;
-  my @tags = defined $options{tags} ? @{$options{tags}} : $self->tags;
-  my $quote_tags = defined $options{quote_tags} ? $options{quote_tags} : (!$in_html || $adding >= 3);
+  my $in_html     = $options{html} ? 1 : 0;
+  my @tags        = defined $options{tags} ? @{$options{tags}} : $self->tags;
+  my $quote_tags  = defined $options{quote_tags} ? $options{quote_tags} : (!$in_html || $adding >= 3);
   my @output;
 
   if (my $description = $self->description) {

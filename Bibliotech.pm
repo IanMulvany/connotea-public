@@ -148,33 +148,27 @@ sub preadd_validate_uri {
   return $uri;
 }
 
+sub _might_give_replacement_bookmark {
+  my ($original_bookmark, $action) = @_;
+  my $maybe_new_bookmark = $action->();
+  return $maybe_new_bookmark if defined $maybe_new_bookmark;
+  return $original_bookmark;
+}
+
+sub preadd_insert {
+  my ($self, $uri, $title) = @_;
+  my $bookmark = Bibliotech::Bookmark->insert({url => $uri});
+  $bookmark = _might_give_replacement_bookmark($bookmark, sub { $self->pull_title($bookmark, $title) });
+  $bookmark = _might_give_replacement_bookmark($bookmark, sub { $self->pull_citation($bookmark) });
+  return $bookmark;
+}
+
 sub preadd {
   my ($self, %options) = @_;
-
-  my $uri   = Bibliotech::Bookmark->normalize_option_to_simple_uri_object(\%options);
+  my $uri   = preadd_validate_uri(Bibliotech::Bookmark->normalize_option_to_simple_uri_object(\%options));
   my $title = $options{title};
-
-  preadd_validate_uri($uri);
-
   my ($bookmark) = Bibliotech::Bookmark->search(url => $uri);
-  unless ($bookmark) {
-    $bookmark = Bibliotech::Bookmark->find_or_create({url => $uri});
-    {
-      my $new_bookmark = $self->pull_title($bookmark, $title);
-      if (defined $new_bookmark) {
-	undef $bookmark;
-	$bookmark = $new_bookmark;
-      }
-    }
-    {
-      my $new_bookmark = $self->pull_citation($bookmark);
-      if (defined $new_bookmark) {
-	undef $bookmark;
-	$bookmark = $new_bookmark;
-      }
-    }
-  }
-
+  $bookmark = $self->preadd_insert($uri, $options{title}) unless defined $bookmark;
   return $bookmark;
 }
 
@@ -333,7 +327,10 @@ sub change {
       }
     }
     else {
-      $user_article = Bibliotech::Unwritten::User_Article->construct({user => $user, bookmark => $bookmark});
+      my $article = Bibliotech::Unwritten::Article->new({hash => $bookmark->hash});
+      $user_article = Bibliotech::Unwritten::User_Article->construct({user     => $user,
+								      bookmark => $bookmark,
+								      article  => $article});
       die 'no unwritten user_article object' unless defined $user_article;
       $user_article->bookmark->for_user_article($user_article);
     }

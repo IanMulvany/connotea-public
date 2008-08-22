@@ -5,7 +5,8 @@
 # of the License, or (at your option) any later version.
 #
 # The Bibliotech::Import::Text class provides an import interface for
-# simple text files of hyperlinks
+# simple text files of hyperlinks, including round-trip support for
+# /plain output (minus user because you can't post as someone else).
 
 package Bibliotech::Import::Text;
 use strict;
@@ -30,6 +31,10 @@ sub mime_types {
 
 sub extensions {
   ('txt', 'text');
+}
+
+sub noun {
+  'text';
 }
 
 sub understands {
