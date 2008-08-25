@@ -103,7 +103,8 @@ GENERAL {
                        DOI PMC Blackwell Wiley ePrints ]
 
   # which import modules are active
-  IMPORT_MODULES = [ FirefoxBookmarks RIS ]
+  IMPORT_MODULES = [ FirefoxBookmarks RIS EndNote EndNoteXML ISI
+                     BibTeX Text ]
 
   # which proxy translation modules are active
   PROXY_MODULES = [ Ads ]

@@ -27,10 +27,24 @@ sub _split_tag_list {
   return Bibliotech::Parser->new->tag_list($_);
 }
 
+sub _parse_text {
+  local $_ = shift or return;
+  return if m/^#/;                                # skip hash-prefixed comment lines
+  my ($username, $uri, $tag_list) =
+      m/^(?:(\w+)\s+->\s+)?                       # optionally, a username followed by an arrow
+         ((?:\w{1,10}:\s+)?\S+)                   # URL or psuedo-URL with embedded space e.g. 'PMID: 12345'
+         (?:\s+\[?([^\[\]]*)                      # tags, optionally surrounded by square brackets
+           (?:\](?:\s+\#.*)?)?)?$                 # with tags, optionally, a hash-prefixed final comment
+       /x or return;
+  return ($username || undef, $uri || undef, $tag_list || undef);
+}
+
 sub _parse {
-  local $_ = shift;
-  my (undef, $username, $uri, undef, $tag_list) = m/^((\w+) -> )?(\S+)( \[?([^\]]+)\]?)?$/ or return;
-  return ($username || undef, URI->new($uri), _split_tag_list($tag_list));
+  local $_ = shift or return;
+  my ($username, $uri, $tag_list) = _parse_text($_) or return;
+  return ($username || undef,
+	  URI->new(do { local $_ = $uri; s/^(\w{1,10}:)\s+/$1/; $_ }) || undef,
+	  _split_tag_list($tag_list) || undef);
 }
 
 sub parse {

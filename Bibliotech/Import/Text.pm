@@ -14,7 +14,7 @@ use base 'Bibliotech::Import';
 use Bibliotech::Const;
 
 sub name {
-  'Text';
+  'Plain Text (one URL and tags per line)';
 }
 
 sub version {
@@ -38,12 +38,14 @@ sub noun {
 }
 
 sub understands {
-  $_[1] =~ /^(?:\w+ -> )?(?:http:|pmid:|doi:|asin:)/mi ? 2 : 0;
+  $_[1] =~ /^(?:\w+ -> )?(?:\w{1,10}:|\d+$|\d+\s+\[?\"?\w)/mi ? 2 : 0;
 }
 
 sub parse {
   my $self = shift;
-  $self->data(Bibliotech::Import::EntryList->new(map { Bibliotech::Import::Text::Entry->new($_) } split(/\n/, $self->doc)));
+  $self->data(Bibliotech::Import::EntryList->new(map { Bibliotech::Import::Text::Entry->new($_) }
+						 grep { $_ && !/^#/ }
+						 split(/\n/, $self->doc)));
   return 1;
 }
 
