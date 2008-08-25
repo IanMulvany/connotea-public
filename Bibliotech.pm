@@ -130,10 +130,17 @@ sub import_file {
   return $importer->generate_user_articles;
 }
 
+sub prevalidation_uri_conversion {
+  my $uri = pop;
+  return URI->new('pmid:'.$uri) if $uri =~ /^\d+$/;  # PMID as number only - convert, otherwise it would be rejected
+  return $uri;
+}
+
 sub preadd_validate_uri {
   my $uri = pop;
-  my $ref = ref $uri;              # URI has subclasses per type of URI
-  $ref && $ref ne 'URI::_generic'  # they are all ISA URI::_generic but if that's *all* then reject it
+  my $ref = ref($uri)              # URI has subclasses per type of URI
+      or die "Sorry, this URL could not be parsed by the URI library.\n";
+  $ref ne 'URI::_generic'          # they are all ISA URI::_generic but if that's *all* then reject it
       or die "Sorry, this URL does not appear to be valid.\n";
   $uri->isa('URI')
       or die "Sorry, this URL does not appear to be valid (not URI object).\n";
@@ -165,7 +172,7 @@ sub preadd_insert {
 
 sub preadd {
   my ($self, %options) = @_;
-  my $uri   = preadd_validate_uri(Bibliotech::Bookmark->normalize_option_to_simple_uri_object(\%options));
+  my $uri   = preadd_validate_uri(prevalidation_uri_conversion(Bibliotech::Bookmark->normalize_option_to_simple_uri_object(\%options)));
   my $title = $options{title};
   my ($bookmark) = Bibliotech::Bookmark->search(url => $uri);
   $bookmark = $self->preadd_insert($uri, $options{title}) unless defined $bookmark;
