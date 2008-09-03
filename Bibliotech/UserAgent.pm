@@ -28,18 +28,19 @@ sub _make_qrs {
   map { ref($_) ? $_ : _make_qr($_) } @_;
 }
 
-# create normal object but override sitename
+# create normal object but override sitename and add log object
 sub new {
   my ($class, %options) = @_;
-  my $bibliotech = $options{bibliotech};
-  delete $options{bibliotech};
+  my ($bibliotech_sitename,
+      $bibliotech_log) = do { my $bibliotech = delete $options{bibliotech};
+			      defined $bibliotech ? ($bibliotech->sitename, $bibliotech->log) : () };
   my $self = $class->SUPER::new(%options);
-  my $sitename = defined $bibliotech ? $bibliotech->sitename : $SITE_NAME;
   $self->timeout($TIMEOUT);
-  $self->agent($STRING || $sitename.' ');  # trailing space ensures LWP will add version info
+  $self->agent($STRING || ($bibliotech_sitename || $SITE_NAME).' ');  # trailing space ensures LWP will add version info
   $self->blocked_hosts(_make_qrs(@{$BLACK_LIST}))     if $BLACK_LIST and @{$BLACK_LIST};
   $self->whitelisted_hosts(_make_qrs(@{$WHITE_LIST})) if $WHITE_LIST and @{$WHITE_LIST};
   $self->cookie_jar({});
+  $self->{log} = $bibliotech_log;
   return $self;
 }
 
@@ -52,11 +53,24 @@ sub request_handle_foreign {
   return $self->SUPER::request($req, $arg, $size, $previous);
 }
 
-# perform request as normal but afterwards rebless response
+# perform request as normal but afterwards log it and rebless response
 sub request {
-  my ($self, $req, $arg, $size, $previous) = @_;
-  my $response = $self->request_handle_foreign($req, $arg, $size, $previous);
+  my ($self, $request, $arg, $size, $previous) = @_;
+  my $response = $self->request_handle_foreign($request, $arg, $size, $previous);
+  $self->log_objects($request, $response);
   return bless $response, 'Bibliotech::HTTP::Response';
+}
+
+sub log_objects {
+  my ($self, $request, $response) = @_;
+  $self->log_message(join(' ',
+			  'useragent', $request->method, $request->uri,
+			  'yields', $response->status_line));
+}
+
+sub log_message {
+  my ($self, $str) = @_;
+  $self->{log}->info($str) if defined $self->{log};
 }
 
 sub system_hosts_file {
