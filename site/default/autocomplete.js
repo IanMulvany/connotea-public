@@ -130,6 +130,7 @@ function analyseTagString(tagString, caretPos) {
   var len = all.length;
   var inTag = false;
   var inQuote = false;
+  var inQuoteChar = null;
   var part = { text: '', currentlyediting: false };
 
   for (var i = 0; i < len; i++) {
@@ -148,17 +149,35 @@ function analyseTagString(tagString, caretPos) {
         continue;
       }
     }
-    else if (c == '"' || c == "'") {
+    else if (c == '"') {
       if (!inTag) {
         inTag = true;
         inQuote = true;
+        inQuoteChar = '"';
         continue;
       }
-      else if (inQuote) {
+      else if (inQuote && inQuoteChar == '"') {
         tagParts.push(part);
         part = { text: '', currentlyediting: false };
         inTag = false;
         inQuote = false;
+        inQuoteChar = null;
+        continue;
+      }
+    }
+    else if (c == "'") {
+      if (!inTag) {
+        inTag = true;
+        inQuote = true;
+        inQuoteChar = "'";
+        continue;
+      }
+      else if (inQuote && inQuoteChar == "'") {
+        tagParts.push(part);
+        part = { text: '', currentlyediting: false };
+        inTag = false;
+        inQuote = false;
+        inQuoteChar = null;
         continue;
       }
     }
