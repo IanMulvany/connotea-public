@@ -1,4 +1,11 @@
-var reportWindow;
+// Add Form AutoComplete Functions
+//
+// Copyright 2008 Nature Publishing Group
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+
 var usageBoxDone = 0;
 var alphaBoxDone = 0;
 var lastCaretPos = 0;
@@ -6,48 +13,50 @@ var potentials;
 var preferByUsage = 0;
 
 function addsuggestion(id, tag, clear) {
-  document.getElementById(id).innerHTML += '<a class="add-form-tag-suggestion tag" href="javascript:addtag(\'' + tag.replace(/\'/g, "\\'") + '\', ' + clear + ')">' + tag + '</a>';
+  var suggestions = document.getElementById(id);
+  var anchor = document.createElement('a');
+  anchor.setAttribute('class', 'add-form-tag-suggestion tag');
+  anchor.setAttribute('href', 'javascript:addtag(\'' + tag.replace(/\'/g, "\\'") + '\', ' + clear + ')');
+  anchor.appendChild(document.createTextNode(tag));
+  suggestions.appendChild(anchor);
 }
 
 function addtag(tag, clear) {
-  report("LCP: " + lastCaretPos);
   var tagsBox = document.getElementById('tagsbox');
   var tagstring = tagsBox.value;
   var tagparts = analyseTagString(tagstring, lastCaretPos);
   tagsBox.value = '';
 
   function append(t) {
-    if(t.match(/\S[\s,]+\S/)) {
+    if (t.match(/\S[\s,]+\S/))
       t = '"'+t+'"';
-     } 
-    if(tagsBox.value == '') {
+    if (tagsBox.value == '')
       tagsBox.value += t;
-    }
-    else {
+    else
       tagsBox.value += ', ' + t;
-    }
   }
   var addedtag = false;
-  for(var i=0; i < tagparts.length; i++) {
-    report("ADDTAG: " + tagparts[i].text + " " + tagparts[i].currentlyediting);
+  for (var i=0; i < tagparts.length; i++) {
     var addme = tagparts[i].text;
-    if(tagparts[i].currentlyediting == true) {
+    if (tagparts[i].currentlyediting == true) {
       addme = tag;
       addedtag = true;
     }
     append(addme);
   }
-  if (!addedtag) {
+  if (!addedtag)
     append(tag);
-  }
   tagsBox.value += ' ';
   tagsBox.focus();
   lastCaretPos = getCaretPosition(tagsBox);
-  if(clear) { clearsuggestions(); }
+  if (clear)
+    clearsuggestions();
 }
 
 function clearsuggestions() {
-  document.getElementById('add-form-ac-results-suggest').innerHTML = '';
+  var obj = document.getElementById('add-form-ac-results-suggest');
+  while (obj.firstChild)
+    obj.removeChild(obj.firstChild);
   disable('tbox-all-usage') 
   disable('tbox-all-alpha') 
   disable('tbox-suggest') 
@@ -58,13 +67,11 @@ function showAllUsage() {
   clearsuggestions();
   if (!usageBoxDone) {
     var list = new Array();
-    for(var tag in tags) {
+    for (var tag in tags)
       list.push({ 'tag' : tag, 'uOrder' : tags[tag] });
-    } 
     list.sort(usageorder);
-    for(var i=0; i < list.length; i++) {
+    for(var i=0; i < list.length; i++)
       addsuggestion('add-form-ac-results-usage', list[i].tag, false);
-    }
     usageBoxDone = 1;
   }
   disable('tbox-closed');
@@ -77,9 +84,8 @@ function showAllUsage() {
 function showAllAlpha() {
   clearsuggestions();
   if (!alphaBoxDone) {
-    for(var tag in tags) {
+    for (var tag in tags)
       addsuggestion('add-form-ac-results-alpha', tag, false);
-    }
     alphaBoxDone = 1;
   }
   disable('tbox-closed');
@@ -105,13 +111,11 @@ function clearall() {
 }
 
 function enable(id) {
-  //report("enable " + id);
   var el = document.getElementById(id);
   el.style.display = '';
 }
 
 function disable(id) {
-  //report("disable " + id);
   var el = document.getElementById(id);
   el.style.display = 'none';
 }
@@ -123,64 +127,64 @@ function usageorder(a, b) {
 function analyseTagString(tagString, caretPos) {
   var tagParts = new Array();
   var all = tagString.split('');
-  //report("ATS: split into: " + all.length);
-
-  var inQuote = false;
+  var len = all.length;
   var inTag = false;
+  var inQuote = false;
   var part = { text: '', currentlyediting: false };
 
-  for (var i = 0; i < all.length; i++) {
+  for (var i = 0; i < len; i++) {
     var c = all[i];
-    //report("C: " + all[i]);
     if (c.match(/\s/)) {
       if (!inTag)
-	  continue;
+        continue;
       else if (inQuote) {
-	part.text += c;
-	continue;
+        part.text += c;
+        continue;
       }
       else if (inTag) {
-	tagParts.push(part);
-	part = { text: '', currentlyediting: false };
-	inTag = false;
-	continue;
+        tagParts.push(part);
+        part = { text: '', currentlyediting: false };
+        inTag = false;
+        continue;
       }
     }
     else if (c == '"' || c == "'") {
       if (!inTag) {
-	inTag = true;
-	inQuote = true;
-	continue;
+        inTag = true;
+        inQuote = true;
+        continue;
       }
       else if (inQuote) {
-	tagParts.push(part);
-	part = { text: '', currentlyediting: false };
-	inTag = inQuote = false;
-	continue;
+        tagParts.push(part);
+        part = { text: '', currentlyediting: false };
+        inTag = false;
+        inQuote = false;
+        continue;
       }
     }
     else if (c == ',') {
       if (inQuote) {
-	// noop
+        // noop
       }
       else if (inTag) {
-	tagParts.push(part);
-	part = { text: '', currentlyediting: false };
-	inTag = inQuote = false;
-	continue;
+        tagParts.push(part);
+        part = { text: '', currentlyediting: false };
+        inTag = false;
+        continue;
       }
       else {
-	continue;
+        continue;
       }
     }
     inTag = true;
     if (caretPos == (i + 1))
-	part.currentlyediting = true;
+      part.currentlyediting = true;
     part.text += c;
   }
-  if (part.text.length) {
+
+  if (part.text.length)
     tagParts.push(part);
-  }
+
   return tagParts;
 }
 
@@ -189,46 +193,39 @@ function autocompletetags() {
   var tagstring = tagsBox.value;
 
   lastCaretPos = getCaretPosition(tagsBox);
-  report("TS: " + tagstring + " SS: " + lastCaretPos);
 
   clearsuggestions();
 
-  if (tagstring.length == 0) {
+  if (tagstring.length == 0)
     return;
-  }
 
   var tagparts = analyseTagString(tagstring, lastCaretPos);
 
   potentials = new Array();
-  for(var i=0; i < tagparts.length; i++) {
-    if(tagparts[i].currentlyediting != true) {continue;}
+  for (var i=0; i < tagparts.length; i++) {
+    if (tagparts[i].currentlyediting != true)
+      continue;
     var lctagpart = tagparts[i].text.toLowerCase();
-    //report("TP: " + tagparts[i].text);
 
-    if(lctagpart == '') { continue; }
+    if (lctagpart == '')
+      continue;
 
     for (var tag in tags) {
-      //report("C: " + tag);
       var lctag = tag.toLowerCase();
-      if(lctag.indexOf(lctagpart) == 0) {
-	//report("P: " + tag);
-        //potentials.push(tag);
+      if (lctag.indexOf(lctagpart) == 0)
         potentials.push( { 'tag' : tag, 'uOrder' : tags[tag] } );
-      }
     }
   }
   
   if (potentials.length)
-      showSuggestByPreference();
+    showSuggestByPreference();
 }
 
 function showSuggestAlpha() {
-
   clearsuggestions();
 
-  for(var i=0; i< potentials.length; i++) {
+  for (var i=0; i< potentials.length; i++)
     addsuggestion('add-form-ac-results-suggest', potentials[i].tag, true);
-  }
 
   disable('tbox-all-usage');
   disable('tbox-all-alpha');
@@ -240,15 +237,13 @@ function showSuggestAlpha() {
 }
 
 function showSuggestUsage() {
-
   clearsuggestions();
 
   var alphaPotentials = potentials.slice(0, potentials.length);
 
   alphaPotentials.sort(usageorder);
-  for(var i=0; i< potentials.length; i++) {
+  for (var i=0; i< potentials.length; i++)
     addsuggestion('add-form-ac-results-suggest', alphaPotentials[i].tag, true);
-  }
 
   disable('tbox-all-usage');
   disable('tbox-all-alpha');
@@ -268,19 +263,14 @@ function showSuggestByPreference() {
 
 function getCaretPosition(input) {
   var cPos;
-  if (input.setSelectionRange) {
+  if (input.setSelectionRange)
     cPos = input.selectionStart;
-  }
-  /*
-   * One IE way
-   */
+  /*  One IE way  */
   else if (document.selection) {
     var range = document.selection.createRange();
     var maxMoveRight = range.move('character', 1000);
     cPos = input.value.length - maxMoveRight;
   }
-  
-  //report ("CPOS: " + cPos);
   return cPos;
 }
 
@@ -288,56 +278,20 @@ function fixsize() {
   window.resizeTo(rec_popup_width(), rec_popup_height());
 }
 
-function reportReady() {
-  report("ready");
-
-  report("SCREEN HEIGHT: " + screen.height);
-  report("WINDOW HEIGHT: " + getWindowHeight());
-  //showDivSize(document.getElementById('add-form-ac-results'));
-  //showDivSize(document.body);
-}
-
 function getWindowHeight() {
   var total = 0;
-
-  if (document.selection) {	// IE
+  if (document.selection)     // IE
     for (var el = document.body; el; el = el.offsetParent) {
       total += el.offsetHeight;
     }
-    //report("IEWINHEIGHT: " + total);
-  }
-  else {
+  else
     total = window.outerHeight;
-    //report("FFWINHEIGHT: " + total);
-  }
   return total;
 }
 
 function sizeCheck() {
   var windowHeight = getWindowHeight();
   var screenHeight = screen.availHeight;
-
-  if (screenHeight > windowHeight) {
+  if (screenHeight > windowHeight)
     window.resizeBy(0, ((screenHeight - windowHeight) / 2));
-  }
-}
-
-function makeReportWindow() {
-  if (!reportWindow || reportWindow.closed) {
-    reportWindow = window.open("", "report", "height=600,width=300,resizable,scrollbars");
-    setTimeout("initReportWindow()", 100);
-  }
-}
-
-function initReportWindow() {
-  var content = '<html><head><title>report</title></head><body><h3>Report</h3><div id="report"></div></body></html>';
-  reportWindow.document.write(content);
-  reportWindow.document.close();
-}
-
-function report(s) {
-  if (! reportWindow)
-      return;
-  var r = reportWindow.document.getElementById('report');
-  r.innerHTML += s + '<br/>';
 }
