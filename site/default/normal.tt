@@ -5,6 +5,7 @@
 <title>[% main_title %]</title>
 [% rss_link %]
 [% css_link %]
+[% javascript_link %]
 [% component_javascript_block_if_needed %]
 </head>
 <body[% component_javascript_onload_if_needed %]>

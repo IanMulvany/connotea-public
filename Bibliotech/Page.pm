@@ -240,7 +240,8 @@ sub last_updated {
 sub html_content_component_section {
   my ($module, $part, $key, $obj,
       $cgi, $local_cache, $last_updated_basis_cache,
-      $init_main_sub, $add_main_html_sub, $add_javascript_onload_sub, $add_javascript_block_sub) = @_;
+      $init_main_sub, $add_main_html_sub,
+      $add_javascript_file_sub, $add_javascript_onload_sub, $add_javascript_block_sub) = @_;
 
   my $result = '';
 
@@ -260,6 +261,7 @@ sub html_content_component_section {
 	$html_content_obj = Bibliotech::Page::HTML_Content->simple($html_content_obj);
       }
       if (my $script = $html_content_obj->get_javascript) {
+	$add_javascript_file_sub->($script->{file})     if $script->{file};
 	$add_javascript_block_sub->($script->{block})   if $script->{block};
 	$add_javascript_onload_sub->($script->{onload}) if $script->{onload};
       }
@@ -334,6 +336,7 @@ sub tt_functions_for_html_content {
 		  $bibliotech->cgi, \%local_cache, $self->last_updated_basis_cache,
 		  $init_main_sub,
 		  sub { push @{$content->html_parts->{join(':', $module, $part, $options)}}, shift },
+		  sub { push @{$content->javascript_file}, shift },
 		  sub { push @{$content->javascript_onload}, shift },
 		  sub { push @{$content->javascript_block}, shift },
 		  );
@@ -390,6 +393,13 @@ sub tt_functions_for_html_content {
        },
        main_description => sub {
 	 return $content->description || '';
+       },
+       javascript_link => sub {
+	 return join("\n",
+		     map { "<script type=\"".JAVASCRIPT_MIME_TYPE."\" src=\"$_\"></script>" }
+		     do { my $file = $content->get_javascript->{file};
+			  ref($file) eq 'ARRAY' ? @{$file} : ($file); }
+		     );
        },
        css_link => sub {
 	 return join("\n",
@@ -789,10 +799,13 @@ package Bibliotech::Page::HTML_Content;
 use strict;
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw/html_parts javascript_block javascript_onload title description heading/);
+__PACKAGE__->mk_accessors(qw/html_parts
+                             javascript_file javascript_block javascript_onload
+                             title description heading/);
 
 sub new_with_parts {
   shift->new({html_parts        => {main => []},
+	      javascript_file   => [],
 	      javascript_block  => [],
 	      javascript_onload => [],
 	     });
@@ -823,9 +836,11 @@ sub content {
 
 sub get_javascript {
   my $self     = shift;
+  my $file     = $self->javascript_file;
   my $block    = $self->javascript_block;
   my $onload   = $self->javascript_onload;
-  return {$block  ? (block  => _flatten_javascript_array("\n", $block)) : (),
+  return {$file   ? (file   => $file) : (),
+          $block  ? (block  => _flatten_javascript_array("\n", $block)) : (),
 	  $onload ? (onload => _flatten_javascript_array(' ', $onload)) : ()};
 }
 
