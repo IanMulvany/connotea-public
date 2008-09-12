@@ -1,0 +1,43 @@
+<h1>Resign Account</h1>
+
+<div id="resignationform">
+  <form name="resign" action="[% location %]resign" method="post" class="compform">
+
+    <fieldset>
+      <legend>Warning</legend>
+      <p>This action will resign the [% sitename %] user [% user.username %].</p>
+    </fieldset>
+
+    <fieldset[% IF has_validation_error_for('confirm') %] class="haserrors"[% END %]>
+      <legend>Confirmation</legend>
+
+      <p>Are you sure that you want to delete your account?</p>
+
+      [% IF has_validation_error_for('confirm') %]
+      <p class="validation">[% validation_error %]</p>
+      [% END %]
+
+      <select id="confirmselect" name="confirm">
+	<option value="no"[% IF sticky('confirm') != "yes" %] selected="true"[% END %]>No</option>
+	<option value="yes"[% IF sticky('confirm') == "yes" %] selected="true"[% END %]>Yes</option>
+      </select>
+
+    </fieldset>
+
+    <fieldset[% IF has_validation_error_for('comment') %] class="haserrors"[% END %]>
+      <legend>Comment</legend>
+
+      [% IF has_validation_error_for('comment') %]
+      <p class="validation">[% validation_error %]</p>
+      [% END %]
+
+      <p><label for="comment"[% IF validation_error_field == "comment" %] class="validation"[% END %]>You may optionally leave a resignation comment for management:</label>
+	<textarea id="commentbox" name="comment" rows="5" cols="60">[% sticky('comment') %]</textarea>
+      </p>
+    </fieldset>
+
+    <p><span class="cleardiv"><!-- clear --></span>
+      <input type="submit" class="submitbutton" name="button" value="resign" />
+      <input type="submit" class="submitbutton" name="button" value="cancel" /></p>
+  </form>
+</div>
