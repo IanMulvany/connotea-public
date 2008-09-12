@@ -71,5 +71,19 @@ below.</p>[% END %]
 
     <p><span class="cleardiv"><!-- clear --></span>
       <input type="submit" class="submitbutton" name="button" value="[% IF NOT user %]register[% ELSE %]update[% END %]" /></p>
+
+    [% IF user %]
+    <br />
+    <br />
+    <fieldset>
+      <legend>More options</legend>
+      <ul class="bullets">
+	<li><a href="[% location %]advanced">Advanced settings</a></li>
+	<li><a href="[% location %]contact">Contact us</a></li>
+	<li><a href="[% location %]resign">Resign account</a></li>
+      </ul>
+    </fieldset>
+    [% END %]
+
   </form>
 </div>
