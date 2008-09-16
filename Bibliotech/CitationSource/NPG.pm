@@ -28,7 +28,7 @@ sub cfgname {
 }
 
 sub version {
-  '1.12.2.5';
+  '1.13';
 }
 
 sub understands {
@@ -36,9 +36,9 @@ sub understands {
   return 0 unless $uri->scheme eq 'http';
   return 0 unless $uri->host =~ /^(www\.)?nature.com$/;
   # new, e.g.: http://www.nature.com/ncpuro/journal/vaop/ncurrent/pdf/ncpuro1146.pdf
-  return 1 if $uri->path =~ m!^/[a-z]+?/journal/v(?:\d+|aop)/n(?:\d+|current)/(?:full|abs|pdf)/.+\.(?:html|pdf)!i;
+  return 1 if _article_path_to_metadata($uri->path);
   # old, e.g.: http://www.nature.com/cgi-taf/DynaPage.taf?file=/emboj/journal/v18/n17/full/7591878a.html&filetype=pdf
-  return 1 if $uri->path eq '/cgi-taf/DynaPage.taf' && $uri->query_param('file');
+  return 1 if $uri->path eq '/cgi-taf/DynaPage.taf' && _article_path_to_metadata($uri->query_param('file'));
   return 0;
 }
 
@@ -50,32 +50,36 @@ sub filter {
   return $uri->eq($orig_uri) ? undef : $uri;
 }
 
+# note this does NOT match /news paths; or the index pages of journals, only their articles
+sub _article_path_to_metadata {
+  local $_ = shift or return ();
+  m!^/([a-z]+)/journal/v(\d+|(?:aop))/n(\d+s?|(?:current))/(?:full|abs|pdf)/(.+?)(?:_[a-z]+)?\.(?:html|pdf)!i or return ();
+  return ($1, $2, $3, $4);  # journal abbreviation, volume, issue, UID
+}
+
+sub _two_tries {
+  my ($action, $delay) = @_;
+  unless ($action->()) {
+    sleep($delay || 1);
+    $action->();
+  }
+}
+
 sub citations {
   my ($self, $article_uri) = @_;
   my $ris;
   eval {
-    my $file = $article_uri->query_param('file') || $article_uri->path
-	or die "no file name seen in URI\n";
-    $file =~ m!^/([a-z]+)/journal/v(\d+|(?:aop))/n(\d+s?|(?:current))/(?:full|abs|pdf)/(.+?)(?:_[a-z]+)?\.(?:html|pdf)!i
-	or die "path not recognized ($file)\n";
-    my $abr = $1 or die "no abbreviated journal name\n";
-    my $vol = $2 or die "no volume\n";
-    my $iss = $3 or die "no issue\n";
-    my $uid = $4 or die "no UID\n";
+    my $path = $article_uri->query_param('file') || $article_uri->path or die "no file name seen in URI\n";
+    my ($abr, $vol, $iss, $uid) = _article_path_to_metadata($path) or die "path not recognized ($path)\n";
     my $query_uri = URI->new("http://www.nature.com/$abr/journal/v$vol/n$iss/ris/$uid.ris");
-    my $ris_raw = $self->get($query_uri);
-    $ris = Bibliotech::CitationSource::RIS->new($ris_raw);
-    if (!$ris->has_data) {
-      # give it one more try because nature.com is flakey
-      # the NPG servers occasionally report 404 or 501 for no reason
-      # additionally I think they sometimes return no data with a 200
-      sleep 2;
-      $ris_raw = $self->get($query_uri);
-      $ris = Bibliotech::CitationSource::RIS->new($ris_raw);
-    }
+    # give it two tries because nature.com is flakey
+    # the NPG servers occasionally report 404 or 501 for no reason, or an empty 200
+    _two_tries(sub { my $raw = $self->get($query_uri);
+		     $ris = Bibliotech::CitationSource::RIS->new($raw);
+		     defined $ris && $ris->has_data }, 2);
     die "RIS obj false: $query_uri\n" unless $ris;
     die "RIS file contained no data: $query_uri\n" unless $ris->has_data;
-  };    
+  };
   if (my $e = $@) {
     if ($e =~ /^RIS/) {
       $self->warnstr($e);  # level 1 error
