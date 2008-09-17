@@ -1167,7 +1167,7 @@ implicit_link_inner     : prefixed_wikiword_link | wikiword_link
 
 explicit_link 	       	: '[' explicit_link_inner ']'
               	       	  { $item[2] }
-explicit_link_inner    	: url_or_local / ?\| ?/ explicit_link_name   #/ (emacs font-lock)
+explicit_link_inner    	: url_or_local / ?\| ?/ explicit_link_name   #/(emacs font-lock)
                        	  { join('', ('<a ',
 				      $item[1] =~ /^[a-z]{1,8}:/ ? 'rel="nofollow" ' : '',
 				      "href=\"$item[1]\">$item[3]</a>")) }
@@ -1311,7 +1311,7 @@ quote 			: quote_line(s /\n/) /\n+/
 quote_line 		: /^(    |\t)/ /.*/
            		  { $item[1] eq "\t" ? '    '.$item[2] : $item[2] }
 
-bullet_list 		: <reject: $text !~ /^(    |\t) *\* */> bullet_line(s /\n/)
+bullet_list 		: <reject: $text !~ /^(    |\t) *\* */> bullet_line(s /\n/)   #/(emacs font-lock)
             		  { "<ul>\n".join('', @{$item[2]}).'</ul>' }
 bullet_line 		: <rulevar: local $list_indent = defined $list_indent ? $list_indent.' ' : ''>
             		| /^(    |\t)$list_indent\* */ segment
@@ -1319,7 +1319,7 @@ bullet_line 		: <rulevar: local $list_indent = defined $list_indent ? $list_inde
             		| <reject: do { length($list_indent) > 4 } > bullet_list { $item[2]."\n" }
             		| <reject: do { length($list_indent) > 4 } > number_list { $item[2]."\n" }
 
-number_list 		: <reject: $text !~ /^(    |\t) *(\d+|\#|[AaIi])\. */> number_line(s /\n/)
+number_list 		: <reject: $text !~ /^(    |\t) *(\d+|\#|[AaIi])\. */> number_line(s /\n/)   #/(emacs font-lock)
             		  { "<ol>\n".join('', @{$item[2]}).'</ol>' }
 number_line 		: <rulevar: local $list_indent = defined $list_indent ? $list_indent.' ' : ''>
             		| /^(    |\t)$list_indent(\d+|\#|[AaIi])\. */ segment
