@@ -585,7 +585,7 @@ sub generate_node_list {
   return (content       => join('',
 				$intro,
 				"\n",
-				map { "    * wikilink=$_=\n" }
+				map { "    * pagelink=$_=\n" }
 				sort { lc($a) cmp lc($b) }
 				grep { $nodeprefix ? /^$nodeprefix:/ : !/^System:/ }
 				$wiki->list_all_nodes)
@@ -673,7 +673,7 @@ sub generate_node_system_links {
   my ($self, $wiki) = @_;
   return (content       => join('',
 				"= System-Used Pages =\n",
-				map { "    * wikilink=$_=\n" }
+				map { "    * pagelink=$_=\n" }
 				$self->system_links)
 	  );
 }
@@ -1190,8 +1190,10 @@ local_url 	       	: node node_params(?)
 url                    	: /[a-z]{1,8}:[^|\]]*[^|\] ]/
 node_params            	: /\?[\w:=%&;]+/
 
+easy_wikilink 	       	: 'pagelink=' <commit> node '='
+         	       	  { $thisparser->{wikilink}->($item[3], undef, undef, undef, 1) }
 wikilink 	       	: 'wikilink=' <commit> node wikilink_version(?) wikilink_base(?) '=' wikilink_name(?)
-         	       	  { $thisparser->{wikilink}->($item[3], $item[4]->[0], $item[5]->[0], $item[7]->[0]) }
+         	       	  { $thisparser->{wikilink}->($item[3], $item[4]->[0], $item[5]->[0], $item[7]->[0], 0) }
 wikilink_version       	: '#' /\d+/
 wikilink_base          	: '##' /\d+/
 wikilink_name 	       	: <rulevar: local $word_avoid = 'wikilink_name'>
@@ -1243,7 +1245,7 @@ token_stream 		: spacing(?) <leftop: token spacing token >
 # bubbles up to a context which is interested in the whitespace
 # between tokens anyway (see 'token_stream') so it's ok
 token                   : quick_tokens
-                        | explicit_link | implicit_link | wikilink
+                        | explicit_link | implicit_link | easy_wikilink | wikilink
                         | escaped_token
                         | image | macro | biblink | embeddable_token
 
@@ -1252,6 +1254,7 @@ escapable_part          : "\\" ...escapable_part
                           { $item[1] }
                         | '['
                         | ']'
+                        | 'pagelink='
                         | 'wikilink='
                         | 'http:'
                         | '/'
@@ -1389,11 +1392,16 @@ sub wikiname {
 }
 
 sub wikilink {
-  my ($self, $node, $version, $base, $custom_name) = @_;
+  my ($self, $node_cooked, $version, $base, $custom_name, $guaranteed_exists) = @_;
+
+  # remove UTF8 escaping used by format() to get around
+  # Parse::RecDescent's inability to parse through UTF8
+  # (although apparently creating it is ok)
+  (my $node = $node_cooked) =~ s/-UTF8:char(\d+)-/chr($1)/ge;
 
   my $cgi      = $self->bibliotech->cgi;
   my $callback = $self->node_exists_callback || sub { 0 };
-  my $exists   = $callback->($node);
+  my $exists   = $guaranteed_exists || $callback->($node);
   my $text     = $custom_name || $self->wikiname($node, $version, $base, !$exists);
   my $href     =                 $self->wikihref($node, $version, $base, !$exists);
 
