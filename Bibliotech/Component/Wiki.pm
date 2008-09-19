@@ -469,7 +469,7 @@ sub retrieve_node {
   my ($self, $wiki, $node, $version) = @_;
   return unless defined $node;
   my %raw = eval {
-    if ($node =~ /^Generate:/) {
+    if ($node->prefix eq 'Generate') {
       my %current = $self->generate_node($node, $wiki);
       $current{is_current}       = 1;
       $current{current_version}  = $current{version};
@@ -582,14 +582,13 @@ sub generate_node_list {
   my ($self, $wiki) = @_;
   my $nodeprefix = $self->cleanparam($self->bibliotech->cgi->param('prefix'));
   my $intro      = $self->generate_node_list_intro($wiki, $nodeprefix);
-  return (content       => join('',
-				$intro,
-				"\n",
-				map { "    * pagelink=$_=\n" }
-				sort { lc($a) cmp lc($b) }
-				grep { $nodeprefix ? /^$nodeprefix:/ : !/^System:/ }
-				$wiki->list_all_nodes)
-	  );
+  return (content => join('',
+			  $intro,
+			  "\n",
+			  map { "    * pagelink=$_=\n" }
+			  sort { lc($a) cmp lc($b) }
+			  grep { $nodeprefix ? /^$nodeprefix:/ : !/^System:/ }
+			  $wiki->list_all_nodes));
 }
 
 sub versions_of_node {
@@ -627,22 +626,20 @@ sub generate_node_history {
   my ($self, $wiki, $node) = @_;
   $node =~ /^Generate:History_([\w: \-]+)$/;
   my $target = $1;
-  return (content       => join('',
-				"= Page History for $target =\n",
-				map { $self->version_line($target, $_) }
-				reverse $self->versions_of_node($wiki, $target))
-	  );
+  return (content => join('',
+			  "= Page History for $target =\n",
+			  map { $self->version_line($target, $_) }
+			  reverse $self->versions_of_node($wiki, $target)));
 }
 
 sub generate_recent_changes {
   my ($self, $wiki) = @_;
   $self->bibliotech->has_rss(1);
-  return (content       => join('',
-				"= Recent Changes =\n",
-				"{>RSS}\n",
-				map { $self->version_line($_->{name}, $_) }
-				$wiki->list_recent_changes(last_n_changes => 30))
-	  );
+  return (content => join('',
+			  "= Recent Changes =\n",
+			  "{>RSS}\n",
+			  map { $self->version_line($_->{name}, $_) }
+			  $wiki->list_recent_changes(last_n_changes => 30)));
 }
 
 sub system_links {
@@ -671,11 +668,10 @@ sub system_links {
 
 sub generate_node_system_links {
   my ($self, $wiki) = @_;
-  return (content       => join('',
-				"= System-Used Pages =\n",
-				map { "    * pagelink=$_=\n" }
-				$self->system_links)
-	  );
+  return (content => join('',
+			  "= System-Used Pages =\n",
+			  map { "    * pagelink=$_=\n" }
+			  $self->system_links));
 }
 
 sub system_redirect_for_no_content {
