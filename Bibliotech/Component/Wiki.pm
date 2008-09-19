@@ -116,7 +116,7 @@ sub html_content {
   my $wiki          = $self->wiki_obj;
   my $action_stated = $self->cleanparam($cgi->param('action'));
   my $action 	    = $action_stated || 'display';
-  my $node_stated   = Bibliotech::Component::Wiki::NodeName-> new
+  my $node_stated   = Bibliotech::Component::Wiki::NodeName->new
                           ($bibliotech->command->wiki_path || $self->cleanparam($cgi->param('node')));
   my $node   	    = Bibliotech::Component::Wiki::NodeName->new($node_stated || $WIKI_HOME_NODE);
   my $node_real     = $node->clone;
@@ -467,20 +467,20 @@ sub text_format {
 
 sub retrieve_node {
   my ($self, $wiki, $node, $version) = @_;
-  return unless $node;
+  return unless defined $node;
   my %raw = eval {
     if ($node =~ /^Generate:/) {
       my %current = $self->generate_node($node, $wiki);
-      $current{is_current} = 1;
-      $current{current_version} = $current{version};
+      $current{is_current}       = 1;
+      $current{current_version}  = $current{version};
       $current{current_checksum} = $current{checksum};
       return %current;
     }
     my %current = $wiki->retrieve_node("$node");
     my %asked   = $version ? $wiki->retrieve_node(name => "$node", version => $version)
 	                   : %current;
-    $asked{is_current} = $current{version} == $asked{version} ? 1 : 0;
-    $asked{current_version} = $current{version};
+    $asked{is_current}       = $current{version} == $asked{version} ? 1 : 0;
+    $asked{current_version}  = $current{version};
     $asked{current_checksum} = $current{checksum};
     return %asked;
   };
@@ -572,7 +572,7 @@ sub generate_node_inner {
 sub generate_node_list_intro {
   my ($self, $wiki, $nodeprefix) = @_;
   if ($nodeprefix) {
-    my $saved = $self->retrieve_node($wiki, 'System:'.$nodeprefix.'Prefix');
+    my $saved = $self->retrieve_node($wiki, Bibliotech::Component::Wiki::NodeName->new('System:'.$nodeprefix.'Prefix'));
     return $saved if $saved;
   }
   return '= '.($nodeprefix || 'Page')." List =\n";
@@ -999,12 +999,15 @@ sub command_is_for_referent_with_wiki_page {
 
 package Bibliotech::Component::Wiki::NodeName;
 use overload '""' => 'node', fallback => 1;
+use Encode qw/decode_utf8/;
 
 sub new {
   my ($class, $node_str_or_obj) = @_;
-  my $node  = "$node_str_or_obj";
-  my $valid = length $node > 0;
-  $node =~ /^((Generate):)([\w: \-]*)$/ or $node =~ /^((System|User|Bookmark|Tag|Group):)?([\w \-]*)$/ or $valid = 0;
+  return $node_str_or_obj if UNIVERSAL::isa($node_str_or_obj, 'Bibliotech::Component::Wiki::NodeName');
+  my $node_str = "$node_str_or_obj";
+  my $node     = decode_utf8($node_str) || $node_str;
+  my $valid    = $node =~ /^((Generate):)([\w: \-]*)$/ ||
+                 $node =~ /^((System|User|Bookmark|Tag|Group):)?([\w \-]*)$/;
   my ($nodeprefix, $basenode) = ($2, $3);
   return bless [$node, $nodeprefix, $basenode, $valid], ref $class || $class;
 }
