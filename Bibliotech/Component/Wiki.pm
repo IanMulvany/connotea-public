@@ -370,6 +370,8 @@ sub _validate_submitted_content {
       and die "Sorry, each wiki page source text is limited to $WIKI_MAX_PAGE_SIZE characters at maximum.\n";
   do { my @count = uniq(/(?:https?|ftp:[^\]\|\s]+)/g); scalar @count; } > $WIKI_MAX_EXT_LINKS
       and die "Sorry, too many external hyperlinks.\n";  # antispam, intentionally omit http/https/ftp or number
+  m!\[https?://[^|]+\|[^\]]*(click here|online here|for sale here|>>>[\w ]+<<<)[^\]]*\]!i
+      and die "Sorry, spam link detected.\n";    # antispam, intentionally omit trigger phrase
   $WIKI_SCAN == 1 && Bibliotech::Antispam::Util::scan_text_for_really_bad_phrases($_)
       and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit trigger phrase
   $WIKI_SCAN == 2 && Bibliotech::Antispam::Util::scan_text_for_bad_phrases($_)
