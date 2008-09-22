@@ -33,7 +33,7 @@ our $WIKI_ALLOW_EDIT    = __PACKAGE__->cfg('ALLOW_EDIT');
     $WIKI_ALLOW_EDIT    = 1 unless defined $WIKI_ALLOW_EDIT;
 
 sub last_updated_basis {
-  ('NOW');
+  (Bibliotech::Component::Wiki::DBI->sql_last_modified_unix_timestamp->select_val);
 }
 
 sub wiki_obj {
@@ -1603,6 +1603,10 @@ package Bibliotech::Component::Wiki::DBI;
 use base 'Class::DBI';
 
 __PACKAGE__->connection($WIKI_DBI_CONNECT, $WIKI_DBI_USERNAME, $WIKI_DBI_PASSWORD);
+
+__PACKAGE__->set_sql(last_modified_unix_timestamp => <<'');
+SELECT 	 UNIX_TIMESTAMP(MAX(modified))
+FROM     node
 
 __PACKAGE__->set_sql(test_node_for_retrieval => <<'');
 SELECT 	 name
