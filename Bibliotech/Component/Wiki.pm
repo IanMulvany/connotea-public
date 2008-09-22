@@ -462,9 +462,16 @@ sub text_format {
   my $location   = $bibliotech->location;
   my $prefix     = $location.'wiki/';
   my %vars       = (node => $node, action => $action, prefix => $prefix, %{$special_vars||{}});
-  my $coded  	 = $bibliotech->replace_text_variables([$content], $user, \%vars)->[0];
+  my $allowable  = _censor_verbatim_for_untrusted_content($content, $node);
+  my $coded  	 = $bibliotech->replace_text_variables([$allowable], $user, \%vars)->[0];
   my $cooked 	 = $coded ? $wiki->format($coded) : '';
   return $cooked;
+}
+
+sub _censor_verbatim_for_untrusted_content {
+  my ($content, $node) = @_;
+  $node->is_generate_or_system or $content =~ s/!VERBATIM:{[^}]+}//g;
+  return $content;
 }
 
 sub retrieve_node {
@@ -581,16 +588,27 @@ sub generate_node_list_intro {
 }
 
 sub generate_node_list {
-  my ($self, $wiki) = @_;
-  my $nodeprefix = $self->cleanparam($self->bibliotech->cgi->param('prefix'));
-  my $intro      = $self->generate_node_list_intro($wiki, $nodeprefix);
+  my ($self, $wiki, $nodeprefix) = @_;
+  my $cgi = $self->bibliotech->cgi;
   return (content => join('',
-			  $intro,
+			  $self->generate_node_list_intro($wiki, $nodeprefix),
 			  "\n",
-			  map { "    * pagelink=$_=\n" }
-			  sort { lc($a) cmp lc($b) }
-			  grep { $nodeprefix ? /^$nodeprefix:/ : !/^System:/ }
-			  $wiki->list_all_nodes));
+			  $self->optimized_cheat_on_bullet_list_of_pagelinks(
+			    map { "    * pagelink=$_=\n" }
+			    sort { lc($a) cmp lc($b) }
+			    grep { $nodeprefix ? /^$nodeprefix:/ : !/^System:/ }
+			    $wiki->list_all_nodes)));
+}
+
+sub optimized_cheat_on_bullet_list_of_pagelinks {
+  my $self = shift;
+  my $cgi = $self->bibliotech->cgi;
+  my $formatter = $self->wiki_obj->formatter;
+  return '!VERBATIM:{'.$cgi->ul(
+    map {
+      m|^    \* pagelink=(.+)=\n$|;
+      $cgi->li($formatter->wikilink($1, undef, undef, undef, 1))."\n";
+    } @_)."}\n";
 }
 
 sub versions_of_node {
@@ -672,8 +690,9 @@ sub generate_node_system_links {
   my ($self, $wiki) = @_;
   return (content => join('',
 			  "= System-Used Pages =\n",
-			  map { "    * pagelink=$_=\n" }
-			  $self->system_links));
+			  $self->optimized_cheat_on_bullet_list_of_pagelinks(
+			    map { "    * pagelink=$_=\n" }
+			    $self->system_links)));
 }
 
 sub system_redirect_for_no_content {
@@ -1039,8 +1058,12 @@ sub is_system {
   shift->prefix eq 'System';
 }
 
+sub is_generate_or_system {
+  shift->prefix =~ /^(?:Generate|System)$/;
+}
+
 sub is_referent {
-  shift->prefix =~ /^(User|Bookmark|Tag|Group)$/;
+  shift->prefix =~ /^(?:User|Bookmark|Tag|Group)$/;
 }
 
 sub is_referent_bookmark {
@@ -1170,14 +1193,16 @@ explicit_link 	       	: '[' explicit_link_inner ']'
               	       	  { $item[2] }
 explicit_link_inner    	: url_or_local / ?\| ?/ explicit_link_name   #/(emacs font-lock)
                        	  { join('', ('<a ',
-				      $item[1] =~ /^[a-z]{1,8}:/ ? 'rel="nofollow" ' : '',
+				      $item[1] =~ /^[a-z]{1,8}:/ &&
+				      $item[1] !~ /^mailto:/ ? 'rel="nofollow" ' : '',
 				      "href=\"$item[1]\">$item[3]</a>")) }
                        	| explicit_link                         # redundant brackets: [[http://...]]
                        	| implicit_link ...!/ ?\|/ ...!'?'      # superfluous brackets: [WikiWord]
                        	  { $item[1] }
                        	| url_or_local
                        	  { join('', ('<a ',
-				      $item[1] =~ /^[a-z]{1,8}:/ ? 'rel="nofollow" ' : '',
+				      $item[1] =~ /^[a-z]{1,8}:/ &&
+				      $item[1] !~ /^mailto:/? 'rel="nofollow" ' : '',
 				      "href=\"$item[1]\">$item[1]</a>")) }
 explicit_link_name     	: embeddable_token_stream
 
@@ -1349,6 +1374,10 @@ table_cell 		: segment(?) '|'
 blank                   : / *\n+/
                           { "\n" }
 
+# this is only allowed for Generate: prefix nodes, checked separately.
+verbatim                : '!VERBATIM:{' /[^}]+/ '}'
+                          { $item[2] }
+
 # the production of last resort, just to keep things moving
 # just spit out the remainder of the line in a <p> tag all-escaped
 error 			: /.+/
@@ -1357,7 +1386,7 @@ error 			: /.+/
 				'<!-- end --></p>'
 			  }
 
-block                   : paragraph | heading | bullet_list | number_list | quote | rule | table | blank | error
+block                   : verbatim | paragraph | heading | bullet_list | number_list | quote | rule | table | blank | error
 
 wikitext 		: <skip:''> block(s)
              		  { join("\n", grep($_ ne "\n", @{$item[2]})) }
@@ -1393,18 +1422,19 @@ sub wikiname {
 }
 
 sub wikilink {
-  my ($self, $node_cooked, $version, $base, $custom_name, $guaranteed_exists) = @_;
+  my ($self, $node_cooked, $version, $base, $custom_name, $guaranteed_exists, $cgi) = @_;
+
+  $cgi = $self->bibliotech->cgi unless defined $cgi;  # so $self can be a classname instead of an object
 
   # remove UTF8 escaping used by format() to get around
   # Parse::RecDescent's inability to parse through UTF8
   # (although apparently creating it is ok)
   (my $node = $node_cooked) =~ s/-UTF8:char(\d+)-/chr($1)/ge;
 
-  my $cgi      = $self->bibliotech->cgi;
-  my $callback = $self->node_exists_callback || sub { 0 };
-  my $exists   = $guaranteed_exists || $callback->($node);
-  my $text     = $custom_name || $self->wikiname($node, $version, $base, !$exists);
-  my $href     =                 $self->wikihref($node, $version, $base, !$exists);
+  my $exists = $guaranteed_exists || do { my $callback = $self->node_exists_callback;
+					  defined $callback ? $callback->($node) : 0; };
+  my $text   = $custom_name || $self->wikiname($node, $version, $base, !$exists);
+  my $href   =                 $self->wikihref($node, $version, $base, !$exists);
 
   return $cgi->a({href => $href, class => 'wikilink wikiexist'   }, $text)
       if $exists;
