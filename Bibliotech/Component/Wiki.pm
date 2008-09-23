@@ -380,6 +380,8 @@ sub _validate_submitted_content {
       and die "Sorry, spam link detected.\n";    # antispam, intentionally omit trigger phrase
   length(_without_wiki_explicit_links_and_spaces($_)) == 0
       and die "Sorry, a wiki page may not consist solely of explicit links.\n";
+  m|[\w\.]+\n+(^\[https?://.*\]\n){5,10}|m
+      and die "Sorry, spam link detected.\n";    # antispam, intentionally omit explanation
 }
 
 sub plain_content {
