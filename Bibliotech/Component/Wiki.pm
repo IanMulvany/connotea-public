@@ -216,7 +216,7 @@ sub html_content {
 
   if ($action_real eq 'display') {
     $node_real     = $self->test_node_for_retrieval($wiki, $node_real) || $node_real;
-    my %raw        = $self->retrieve_node($wiki, $node_real, $version);
+    my %raw        = $self->retrieve_node($wiki, $node_real, $version, 1);
     $node          = $node_real if lc($node) eq lc($node_real);          # correct capitalization
     my $version    = $raw{version};
     my $current    = $raw{current_version};
@@ -225,7 +225,7 @@ sub html_content {
     unless ($raw{content}) {
       $node_real   = $self->system_redirect_for_no_content($version, $current, $can_edit);
       $version     = undef;
-      %raw         = $self->retrieve_node($wiki, $node_real, $version);
+      %raw         = $self->retrieve_node($wiki, $node_real, $version, 1);
       $version     = $raw{version};
       $current     = $raw{current_version};
       $content     = $raw{content};
@@ -291,7 +291,7 @@ sub html_content {
       $preview_html = $self->text_format($user, $wiki, "$node", $action, $content, \%vars);
     }
     else {
-      my %raw = $self->retrieve_node($wiki, $node, $version);
+      my %raw = $self->retrieve_node($wiki, $node, $version, 1);
       if ($raw{current_version}) {
 	$content  = is_utf8($raw{content}) ? $raw{content} : (decode_utf8($raw{content}) || $raw{content});
 	$checksum = $raw{current_checksum};  # may not be visible version checksum, allows rollback
@@ -429,7 +429,7 @@ sub plain_content {
   if ($action_real eq 'display') {
 
     $node_real     = $self->test_node_for_retrieval($wiki, $node_real) || $node_real;
-    my %raw        = $self->retrieve_node($wiki, $node_real, $version);
+    my %raw        = $self->retrieve_node($wiki, $node_real, $version, 0);
     $node          = $node_real if lc($node) eq lc($node_real);          # correct capitalization
     my $version    = $raw{version};
     my $current    = $raw{current_version};
@@ -438,7 +438,7 @@ sub plain_content {
     unless ($raw{content}) {
       $node_real   = $self->system_redirect_for_no_content($version, $current, 0);
       $version     = undef;
-      %raw         = $self->retrieve_node($wiki, $node_real, $version);
+      %raw         = $self->retrieve_node($wiki, $node_real, $version, 0);
       $version     = $raw{version};
       $current     = $raw{current_version};
       $content     = $raw{content};
@@ -469,17 +469,18 @@ sub text_format {
 }
 
 sub _censor_verbatim_for_untrusted_content {
-  my ($content, $node) = @_;
-  $node->is_generate_or_system or $content =~ s/!VERBATIM:{[^}]+}//g;
-  return $content;
+  local $_ = shift;
+  my $node = shift;
+  $node =~ /^(?:Generate|System):/ or s/!FASTHTML://g;
+  return $_;
 }
 
 sub retrieve_node {
-  my ($self, $wiki, $node, $version) = @_;
+  my ($self, $wiki, $node, $version, $for_html_output) = @_;
   return unless defined $node;
   my %raw = eval {
     if ($node->prefix eq 'Generate') {
-      my %current = $self->generate_node($node, $wiki);
+      my %current = $self->generate_node($node, $wiki, $for_html_output);
       $current{is_current}       = 1;
       $current{current_version}  = $current{version};
       $current{current_checksum} = $current{checksum};
@@ -561,8 +562,9 @@ sub is_admin_user {
 }
 
 sub generate_node {
-  my ($self, $node, $wiki) = @_;
+  my ($self, $node, $wiki, $for_html_output) = @_;
   my %raw = $self->generate_node_inner($node, $wiki) or return ();
+  $raw{content} =~ s/!FASTHTML:{([^}]*)}{([^}]*)}/$1/g unless $for_html_output;
   # add common metadata for Generate: nodes
   $raw{last_modified} ||= Bibliotech::Util::now->mysql_datetime;
   $raw{comment}       ||= 'auto';
@@ -604,11 +606,13 @@ sub optimized_cheat_on_bullet_list_of_pagelinks {
   my $self = shift;
   my $cgi = $self->bibliotech->cgi;
   my $formatter = $self->wiki_obj->formatter;
-  return '!VERBATIM:{'.$cgi->ul(
-    map {
-      m|^    \* pagelink=(.+)=\n$|;
-      $cgi->li($formatter->wikilink($1, undef, undef, undef, 1))."\n";
-    } @_)."}\n";
+  return '!FASTHTML:{'.join('', @_).'}{'.
+      $cgi->ul(
+	map {
+	  m|^    \* pagelink=(.+)=\n$|;
+	  $cgi->li($formatter->wikilink($1, undef, undef, undef, 1))."\n";
+	} @_).
+      "}\n";
 }
 
 sub versions_of_node {
@@ -1375,8 +1379,8 @@ blank                   : / *\n+/
                           { "\n" }
 
 # this is only allowed for Generate: prefix nodes, checked separately.
-verbatim                : '!VERBATIM:{' /[^}]+/ '}'
-                          { $item[2] }
+verbatim                : '!FASTHTML:{' /[^}]*/ '}{' /[^}]*/ '}'
+                          { $item[4] }
 
 # the production of last resort, just to keep things moving
 # just spit out the remainder of the line in a <p> tag all-escaped
