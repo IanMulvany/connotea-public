@@ -376,6 +376,8 @@ sub _validate_submitted_content {
       and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit trigger phrase
   $WIKI_SCAN == 2 && Bibliotech::Antispam::Util::scan_text_for_bad_phrases($_)
       and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit trigger phrase
+  Bibliotech::Antispam::Util::scan_text_for_bad_uris($_)
+      and die "Sorry, spam link detected.\n";    # antispam, intentionally omit trigger phrase
   length(_without_wiki_explicit_links_and_spaces($_)) == 0
       and die "Sorry, a wiki page may not consist solely of explicit links.\n";
 }

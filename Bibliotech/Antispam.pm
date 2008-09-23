@@ -682,3 +682,7 @@ sub scan_text_for_really_bad_phrases {
 sub scan_text_for_bad_phrases {
   _scan_text_for_really_bad_phrases(pop, $Bibliotech::Antispam::TAG_COMBINED_BAD_PHRASE_LIST, 1);
 }
+
+sub scan_text_for_bad_uris {
+  _scan_text_for_really_bad_phrases(pop, $Bibliotech::Antispam::URI_BAD_HOST_LIST, 1);
+}
