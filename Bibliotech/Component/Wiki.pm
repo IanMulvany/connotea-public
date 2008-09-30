@@ -364,13 +364,46 @@ sub _without_wiki_explicit_links_and_spaces {
   return $_;
 }
 
+sub _too_many_uppercase_letters {
+  local $_ = shift;
+  my $uc = do { my @uc = m/([A-Z])/g; scalar @uc; };  # count uppercase letters
+  my $lc = do { my @lc = m/([a-z])/g; scalar @lc; };  # count lowercase letters
+  return if $uc < 150;                                # too few to really test a ratio
+  return $uc > $lc * 1.5;                             # 50% more uppercase than lowercase
+}
+
+sub _top_words_are_repeated_over_and_over {
+  local $_ = shift;
+  s/[*=]//g;     # remove bold and header marks for this test
+  s/\[.*?\]//g;  # remove explicit links for this test
+  my %words;
+  my @words = /(\w+)/g;
+  my $total = @words;
+  return if $total < 25;  # too few to really test
+  $words{$_}++ foreach (@words);
+  my @top = sort { $words{$b} <=> $words{$a} } (keys %words);
+  my $top_1 = $words{$top[0]};
+  my $top_2 = $words{$top[0]} + $words{$top[1]};
+  my $top_3 = $words{$top[0]} + $words{$top[1]} + $words{$top[2]};
+  return $top_1 > $total * 0.50 || $top_2 > $total * 0.55 || $top_3 > $total * 0.60;
+}
+
+sub _all_repeated_urls {
+  local $_ = shift;
+  my %urls;
+  my @urls = m!\[(https?://[^\]\| ]+)!ig;
+  $urls{$_}++ foreach (@urls);
+  return if grep { $_ == 1 } (values %urls);
+  return 1;
+}
+
 sub _validate_submitted_content {
   local $_ = shift or return;
   length($_) > $WIKI_MAX_PAGE_SIZE
       and die "Sorry, each wiki page source text is limited to $WIKI_MAX_PAGE_SIZE characters at maximum.\n";
   do { my @count = uniq(/(?:https?|ftp:[^\]\|\s]+)/g); scalar @count; } > $WIKI_MAX_EXT_LINKS
       and die "Sorry, too many external hyperlinks.\n";  # antispam, intentionally omit http/https/ftp or number
-  m!\[https?://[^|]+\|[^\]]*(click here|online here|for sale here|>>>[\w ]+<<<)[^\]]*\]!i
+  m!\[https?://[^|]+\|[^\]]*(click here|online here|for sale here|>+[\w ]+<+)[^\]]*\]!i
       and die "Sorry, spam link detected.\n";    # antispam, intentionally omit trigger phrase
   $WIKI_SCAN == 1 && Bibliotech::Antispam::Util::scan_text_for_really_bad_phrases($_)
       and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit trigger phrase
@@ -382,6 +415,12 @@ sub _validate_submitted_content {
       and die "Sorry, a wiki page may not consist solely of explicit links.\n";
   m|[\w\.]+\n+(^\[https?://.*\]\n){5,10}|m
       and die "Sorry, spam link detected.\n";    # antispam, intentionally omit explanation
+  _too_many_uppercase_letters($_)
+      and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit explanation
+  _top_words_are_repeated_over_and_over($_)
+      and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit explanation
+  _all_repeated_urls($_)
+      and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit explanation
 }
 
 sub plain_content {
