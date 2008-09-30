@@ -307,6 +307,8 @@ COMPONENT WIKI {
   # scan: 1 means check text against ANTISPAM > TAG_REALLY_BAD_PHRASE_LIST
   # scan: 2 means check text against ANTISPAM > TAG_BAD_PHRASE_LIST+TAG_REALLY_BAD_PHRASE_LIST
   #SCAN = 1
+  # to admit the spam rule that rejects wiki text, set this to true:
+  #SAY_SPAM_RULE = false
 }
 
 COMPONENT KILLSPAMMER {

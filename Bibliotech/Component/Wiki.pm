@@ -31,6 +31,7 @@ our $WIKI_SCAN          = __PACKAGE__->cfg('SCAN');
     $WIKI_SCAN          = 1 unless defined $WIKI_SCAN;
 our $WIKI_ALLOW_EDIT    = __PACKAGE__->cfg('ALLOW_EDIT');
     $WIKI_ALLOW_EDIT    = 1 unless defined $WIKI_ALLOW_EDIT;
+our $WIKI_SAY_SPAM_RULE = __PACKAGE__->cfg('SAY_SPAM_RULE');
 
 sub last_updated_basis {
   (Bibliotech::Component::Wiki::DBI->sql_last_modified_unix_timestamp->select_val);
@@ -390,8 +391,9 @@ sub _top_words_are_repeated_over_and_over {
 
 sub _all_repeated_urls {
   local $_ = shift;
-  my %urls;
   my @urls = m!\[(https?://[^\]\| ]+)!ig;
+  return if @urls == 0;
+  my %urls;
   $urls{$_}++ foreach (@urls);
   return if grep { $_ == 1 } (values %urls);
   return 1;
@@ -399,28 +401,33 @@ sub _all_repeated_urls {
 
 sub _validate_submitted_content {
   local $_ = shift or return;
+
+  # give explanation:
   length($_) > $WIKI_MAX_PAGE_SIZE
       and die "Sorry, each wiki page source text is limited to $WIKI_MAX_PAGE_SIZE characters at maximum.\n";
   do { my @count = uniq(/(?:https?|ftp:[^\]\|\s]+)/g); scalar @count; } > $WIKI_MAX_EXT_LINKS
       and die "Sorry, too many external hyperlinks.\n";  # antispam, intentionally omit http/https/ftp or number
-  m!\[https?://[^|]+\|[^\]]*(click here|online here|for sale here|>+[\w ]+<+)[^\]]*\]!i
-      and die "Sorry, spam link detected.\n";    # antispam, intentionally omit trigger phrase
-  $WIKI_SCAN == 1 && Bibliotech::Antispam::Util::scan_text_for_really_bad_phrases($_)
-      and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit trigger phrase
-  $WIKI_SCAN == 2 && Bibliotech::Antispam::Util::scan_text_for_bad_phrases($_)
-      and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit trigger phrase
-  Bibliotech::Antispam::Util::scan_text_for_bad_uris($_)
-      and die "Sorry, spam link detected.\n";    # antispam, intentionally omit trigger phrase
   length(_without_wiki_explicit_links_and_spaces($_)) == 0
       and die "Sorry, a wiki page may not consist solely of explicit links.\n";
+
+  # omit explanation:
+  my $explanation = sub { die "Sorry, spam detected.\n" unless $WIKI_SAY_SPAM_RULE; die $_[0]; };
+  m!\[https?://[^|]+\|[^\]]*(click here|online here|for sale here|>+[\w ]+<+)[^\]]*\]!i
+      and die $explanation->("Sorry, \"click here\" link detected.\n");
+  $WIKI_SCAN == 1 && Bibliotech::Antispam::Util::scan_text_for_really_bad_phrases($_)
+      and die $explanation->("Sorry, really bad phrase detected.\n");
+  $WIKI_SCAN == 2 && Bibliotech::Antispam::Util::scan_text_for_bad_phrases($_)
+      and die $explanation->("Sorry, bad phrase detected.\n");
+  Bibliotech::Antispam::Util::scan_text_for_bad_uris($_)
+      and die $explanation->("Sorry, bad URL detected.\n");
   m|[\w\.]+\n+(^\[https?://.*\]\n){5,10}|m
-      and die "Sorry, spam link detected.\n";    # antispam, intentionally omit explanation
+      and die $explanation->("Sorry, too many URL\'s at end.\n");
   _too_many_uppercase_letters($_)
-      and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit explanation
+      and die $explanation->("Sorry, too many uppercase letters.\n");
   _top_words_are_repeated_over_and_over($_)
-      and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit explanation
+      and die $explanation->("Sorry, the top words are over-repeated.\n");
   _all_repeated_urls($_)
-      and die "Sorry, spam phrase detected.\n";  # antispam, intentionally omit explanation
+      and die $explanation->("Sorry, all explicit URL\'s are repeated.\n");
 }
 
 sub plain_content {
