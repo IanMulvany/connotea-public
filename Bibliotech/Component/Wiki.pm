@@ -389,14 +389,19 @@ sub _top_words_are_repeated_over_and_over {
   return $top_1 > $total * 0.50 || $top_2 > $total * 0.55 || $top_3 > $total * 0.60;
 }
 
-sub _all_repeated_urls {
+sub _all_repeated_urls_or_heavily_repeated_url {
   local $_ = shift;
   my @urls = m!\[(https?://[^\]\| ]+)!ig;
   return if @urls == 0;
   my %urls;
   $urls{$_}++ foreach (@urls);
-  return if grep { $_ == 1 } (values %urls);
-  return 1;
+  return 1 unless grep { $_ == 1 } (values %urls);
+  return 1 if grep { $_ > 5 } (values %urls);
+  return 1 if do { my @multi = grep { $_ > 1 } (values %urls);
+		   scalar(@multi); } > 10;
+  return 1 if do { my @simple = grep { m{^http://(?:www\.)?\w+\.(?!edu|org|ac\.)\w+(?:.\w+)?/?$}i } (keys %urls);
+		   scalar(@simple); } > 10;
+  return;
 }
 
 sub _validate_submitted_content {
@@ -426,8 +431,8 @@ sub _validate_submitted_content {
       and die $explanation->("Sorry, too many uppercase letters.\n");
   _top_words_are_repeated_over_and_over($_)
       and die $explanation->("Sorry, the top words are over-repeated.\n");
-  _all_repeated_urls($_)
-      and die $explanation->("Sorry, all explicit URL\'s are repeated.\n");
+  _all_repeated_urls_or_heavily_repeated_url($_)
+      and die $explanation->("Sorry, too many repeated or domain-only URL\'s.\n");
 }
 
 sub plain_content {
