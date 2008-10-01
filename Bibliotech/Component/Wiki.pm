@@ -1073,6 +1073,16 @@ sub command_is_for_referent_with_wiki_page {
                    :  $wiki->exists_wiki_page_for_object($referent);
 }
 
+sub list_spam_nodes {
+  my ($self, $notify_sub) = @_;
+  my $wiki = $self->wiki_obj;
+  return (grep { $notify_sub->($_) if defined $notify_sub;
+		 eval { _validate_submitted_content(scalar($wiki->retrieve_node($_))) }; $@; }
+	  grep { !$_->is_system }
+	  map { Bibliotech::Component::Wiki::NodeName->new($_) }
+	  $wiki->list_all_nodes);
+}
+
 package Bibliotech::Component::Wiki::NodeName;
 use overload '""' => 'node', fallback => 1;
 use Encode qw/decode_utf8/;

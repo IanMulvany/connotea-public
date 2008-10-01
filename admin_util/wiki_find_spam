@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Getopt::Long;
+use lib '..';
+use Bibliotech::Fake;
+use Bibliotech::Component::Wiki;
+
+my $bibliotech = Bibliotech::Fake->new;
+my $wiki = Bibliotech::Component::Wiki->new({bibliotech => $bibliotech});
+
+print map { "$_\n" } $wiki->list_spam_nodes;
