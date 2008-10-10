@@ -63,9 +63,14 @@ sub wiki_obj {
   return $wiki;
 }
 
+sub nodename {
+  shift if ref($_[0]) eq __PACKAGE__ or $_[0] eq __PACKAGE__;
+  return Bibliotech::Component::Wiki::NodeName->new(@_);
+}
+
 sub wiki_node_name_for_object {
   my ($self, $obj) = @_;
-  return Bibliotech::Component::Wiki::NodeName->new(ucfirst($obj->noun).':'.$obj->label_parse_easy);
+  return $self->nodename(ucfirst($obj->noun).':'.$obj->label_parse_easy);
 }
 
 sub exists_wiki_page_for_object {
@@ -117,9 +122,8 @@ sub html_content {
   my $wiki          = $self->wiki_obj;
   my $action_stated = $self->cleanparam($cgi->param('action'));
   my $action 	    = $action_stated || 'display';
-  my $node_stated   = Bibliotech::Component::Wiki::NodeName->new
-                          ($bibliotech->command->wiki_path || $self->cleanparam($cgi->param('node')));
-  my $node   	    = Bibliotech::Component::Wiki::NodeName->new($node_stated || $WIKI_HOME_NODE);
+  my $node_stated   = $self->nodename($bibliotech->command->wiki_path || $self->cleanparam($cgi->param('node')));
+  my $node   	    = $self->nodename($node_stated || $WIKI_HOME_NODE);
   my $node_real     = $node->clone;
   my $version  	    = do { my $v = $self->cleanparam($cgi->param('version')); $v ? int($v) : undef; };
   my $button   	    = $self->cleanparam($cgi->param('button'));
@@ -132,14 +136,14 @@ sub html_content {
 
   unless ($node->is_valid) {
     $action_real = 'display';
-    $node_real = Bibliotech::Component::Wiki::NodeName->new('System:InvalidName');
+    $node_real = $self->nodename('System:InvalidName');
   }
 
   # force bookmark prefixes to be the hash and not the URL
   if ($node->is_referent_bookmark) {
     unless (Bibliotech::Bookmark::is_hash_format($node->base)) {
       $action_real = 'display';
-      $node_real = Bibliotech::Component::Wiki::NodeName->new('System:BookmarkNotHash');
+      $node_real = $self->nodename('System:BookmarkNotHash');
     }
   }
 
@@ -148,7 +152,7 @@ sub html_content {
   if ($node->is_referent and $node->base) {
     unless ($referent = Bibliotech::DBI::class_for_name($node->prefix)->new($node->base)) {
       $action_real = 'display';
-      $node_real = Bibliotech::Component::Wiki::NodeName->new('System:'.$node->prefix.'Invalid');
+      $node_real = $self->nodename('System:'.$node->prefix.'Invalid');
     }
   }
 
@@ -158,28 +162,27 @@ sub html_content {
   if ($action ne 'display' and $can_edit != 1) {
     $action_real = 'display';
     if ($can_edit == 0) {
-      $node_real = Bibliotech::Component::Wiki::NodeName->new('System:AccessDenied');
+      $node_real = $self->nodename('System:AccessDenied');
     }
     else {
-      $node_real = Bibliotech::Component::Wiki::NodeName->new('System:PleaseLogin');
+      $node_real = $self->nodename('System:PleaseLogin');
       $self->remember_current_uri;
     }
   }
 
   if ($action eq 'edit' and !$WIKI_ALLOW_EDIT) {
     $action_real = 'display';
-    $node_real = Bibliotech::Component::Wiki::NodeName->new('System:NoEdit');
+    $node_real = $self->nodename('System:NoEdit');
   }
 
   if (defined $user and !$user->active) {
     $action_real = 'display';
-    $node_real = Bibliotech::Component::Wiki::NodeName->new('System:AccessDenied');
+    $node_real = $self->nodename('System:AccessDenied');
   }
 
   # info page for User: and System: nodes
   if ($action eq 'display' and $node->prefix and !$node->base) {
-    $node_real = Bibliotech::Component::Wiki::NodeName->new('Generate:PageList');
-    $cgi->param(prefix => $node->prefix);
+    $node_real = $self->nodename('Generate:PageList', $node->prefix);
   }
 
   my $lock_plugin = Wiki::Toolkit::Plugin::Lock->new;
@@ -204,7 +207,7 @@ sub html_content {
 	= $lock_plugin->try_lock($node_real, $username, $WIKI_LOCK_TIME);
     unless ($got_lock) {
       $action_real = 'display';
-      $node_real = Bibliotech::Component::Wiki::NodeName->new('System:Locked');
+      $node_real = $self->nodename('System:Locked');
       my $lock_expire_obj  = Bibliotech::Date->new($lock_expire)->mark_time_zone_from_db->utc;
       $vars{lock_username} = $lock_username;
       $vars{lock_expire}   = $lock_expire_obj->label_plus_time;
@@ -450,7 +453,7 @@ sub plain_content {
   my $action_real   = $action;
   my $node_stated   = Bibliotech::Component::Wiki::NodeName-> new
                           ($bibliotech->command->wiki_path || $self->cleanparam($cgi->param('node')));
-  my $node          = Bibliotech::Component::Wiki::NodeName->new($node_stated || $WIKI_HOME_NODE);
+  my $node          = $self->nodename($node_stated || $WIKI_HOME_NODE);
   my $node_real     = $node->clone;
   my $version       = do { my $v = $self->cleanparam($cgi->param('version')); $v ? int($v) : undef; };
 
@@ -477,8 +480,7 @@ sub plain_content {
 
   # info page for User: and System: nodes
   if ($action eq 'display' and $node->prefix and !$node->base) {
-    $node_real = Bibliotech::Component::Wiki::NodeName->new('Generate:PageList');
-    $cgi->param(prefix => $node->prefix);
+    $node_real = $self->nodename('Generate:PageList', $node->prefix);
   }
 
   if ($action_real eq 'display') {
@@ -517,16 +519,17 @@ sub text_format {
   my $location   = $bibliotech->location;
   my $prefix     = $location.'wiki/';
   my %vars       = (node => $node, action => $action, prefix => $prefix, %{$special_vars||{}});
-  my $allowable  = _censor_verbatim_for_untrusted_content($content, $node);
+  my $allowable  = $self->censor_verbatim_for_untrusted_content($content, $node);
   my $coded  	 = $bibliotech->replace_text_variables([$allowable], $user, \%vars)->[0];
   my $cooked 	 = $coded ? $wiki->format($coded) : '';
   return $cooked;
 }
 
-sub _censor_verbatim_for_untrusted_content {
+sub censor_verbatim_for_untrusted_content {
+  my $self = shift;
   local $_ = shift;
   my $node = shift;
-  $node =~ /^(?:Generate|System):/ or s/!FASTHTML://g;
+  s/!FASTHTML://g unless $node->is_generate_or_system or !$node->base;
   return $_;
 }
 
@@ -569,7 +572,7 @@ sub test_node_for_retrieval {
   my $node_authoritative;
   ($node_authoritative) = $sth->fetch if $sth->rows;
   $sth->finish;
-  return Bibliotech::Component::Wiki::NodeName->new($node_authoritative);
+  return $self->nodename($node_authoritative);
 }
 
 sub list_only_edited_by_username {
@@ -578,7 +581,7 @@ sub list_only_edited_by_username {
   $sth->execute($username, $username) or die $sth->error;
   my @nodes;
   while (my ($node_id, $node, $version, $max_version, $others) = $sth->fetchrow_array) {
-    push @nodes, Bibliotech::Component::Wiki::NodeName->new($node);
+    push @nodes, $self->nodename($node);
   }
   return @nodes;
 }
@@ -628,33 +631,55 @@ sub generate_node {
 
 sub generate_node_inner {
   my ($self, $node, $wiki) = @_;
-  return $self->generate_node_list($wiki)           if $node eq 'Generate:PageList';
-  return $self->generate_node_history($wiki, $node) if $node =~ /^Generate:History_/;
-  return $self->generate_node_system_links($wiki)   if $node eq 'Generate:SystemLinks';
-  return $self->generate_recent_changes($wiki)      if $node eq 'Generate:RecentChanges';
+  return $self->generate_node_list($wiki, $node->extra_prefix) if $node eq 'Generate:PageList';
+  return $self->generate_node_history($wiki, $node) 	       if $node =~ /^Generate:History_/;
+  return $self->generate_node_system_links($wiki)   	       if $node eq 'Generate:SystemLinks';
+  return $self->generate_recent_changes($wiki)      	       if $node eq 'Generate:RecentChanges';
   return;
 }
 
 sub generate_node_list_intro {
-  my ($self, $wiki, $nodeprefix) = @_;
-  if ($nodeprefix) {
-    my $saved = $self->retrieve_node($wiki, Bibliotech::Component::Wiki::NodeName->new('System:'.$nodeprefix.'Prefix'));
+  my ($self, $wiki, $node_prefix_mask) = @_;
+  if ($node_prefix_mask) {
+    my $saved = $self->retrieve_node($wiki, $self->nodename('System:'.$node_prefix_mask.'Prefix'));
     return $saved if $saved;
   }
-  return '= '.($nodeprefix || 'Page')." List =\n";
+  return join(' ', '=', $node_prefix_mask || 'Page', "List =\n");
 }
 
 sub generate_node_list {
-  my ($self, $wiki, $nodeprefix) = @_;
-  my $cgi = $self->bibliotech->cgi;
+  my ($self, $wiki, $node_prefix_mask) = @_;
+  my @list = $node_prefix_mask ? $self->list_sorted_node_strings_with_prefix($node_prefix_mask)
+                               : $self->list_sorted_node_strings_without_prefix('System');
   return (content => join('',
-			  $self->generate_node_list_intro($wiki, $nodeprefix),
-			  "\n",
+			  $self->generate_node_list_intro($wiki, $node_prefix_mask),
+			  "\n\n",
 			  $self->optimized_cheat_on_bullet_list_of_pagelinks(
 			    map { "    * pagelink=$_=\n" }
-			    sort { lc($a) cmp lc($b) }
-			    grep { $nodeprefix ? /^$nodeprefix:/ : !/^System:/ }
-			    $wiki->list_all_nodes)));
+			    @list),
+			  "\n"));
+}
+
+sub list_sorted_node_strings_with_prefix {
+  my ($self, $prefix) = @_;
+  my $sth = Bibliotech::Component::Wiki::DBI->sql_list_sorted_nodes_with_prefix;
+  $sth->execute($prefix.':%');
+  my @nodes;
+  while (my ($name) = $sth->fetchrow_array) {
+    push @nodes, $name;
+  }
+  return @nodes;
+}
+
+sub list_sorted_node_strings_without_prefix {
+  my ($self, $prefix) = @_;
+  my $sth = Bibliotech::Component::Wiki::DBI->sql_list_sorted_nodes_without_prefix;
+  $sth->execute($prefix.':%');
+  my @nodes;
+  while (my ($name) = $sth->fetchrow_array) {
+    push @nodes, $name;
+  }
+  return @nodes;
 }
 
 sub optimized_cheat_on_bullet_list_of_pagelinks {
@@ -748,10 +773,10 @@ sub system_links {
 sub generate_node_system_links {
   my ($self, $wiki) = @_;
   return (content => join('',
-			  "= System-Used Pages =\n",
-			  $self->optimized_cheat_on_bullet_list_of_pagelinks(
-			    map { "    * pagelink=$_=\n" }
-			    $self->system_links)));
+			  "= System-Used Pages =\n\n",
+			  (map { "    * wikilink=$_=\n" }
+			   $self->system_links),
+			  "\n"));
 }
 
 sub system_redirect_for_no_content {
@@ -762,7 +787,7 @@ sub system_redirect_for_no_content {
     return 'System:VersionUnknown' if $version > $current_version;
     return 'System:LoadError';
   };
-  return Bibliotech::Component::Wiki::NodeName->new($name);
+  return $self->nodename($name);
 }
 
 sub content_for_new_page {
@@ -928,8 +953,7 @@ sub main_heading {
   my $bibliotech = $self->bibliotech;
   my $command    = $bibliotech->command;
   my $cgi        = $bibliotech->cgi;
-  my $node       = Bibliotech::Component::Wiki::NodeName->new
-                     ($self->cleanparam($command->wiki_path || $cgi->param('node')) || $WIKI_HOME_NODE);
+  my $node       = $self->nodename($self->cleanparam($command->wiki_path || $cgi->param('node')) || $WIKI_HOME_NODE);
   my $action     = $self->cleanparam($cgi->param('action')) || 'display';
   return $self->main_heading_calc($node, $action);
 }
@@ -1079,7 +1103,7 @@ sub list_spam_nodes {
   return (grep { $notify_sub->($_) if defined $notify_sub;
 		 eval { _validate_submitted_content(scalar($wiki->retrieve_node($_))) }; $@; }
 	  grep { !$_->is_system }
-	  map { Bibliotech::Component::Wiki::NodeName->new($_) }
+	  map { $self->nodename($_) }
 	  $wiki->list_all_nodes);
 }
 
@@ -1088,14 +1112,21 @@ use overload '""' => 'node', fallback => 1;
 use Encode qw/decode_utf8/;
 
 sub new {
-  my ($class, $node_str_or_obj) = @_;
+  my ($class, $node_str_or_obj, $extra_prefix_str) = @_;
   return $node_str_or_obj if UNIVERSAL::isa($node_str_or_obj, 'Bibliotech::Component::Wiki::NodeName');
   my $node_str = "$node_str_or_obj";
   my $node     = decode_utf8($node_str) || $node_str;
-  my $valid    = $node =~ /^((Generate):)([\w: \-]*)$/ ||
+  my $is_valid = $node =~ /^((Generate):)([\w: \-]*)$/ ||
                  $node =~ /^((System|User|Bookmark|Tag|Group):)?([\w \-]*)$/;
   my ($nodeprefix, $basenode) = ($2, $3);
-  return bless [$node, $nodeprefix, $basenode, $valid], ref $class || $class;
+  my $extra_prefix;
+  if ($extra_prefix_str) {
+    if ($extra_prefix_str =~ /^(System|User|Bookmark|Tag|Group)$/i) {
+      $extra_prefix_str =~ /^(.)(.*)$/;
+      $extra_prefix = uc($1).lc($2);
+    }
+  }
+  return bless [$node, $nodeprefix, $basenode, $is_valid, $extra_prefix], ref $class || $class;
 }
 
 sub clone {
@@ -1117,6 +1148,10 @@ sub base {
 
 sub is_valid {
   shift->[3];
+}
+
+sub extra_prefix {
+  shift->[4];
 }
 
 sub is_generate {
@@ -1443,9 +1478,9 @@ table_cell 		: segment(?) '|'
 blank                   : / *\n+/
                           { "\n" }
 
-# this is only allowed for Generate: prefix nodes, checked separately.
-verbatim                : '!FASTHTML:{' /[^}]*/ '}{' /[^}]*/ '}'
-                          { $item[4] }
+# this is only allowed for Generate: prefix nodes, checked separately
+verbatim                : '!FASTHTML:{' <commit> /[^}]*/ '}{' /[^}]*/ '}'
+                          { $item[5] }
 
 # the production of last resort, just to keep things moving
 # just spit out the remainder of the line in a <p> tag all-escaped
@@ -1682,6 +1717,18 @@ SELECT 	 name
 FROM     node
 WHERE  	 name = ?
 LIMIT    1
+
+__PACKAGE__->set_sql(list_sorted_nodes_with_prefix => <<'');
+SELECT 	 name
+FROM     node
+WHERE  	 name LIKE ?
+ORDER BY name
+
+__PACKAGE__->set_sql(list_sorted_nodes_without_prefix => <<'');
+SELECT 	 name
+FROM     node
+WHERE  	 name NOT LIKE ?
+ORDER BY name
 
 __PACKAGE__->set_sql(list_only_edited_by_username => <<'');
 SELECT   m.node_id, n2.name, m.version, (SELECT MAX(n.version) FROM node n WHERE n.id=m.node_id) AS max_version,
