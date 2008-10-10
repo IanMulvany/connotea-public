@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# replay bibliotech log and dump the pending items at the end based on the start entries
+# useful for discovering what is hanging/crashing the server
+
+my %pidactivity;
+
+while (<>) {
+  m/^([A-Za-z]+) ([A-Za-z]+)  ?(\d+) (\d+:\d+:\d+) (\d+) (\w+), (\w+)\[(\d+)\] (.*)$/ or next;
+  my ($weekdayname, $monthname, $day, $time, $year, $level, $class, $pid, $msg) = ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+  if ($msg =~ m/^((visitor)|user (\w+) \((\d+)\)) requests (\S+) bringing load to (\d+) with db at (\d+)$/) {
+    my ($userblock, $visitor, $username, $userid, $uri, $load, $db) = ($1, $2, $3 || 'visitor', $4, $5, $6, $7);
+    $pidactivity{$pid} = [$username, $uri];
+  }
+  elsif ($msg =~ m/^completed (\S+) with code (\d+) in ([\d\.]+) secs bringing load to (\d+)$/) {
+    my ($uri, $code, $secs, $load) = ($1, $2, $3, $4);
+    delete $pidactivity{$pid};
+  }
+}
+
+print "At the end of the log, current activity is:\n";
+print sprintf('%-12s %-12s %s', 'PID', 'USERNAME', 'URI'), "\n";
+foreach my $pid (sort keys %pidactivity) {
+  my ($username, $uri) = @{$pidactivity{$pid}};
+  print sprintf('%-12s %-12s %s', $pid, $username, $uri), "\n";
+}
