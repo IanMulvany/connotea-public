@@ -528,7 +528,7 @@ sub text_format {
 sub censor_verbatim_for_untrusted_content {
   my $self = shift;
   local $_ = shift;
-  my $node = shift;
+  my $node = $self->nodename(shift);
   s/!FASTHTML://g unless $node->is_generate_or_system or !$node->base;
   return $_;
 }
