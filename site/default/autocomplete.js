@@ -57,10 +57,10 @@ function clearsuggestions() {
   var obj = document.getElementById('add-form-ac-results-suggest');
   while (obj.firstChild)
     obj.removeChild(obj.firstChild);
-  disable('tbox-all-usage') 
-  disable('tbox-all-alpha') 
-  disable('tbox-suggest') 
-  enable('tbox-closed') 
+  disable('tbox-all-usage');
+  disable('tbox-all-alpha');
+  disable('tbox-suggest');
+  enable('tbox-closed');
 }
 
 function showAllUsage() {
@@ -104,10 +104,10 @@ function showAllByPreference() {
 
 function clearall() {
   clearsuggestions();
-  disable('tbox-all-usage') 
-  disable('tbox-all-alpha') 
-  disable('tbox-suggest') 
-  enable('tbox-closed') 
+  disable('tbox-all-usage');
+  disable('tbox-all-alpha');
+  disable('tbox-suggest');
+  enable('tbox-closed');
 }
 
 function enable(id) {
