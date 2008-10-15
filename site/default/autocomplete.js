@@ -16,6 +16,7 @@ function addsuggestion(id, tag, clear) {
   var suggestions = document.getElementById(id);
   var anchor = document.createElement('a');
   anchor.setAttribute('class', 'add-form-tag-suggestion tag');
+  anchor.setAttribute('className', 'add-form-tag-suggestion tag');  // IE needs it to be className
   anchor.setAttribute('href', 'javascript:addtag(\'' + tag.replace(/\'/g, "\\'") + '\', ' + clear + ')');
   anchor.appendChild(document.createTextNode(tag));
   suggestions.appendChild(anchor);
