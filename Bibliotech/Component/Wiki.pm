@@ -409,6 +409,7 @@ sub _all_repeated_urls_or_heavily_repeated_url {
 
 sub _validate_submitted_content {
   local $_ = shift or return;
+  my $say_spam_rule = @_ ? shift : $WIKI_SAY_SPAM_RULE;
 
   # give explanation:
   length($_) > $WIKI_MAX_PAGE_SIZE
@@ -419,7 +420,7 @@ sub _validate_submitted_content {
       and die "Sorry, a wiki page may not consist solely of explicit links.\n";
 
   # omit explanation:
-  my $explanation = sub { die "Sorry, spam detected.\n" unless $WIKI_SAY_SPAM_RULE; die $_[0]; };
+  my $explanation = sub { die($say_spam_rule ? shift : "Sorry, spam detected.\n"); };
   m!\[https?://[^|]+\|[^\]]*(click here|online here|for sale here|>+[\w ]+<+)[^\]]*\]!i
       and die $explanation->("Sorry, \"click here\" link detected.\n");
   $WIKI_SCAN == 1 && Bibliotech::Antispam::Util::scan_text_for_really_bad_phrases($_)
