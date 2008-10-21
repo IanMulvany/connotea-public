@@ -58,7 +58,7 @@ sub search_new {
 
 sub set_correct_hash {
   my $self = shift;
-  $self->hash(md5_hex(do { my $url = $self->url; defined $url ? "$url" : ''; }));
+  $self->hash(md5_hex($self->url_never_undef));
 }
 
 sub my_alias {
@@ -519,7 +519,7 @@ sub txt_content {
       push @output, $citation_line;
     }
   }
-  push @output, $self->url->as_string;
+  push @output, $self->url_never_undef;
   if (defined $citation) {
     if (my @id = $citation->standardized_identifiers(bibliotech => $bibliotech, just_with_values => 1)) {
       push @output, map { $_->as_string } @id;
@@ -532,7 +532,7 @@ sub ris_content {
   my ($self, $bibliotech, $verbose, $for_user_article) = @_;
   my %ris;
   $ris{TI} = $self->label_title;
-  $ris{UR} = $self->url->as_string;
+  $ris{UR} = $self->url_never_undef;
   if ($verbose) {
     my $multi = defined $for_user_article ? $for_user_article : $self;
     $ris{KW} = [map { $_->name }            $multi->tags];
@@ -572,7 +572,7 @@ sub biblio_rdf {
   my ($self, $bibliotech) = @_;
 
   my $model    = RDF::Core::Model->new(Storage => Bibliotech::RDF::Core::Storage::Memory->new);
-  my $subject  = RDF::Core::Resource->new(Bibliotech::Util::encode_xml_utf8($self->url));
+  my $subject  = RDF::Core::Resource->new(Bibliotech::Util::encode_xml_utf8($self->url_never_undef));
   # (annoyingly, RDF::Core::Serializer does not quote RDF resource URL's)
 
   my $RDF      = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
