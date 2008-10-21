@@ -305,7 +305,7 @@ COMPONENT WIKI {
   # maximum external hyperlink count, cuts down on spam
   #MAX_EXT_LINKS = 75
   # scan: 1 means check text against ANTISPAM > TAG_REALLY_BAD_PHRASE_LIST
-  # scan: 2 means check text against ANTISPAM > TAG_BAD_PHRASE_LIST+TAG_REALLY_BAD_PHRASE_LIST
+  # scan: 2 means check text against ANTISPAM > WIKI_BAD_PHRASE_LIST+TAG_REALLY_BAD_PHRASE_LIST
   #SCAN = 1
   # to admit the spam rule that rejects wiki text, set this to true:
   #SAY_SPAM_RULE = false
@@ -356,6 +356,9 @@ ANTISPAM {
 
   #TAG_REALLY_BAD_PHRASE_LIST = []
   #TAG_REALLY_BAD_PHRASE_SCORE = 3
+
+  # WIKI_BAD_PHRASE_LIST defaults to BAD_PHRASE_LIST if not specified
+  #WIKI_BAD_PHRASE_LIST = []
 
   #TAGS_TOO_MANY_MAX = 7
   #TAGS_TOO_MANY_SCORE = 1

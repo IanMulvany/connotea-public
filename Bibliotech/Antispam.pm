@@ -34,7 +34,8 @@ our $TAG_BAD_PHRASE_SCORE         = Bibliotech::Config->get('ANTISPAM', 'TAG_BAD
 our $TAG_REALLY_BAD_PHRASE_LIST   = Bibliotech::Config->get('ANTISPAM', 'TAG_REALLY_BAD_PHRASE_LIST')   || [];
 our $TAG_REALLY_BAD_PHRASE_SCORE  = Bibliotech::Config->get('ANTISPAM', 'TAG_REALLY_BAD_PHRASE_SCORE');
     $TAG_REALLY_BAD_PHRASE_SCORE  = 3 unless defined $TAG_REALLY_BAD_PHRASE_SCORE;
-our $TAG_COMBINED_BAD_PHRASE_LIST = [@{$TAG_BAD_PHRASE_LIST}, @{$TAG_REALLY_BAD_PHRASE_LIST}];
+our $WIKI_BAD_PHRASE_LIST         = Bibliotech::Config->get('ANTISPAM', 'WIKI_BAD_PHRASE_LIST')         ||
+                                    Bibliotech::Config->get('ANTISPAM', 'BAD_PHRASE_LIST')              || [];
 our $TAGS_TOO_MANY_MAX            = Bibliotech::Config->get('ANTISPAM', 'TAGS_TOO_MANY_MAX');
     $TAGS_TOO_MANY_MAX            = 7 unless defined $TAGS_TOO_MANY_MAX;
 our $TAGS_TOO_MANY_SCORE          = Bibliotech::Config->get('ANTISPAM', 'TAGS_TOO_MANY_SCORE');
@@ -680,7 +681,11 @@ sub scan_text_for_really_bad_phrases {
 }
 
 sub scan_text_for_bad_phrases {
-  _scan_text_for_really_bad_phrases(pop, $Bibliotech::Antispam::TAG_COMBINED_BAD_PHRASE_LIST, 1);
+  _scan_text_for_really_bad_phrases(pop, $Bibliotech::Antispam::TAG_BAD_PHRASE_LIST, 1);
+}
+
+sub scan_wiki_text_for_bad_phrases {
+  _scan_text_for_really_bad_phrases(pop, $Bibliotech::Antispam::WIKI_BAD_PHRASE_LIST, 1);
 }
 
 sub scan_text_for_bad_uris {

@@ -424,13 +424,13 @@ sub _validate_submitted_content {
   m!\[https?://[^|]+\|[^\]]*(click here|online here|for sale here|>+[\w ]+<+)[^\]]*\]!i
       and die $explanation->("Sorry, \"click here\" link detected.\n");
   if ($WIKI_SCAN) {
-    if ($WIKI_SCAN == 1) {
+    if ($WIKI_SCAN >= 1) {
       my ($detected, $phrase) = Bibliotech::Antispam::Util::scan_text_for_really_bad_phrases($_);
-      $detected and die $explanation->("Sorry, really bad phrase detected (\"$phrase\").\n");
+      $detected and die $explanation->("Sorry, bad phrase detected (tag really bad list, \"$phrase\").\n");
     }
-    if ($WIKI_SCAN == 2) {
-      my ($detected, $phrase) = Bibliotech::Antispam::Util::scan_text_for_bad_phrases($_);
-      $detected and die $explanation->("Sorry, bad phrase detected (\"$phrase\").\n");
+    if ($WIKI_SCAN >= 2) {
+      my ($detected, $phrase) = Bibliotech::Antispam::Util::scan_wiki_text_for_bad_phrases($_);
+      $detected and die $explanation->("Sorry, bad phrase detected (wiki bad list, \"$phrase\").\n");
     }
   }
   Bibliotech::Antispam::Util::scan_text_for_bad_uris($_)
