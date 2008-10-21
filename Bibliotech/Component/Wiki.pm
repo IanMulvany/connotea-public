@@ -423,10 +423,16 @@ sub _validate_submitted_content {
   my $explanation = sub { die($say_spam_rule ? shift : "Sorry, spam detected.\n"); };
   m!\[https?://[^|]+\|[^\]]*(click here|online here|for sale here|>+[\w ]+<+)[^\]]*\]!i
       and die $explanation->("Sorry, \"click here\" link detected.\n");
-  $WIKI_SCAN == 1 && Bibliotech::Antispam::Util::scan_text_for_really_bad_phrases($_)
-      and die $explanation->("Sorry, really bad phrase detected.\n");
-  $WIKI_SCAN == 2 && Bibliotech::Antispam::Util::scan_text_for_bad_phrases($_)
-      and die $explanation->("Sorry, bad phrase detected.\n");
+  if ($WIKI_SCAN) {
+    if ($WIKI_SCAN == 1) {
+      my ($detected, $phrase) = Bibliotech::Antispam::Util::scan_text_for_really_bad_phrases($_);
+      $detected and die $explanation->("Sorry, really bad phrase detected (\"$phrase\").\n");
+    }
+    if ($WIKI_SCAN == 2) {
+      my ($detected, $phrase) = Bibliotech::Antispam::Util::scan_text_for_bad_phrases($_);
+      $detected and die $explanation->("Sorry, bad phrase detected (\"$phrase\").\n");
+    }
+  }
   Bibliotech::Antispam::Util::scan_text_for_bad_uris($_)
       and die $explanation->("Sorry, bad URL detected.\n");
   m|[\w\.]+\n+(^\[https?://.*\]\n){5,10}|m

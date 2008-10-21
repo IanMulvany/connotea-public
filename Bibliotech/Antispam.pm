@@ -670,7 +670,7 @@ sub _scan_text_for_really_bad_phrases {
   return 0 if !$score;
   $text =~ s/[-_]/ /g;
   foreach my $bad (@{$phrase_list}) {
-    $text =~ m/\b\Q$bad\E\b/i and return $score;
+    $text =~ m/\b\Q$bad\E\b/i and return wantarray ? ($score, $bad) : $score;
   }
   return 0;
 }
