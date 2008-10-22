@@ -418,6 +418,8 @@ sub _validate_submitted_content {
       and die "Sorry, too many external hyperlinks.\n";  # antispam, intentionally omit http/https/ftp or number
   length(_without_wiki_explicit_links_and_spaces($_)) == 0
       and die "Sorry, a wiki page may not consist solely of explicit links.\n";
+  m|\A= [^\n]+ =\n*\z|
+      and die "Sorry, a wiki page may not consist solely of a title.\n";
 
   # omit explanation:
   my $explanation = sub { die($say_spam_rule ? shift : "Sorry, spam detected.\n"); };
@@ -435,7 +437,7 @@ sub _validate_submitted_content {
   }
   Bibliotech::Antispam::Util::scan_text_for_bad_uris($_)
       and die $explanation->("Sorry, bad URL detected.\n");
-  m|[\w\.]+\n+(^\[https?://.*\]\n){5,10}|m
+  m|[\w\.]+\n+(^\[?https?://.*\]?[\n ]?){5,25}|m
       and die $explanation->("Sorry, too many URL\'s at end.\n");
   _too_many_uppercase_letters($_)
       and die $explanation->("Sorry, too many uppercase letters.\n");
