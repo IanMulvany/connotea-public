@@ -367,7 +367,6 @@ MINIMUM REQUIREMENTS
     * XML::Twig (for Bio::Biblio::IO, better to preinstall)
     * SOAP::Lite (for Bio::Biblio::IO, better to preinstall)
     * Pod::Man (for DateTime, better to preinstall)
-    * Authen::Captcha
     * Bio::Biblio (may need to be forced)
     * Cache::Memcached
     * CGI
@@ -391,12 +390,9 @@ MINIMUM REQUIREMENTS
     * HTML::Sanitizer (you may need to force installation of HTML::Sanitizer
     due to some year-old bugs already filed on CPAN)
     * HTTP::OAI
-    * HTTP::OAI::UserAgent
     * IO::File
-    * IPC::Run
     * JSON
     * LWP::UserAgent
-    * Lingua::EN::NameParse
     * List::MoreUtils
     * List::Util (you may need to force installation of List::Util unless
     you have a very new version of Perl)
@@ -410,7 +406,6 @@ MINIMUM REQUIREMENTS
     * Storable
     * Template
     * Test::Exception
-    * Text::CSV
     * Time::HiRes
     * URI
     * URI::Escape
