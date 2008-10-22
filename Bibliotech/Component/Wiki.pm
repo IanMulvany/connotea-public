@@ -402,7 +402,8 @@ sub _all_repeated_urls_or_heavily_repeated_url {
   return 1 if grep { $_ > 5 } (values %urls);
   return 1 if do { my @multi = grep { $_ > 1 } (values %urls);
 		   scalar(@multi); } > 10;
-  return 1 if do { my @simple = grep { m{^http://(?:www\.)?\w+\.(?!edu|org|ac\.)\w+(?:.\w+)?/?$}i } (keys %urls);
+  return 1 if do { my @simple = grep { !m{\.(?:org|org\.\w+|edu|edu\.\w+|ac\.\w+|gov|gov\.\w+|int)/?$}i }
+		                grep { m{^http://(?:www\.)?\w+\.\w+(?:\.\w+)?/?$}i } (keys %urls);
 		   scalar(@simple); } > 10;
   return;
 }
@@ -1109,8 +1110,9 @@ sub command_is_for_referent_with_wiki_page {
 sub list_spam_nodes {
   my ($self, $notify_sub) = @_;
   my $wiki = $self->wiki_obj;
-  return (grep { $notify_sub->($_) if defined $notify_sub;
-		 eval { _validate_submitted_content(scalar($wiki->retrieve_node($_))) }; $@; }
+  return (grep { my $node = $_;
+		 $notify_sub->($node) if defined $notify_sub;
+		 eval { _validate_submitted_content(scalar($wiki->retrieve_node($node))) }; $@; }
 	  grep { !$_->is_system }
 	  map { $self->nodename($_) }
 	  $wiki->list_all_nodes);
