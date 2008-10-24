@@ -63,23 +63,19 @@ sub citations {
 # if content="..." is missing then meta_tag_content will be undef
 sub _citation_meta_tags {
   my $html = shift or return;
-  my @citation_meta;
-  my $new_tag = sub { my $html_tag = shift or return;
-		      return unless $html_tag eq 'meta';
-		      my $attr_ref = shift or return;
-		      my %attr = %{$attr_ref} or return;
-		      my $name = $attr{name} or return;
-		      my $key = lc($name);
-		      return unless $key =~ /^(citation|dc\.|prism\.)/;
-		      my $value = $attr{content};
-		      my %others = %attr;
-		      delete $others{name};
-		      delete $others{content};
-		      push @citation_meta, [$key => $value, \%others];
-		      return; };
-  HTML::Parser->new(api_version => 3, start_h => [$new_tag, 'tag,attr'])->parse($html)->eof;
-  return Bibliotech::CitationSource::HTMLMetaTags::MetaTags->new
-      (map { Bibliotech::CitationSource::HTMLMetaTags::MetaTag->new(@{$_}) } @citation_meta);
+  my @citation_meta;  # will be populated by calls to &$parse_one_tag from HTML::Parser
+  my $parse_one_tag = sub { my $html_tag = shift or return;
+			    return unless $html_tag eq 'meta';
+			    my $attr_ref = shift or return;
+			    my %attr = %{$attr_ref} or return;
+			    my $name = delete($attr{name}) or return;
+			    return unless $name =~ /^(citation|dc\.|prism\.)/i;
+			    my $value = delete($attr{content});
+			    my $type = delete($attr{type}) || delete($attr{scheme});
+			    push @citation_meta, [lc($name), $value, lc($type), \%attr];
+			    return; };
+  HTML::Parser->new(api_version => 3, start_h => [$parse_one_tag, 'tag,attr'])->parse($html)->eof;
+  return Bibliotech::CitationSource::HTMLMetaTags::MetaTags->new(@citation_meta);
 }
 
 sub _citation_object {
@@ -90,11 +86,11 @@ sub _citation_object {
 	doi    	=> _without_prefix
 	           ($meta->grep_key('citation_doi')->first_value ||
 		    $meta->grep_key('dc.identifier')->grep_type_or_value(qr(doi)i,
-									 qr(^(?:doi: ?)?10\.)i)->first_value),
+									 qr(^(?:doi: ?)?10\.\d+\/)i)->first_value),
 	pubmed 	=> _without_prefix
 	           ($meta->grep_key('citation_pmid')->first_value ||
 		    $meta->grep_key('dc.identifier')->grep_type_or_value(qr(^(?:pm|pmid|pubmed)$)i,
-									 qr(^(?:(?:pm|pmid|pubmed): ?)?\d+$)i)->first_value),
+									 qr(^(?:(?:pm|pmid|pubmed): ?)\d+$)i)->first_value),
 	asin 	=> _without_prefix
 	           ($meta->grep_key('citation_isbn')->first_value ||
 		    $meta->grep_key('dc.identifier')->grep_type_or_value(qr(^(?:isbn|asin)$)i,
@@ -145,7 +141,7 @@ package Bibliotech::CitationSource::HTMLMetaTags::MetaTags;
 
 sub new {
   my $class = shift;
-  my $self = [@_];
+  my $self = [map { Bibliotech::CitationSource::HTMLMetaTags::MetaTag->new(@{$_}) } @_];
   return bless $self, ref $class || $class;
 }
 
@@ -216,26 +212,14 @@ sub type_values_array {
 package Bibliotech::CitationSource::HTMLMetaTags::MetaTag;
 
 sub new {
-  my ($class, $key, $value, $attr) = @_;
-  return bless [$key, $value, $attr], ref $class || $class;
+  my ($class, $key, $value, $type, $other_attr) = @_;
+  return bless [$key, $value, $type, $other_attr], ref $class || $class;
 }
 
-sub key {
-  shift->[0];
-}
-
-sub value {
-  shift->[1];
-}
-
-sub attr {
-  shift->[2];
-}
-
-sub type {
-  my $attr = shift->attr or return;
-  return $attr->{type};
-}
+sub key   { shift->[0] }
+sub value { shift->[1] }
+sub type  { shift->[2] }
+sub attr  { shift->[3] }
 
 1;
 __END__
