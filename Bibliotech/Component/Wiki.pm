@@ -220,29 +220,28 @@ sub html_content {
 
   if ($action_real eq 'display') {
     $node_real     = $self->test_node_for_retrieval($wiki, $node_real) || $node_real;
-    my %raw        = $self->retrieve_node($wiki, $node_real, $version, 1);
-    $node          = $node_real if lc($node) eq lc($node_real);          # correct capitalization
-    my $version    = $raw{version};
-    my $current    = $raw{current_version};
-    my $content    = $raw{content};
+    my $raw        = $self->retrieve_node($wiki, $node_real, $version, 1);
+    $node          = $node_real if lc($node) eq lc($node_real);  # correct capitalization
+    my $version    = $raw->version;
+    my $current    = $raw->current_version;
+    my $content    = $raw->content;
 
-    unless ($raw{content}) {
+    unless ($content) {
       $node_real   = $self->system_redirect_for_no_content($version, $current, $can_edit);
       $version     = undef;
-      %raw         = $self->retrieve_node($wiki, $node_real, $version, 1);
-      $version     = $raw{version};
-      $current     = $raw{current_version};
-      $content     = $raw{content};
+      $raw         = $self->retrieve_node($wiki, $node_real, $version, 1);
+      $version     = $raw->version;
+      $current     = $raw->current_version;
+      $content     = $raw->content;
     }
 
     my $cooked     = $self->text_format($user, $wiki, $node, $action, $content, \%vars);
-    my $updated    = $raw{content} ? Bibliotech::Date->new($raw{last_modified})->mark_time_zone_from_db->utc : undef;
-    my $is_current = $raw{is_current};
-    my $metadata   = $raw{metadata};
-    my $m_author   = exists $metadata->{username} ? $metadata->{username}->[0] : undef;
+    my $updated    = $content ? Bibliotech::Date->new($raw->last_modified)->mark_time_zone_from_db->utc : undef;
+    my $is_current = $raw->is_current;
+    my $m_author   = $raw->username;
     my $author     = $m_author ? Bibliotech::User->new($m_author) : undef;
     my $author_a   = $m_author ? $cgi->a({href => $prefix.'User:'.$m_author}, 'User:'.$m_author) : undef;
-    my $comment    = exists $metadata->{comment} ? $metadata->{comment}->[0] : undef;
+    my $comment    = $raw->comment;
     my $is_admin   = $self->is_admin_user($username);
 
     $pp =  $self->print_page({node    	 => $node,
@@ -295,11 +294,12 @@ sub html_content {
       $preview_html = $self->text_format($user, $wiki, "$node", $action, $content, \%vars);
     }
     else {
-      my %raw = $self->retrieve_node($wiki, $node, $version, 1);
-      if ($raw{current_version}) {
-	$content  = is_utf8($raw{content}) ? $raw{content} : (decode_utf8($raw{content}) || $raw{content});
-	$checksum = $raw{current_checksum};  # may not be visible version checksum, allows rollback
-	$updated  = Bibliotech::Date->new($raw{last_modified})->mark_time_zone_from_db->utc;
+      my $raw = $self->retrieve_node($wiki, $node, $version, 1);
+      if ($raw->current_version) {
+	my $r_content = $raw->content;
+	$content  = is_utf8($r_content) ? $r_content : (decode_utf8($r_content) || $r_content);
+	$checksum = $raw->current_checksum;  # may not be visible version checksum, allows rollback
+	$updated  = Bibliotech::Date->new($raw->last_modified)->mark_time_zone_from_db->utc;
       }
       else {
 	$content = $self->content_for_new_page($wiki, $node);
@@ -496,19 +496,19 @@ sub plain_content {
   if ($action_real eq 'display') {
 
     $node_real     = $self->test_node_for_retrieval($wiki, $node_real) || $node_real;
-    my %raw        = $self->retrieve_node($wiki, $node_real, $version, 0);
+    my $raw        = $self->retrieve_node($wiki, $node_real, $version, 0);
     $node          = $node_real if lc($node) eq lc($node_real);          # correct capitalization
-    my $version    = $raw{version};
-    my $current    = $raw{current_version};
-    my $content    = $raw{content};
+    my $version    = $raw->version;
+    my $current    = $raw->current_version;
+    my $content    = $raw->content;
 
-    unless ($raw{content}) {
+    unless ($content) {
       $node_real   = $self->system_redirect_for_no_content($version, $current, 0);
       $version     = undef;
-      %raw         = $self->retrieve_node($wiki, $node_real, $version, 0);
-      $version     = $raw{version};
-      $current     = $raw{current_version};
-      $content     = $raw{content};
+      $raw         = $self->retrieve_node($wiki, $node_real, $version, 0);
+      $version     = $raw->version;
+      $current     = $raw->current_version;
+      $content     = $raw->content;
     }
 
     return $content;
@@ -546,25 +546,24 @@ sub censor_verbatim_for_untrusted_content {
 sub retrieve_node {
   my ($self, $wiki, $node, $version, $for_html_output) = @_;
   return unless defined $node;
-  my %raw = eval {
-    if ($node->prefix eq 'Generate') {
-      my %current = $self->generate_node($node, $wiki, $for_html_output);
-      $current{is_current}       = 1;
-      $current{current_version}  = $current{version};
-      $current{current_checksum} = $current{checksum};
-      return %current;
-    }
-    my %current = $wiki->retrieve_node("$node");
-    my %asked   = $version ? $wiki->retrieve_node(name => "$node", version => $version)
-	                   : %current;
-    $asked{is_current}       = $current{version} == $asked{version} ? 1 : 0;
-    $asked{current_version}  = $current{version};
-    $asked{current_checksum} = $current{checksum};
-    return %asked;
-  };
-  die $@ if $@;
-  return $raw{content} unless wantarray;
-  return %raw;
+  my (%asked, %current);
+  if ($node->is_generate) {
+    %asked = $self->generate_node($node, $wiki, $for_html_output);
+  }
+  else {
+    %current = $wiki->retrieve_node("$node");
+    %asked   = $version ? $wiki->retrieve_node(name => "$node", version => $version) : %current;
+  }
+  return Bibliotech::Component::Wiki::RetrievedNode->new
+      ({content          => $asked{content},
+	last_modified    => $asked{last_modified},
+	version          => $asked{version},
+	checksum         => $asked{checksum},
+	username         => $asked{metadata}->{username} ? $asked{metadata}->{username}->[0] : undef,
+	comment          => $asked{metadata}->{comment}  ? $asked{metadata}->{comment}->[0]  : undef,
+	current_version  => $current{version},
+	current_checksum => $current{checksum},
+       });
 }
 
 # problem: CGI::Wiki::Store::Database and MySQL 5.0.18 interact to create a bug because although MySQL
@@ -635,7 +634,8 @@ sub generate_node {
   $raw{content} =~ s/!FASTHTML:{([^}]*)}{([^}]*)}/$1/g unless $for_html_output;
   # add common metadata for Generate: nodes
   $raw{last_modified} ||= Bibliotech::Util::now->mysql_datetime;
-  $raw{comment}       ||= 'auto';
+  $raw{metadata} = {} unless defined $raw{metadata};
+  $raw{metadata}->{comment} = ['auto'] unless defined $raw{metadata}->{comment};
   return %raw;
 }
 
@@ -652,7 +652,7 @@ sub generate_node_list_intro {
   my ($self, $wiki, $node_prefix_mask) = @_;
   if ($node_prefix_mask) {
     my $saved = $self->retrieve_node($wiki, $self->nodename('System:'.$node_prefix_mask.'Prefix'));
-    return $saved if $saved;
+    return $saved->content if defined $saved;
   }
   return join(' ', '=', $node_prefix_mask || 'Page', "List =\n");
 }
@@ -721,19 +721,26 @@ sub versions_of_node {
 
 sub version_line {
   my ($self, $node, $node_hashref) = @_;
-  my %node     = %{$node_hashref};
-  my $version  = $node{version};
-  my $last     = $version > 1 ? $version - 1 : undef;
-  my $username = $node{metadata}->{username}->[0];
-  my $comment  = $node{metadata}->{comment}->[0];
+  my %node       = %{$node_hashref};
+  my $version    = $node{version};
+  my $is_edited  = $version > 1;
+  my $previous   = $version - 1;
+  my $is_current = $node{is_current};
+  my $username   = $node{metadata}->{username}->[0];
+  my $comment    = $node{metadata}->{comment}->[0];
   return join(' ',
 	      "    * wikilink=${node}\#${version}=",
-	      '('.($last ? "wikilink=${node}\#${version}\#\#${last}=\"diff from last\" | " : '').
-	      "wikilink=${node}\#\#${version}=\"diff to current\")",
-	      grep { $_ } ($username ? "edited by User:$username" : undef,
-			   $comment  ? "($comment)" : undef,
-			   )
-	      )."\n";
+	      grep { $_ }
+	      (do {
+		my $d = join(' | ',
+			     grep { $_ }
+			     (($is_edited  ? "wikilink=${node}\#${version}\#\#${previous}=\"diff from last\"" : undef),
+			      ($is_current ? undef : "wikilink=${node}\#\#${version}=\"diff to current\"")));
+		$d ? '('.$d.')' : undef;
+	       },
+	       ($username ? 'edited by User:'.$username : undef),
+	       ($comment  ? '('.$comment.')' : undef),
+	      ))."\n";
 }
 
 sub generate_node_history {
@@ -817,8 +824,8 @@ sub version_counter {
   my $o = 'Version '.$version;
 
   if ($version > 1) {
-    my $last = $version - 1;
-    $o .= ' '.$cgi->a({href => "${location}wiki/$node?action=diff&base=$last"}, 'Changes');
+    my $previous = $version - 1;
+    $o .= ' '.$cgi->a({href => "${location}wiki/$node?action=diff&base=$previous"}, 'Changes');
   }
 
   $o .= ' ('.$cgi->a({href => "${location}wiki/$node"}, 'Current');
@@ -1112,11 +1119,12 @@ sub list_spam_nodes {
   my $wiki = $self->wiki_obj;
   return (grep { my $node = $_;
 		 $notify_sub->($node) if defined $notify_sub;
-		 eval { _validate_submitted_content(scalar($wiki->retrieve_node($node))) }; $@; }
+		 eval { _validate_submitted_content(scalar($wiki->retrieve_node("$node"))) }; $@; }
 	  grep { !$_->is_system }
 	  map { $self->nodename($_) }
 	  $wiki->list_all_nodes);
 }
+
 
 package Bibliotech::Component::Wiki::NodeName;
 use overload '""' => 'node', fallback => 1;
@@ -1130,13 +1138,7 @@ sub new {
   my $is_valid = $node =~ /^((Generate):)([\w: \-]*)$/ ||
                  $node =~ /^((System|User|Bookmark|Tag|Group):)?([\w \-]*)$/;
   my ($nodeprefix, $basenode) = ($2, $3);
-  my $extra_prefix;
-  if ($extra_prefix_str) {
-    if ($extra_prefix_str =~ /^(System|User|Bookmark|Tag|Group)$/i) {
-      $extra_prefix_str =~ /^(.)(.*)$/;
-      $extra_prefix = uc($1).lc($2);
-    }
-  }
+  my $extra_prefix = $extra_prefix_str ? ucfirst(lc($extra_prefix_str)) : undef;
   return bless [$node, $nodeprefix, $basenode, $is_valid, $extra_prefix], ref $class || $class;
 }
 
@@ -1145,57 +1147,36 @@ sub clone {
   return bless [@{$self}], ref $self;
 }
 
-sub node {
-  shift->[0];
+sub node         { shift->[0] }
+sub prefix       { shift->[1] }
+sub base         { shift->[2] }
+sub is_valid     { shift->[3] }
+sub extra_prefix { shift->[4] }
+
+sub is_generate           { shift->prefix eq 'Generate' }
+sub is_system             { shift->prefix eq 'System' }
+sub is_generate_or_system { shift->prefix =~ /^(?:Generate|System)$/ }
+sub is_referent           { shift->prefix =~ /^(?:User|Bookmark|Tag|Group)$/ }
+sub is_referent_bookmark  { shift->prefix eq 'Bookmark' }
+sub is_referent_user  	  { shift->prefix eq 'User' }
+sub is_referent_tag   	  { shift->prefix eq 'Tag' }
+sub is_referent_group 	  { shift->prefix eq 'Group' }
+
+
+package Bibliotech::Component::Wiki::RetrievedNode;
+# a slight improvement over the hash you get back from wiki retrieve_node
+use base 'Class::Accessor::Fast';
+
+__PACKAGE__->mk_accessors(qw/content last_modified
+                             version checksum
+                             current_version current_checksum
+                             username comment/);
+
+sub is_current {
+  my $self = shift;
+  return $self->version == $self->current_version;
 }
 
-sub prefix {
-  shift->[1];
-}
-
-sub base {
-  shift->[2];
-}
-
-sub is_valid {
-  shift->[3];
-}
-
-sub extra_prefix {
-  shift->[4];
-}
-
-sub is_generate {
-  shift->prefix eq 'Generate';
-}
-
-sub is_system {
-  shift->prefix eq 'System';
-}
-
-sub is_generate_or_system {
-  shift->prefix =~ /^(?:Generate|System)$/;
-}
-
-sub is_referent {
-  shift->prefix =~ /^(?:User|Bookmark|Tag|Group)$/;
-}
-
-sub is_referent_bookmark {
-  shift->prefix eq 'Bookmark';
-}
-
-sub is_referent_user {
-  shift->prefix eq 'User';
-}
-
-sub is_referent_tag {
-  shift->prefix eq 'Tag';
-}
-
-sub is_referent_group {
-  shift->prefix eq 'Group';
-}
 
 package Bibliotech::Wiki::CGI::Formatter;
 use base ('Wiki::Toolkit::Formatter::Default', 'Class::Accessor::Fast');
@@ -1783,6 +1764,7 @@ sub diff_html {
 					    });
   return $diff->content;
 }
+
 
 package Wiki::Toolkit::Plugin::Lock;
 use strict;
