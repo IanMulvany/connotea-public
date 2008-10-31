@@ -409,10 +409,13 @@ sub _all_repeated_urls_or_heavily_repeated_url {
 }
 
 sub _validate_submitted_content {
-  local $_ = shift or return;
-  my $say_spam_rule = @_ ? shift : $WIKI_SAY_SPAM_RULE;
+  _validate_submitted_content_give_explanation(@_);
+  _validate_submitted_content_omit_explanation(@_);
+}
 
-  # give explanation:
+sub _validate_submitted_content_give_explanation {
+  local $_ = shift or return;
+
   length($_) > $WIKI_MAX_PAGE_SIZE
       and die "Sorry, each wiki page source text is limited to $WIKI_MAX_PAGE_SIZE characters at maximum.\n";
   do { my @count = uniq(/(?:https?|ftp:[^\]\|\s]+)/g); scalar @count; } > $WIKI_MAX_EXT_LINKS
@@ -421,8 +424,12 @@ sub _validate_submitted_content {
       and die "Sorry, a wiki page may not consist solely of explicit links.\n";
   m|\A= [^\n]+ =\n*\z|
       and die "Sorry, a wiki page may not consist solely of a title.\n";
+}
 
-  # omit explanation:
+sub _validate_submitted_content_omit_explanation {
+  local $_ = shift or return;
+  my $say_spam_rule = @_ ? shift : $WIKI_SAY_SPAM_RULE;
+
   my $explanation = sub { die($say_spam_rule ? shift : "Sorry, spam detected.\n"); };
   m{\[https?://[^|]+\|[^\]]*(click here|online here|for sale here|>+[\w ]+<+|!!!)[^\]]*\]}i
       and die $explanation->("Sorry, \"click here\" link detected.\n");
@@ -1119,7 +1126,9 @@ sub list_spam_nodes {
   my $wiki = $self->wiki_obj;
   return (grep { my $node = $_;
 		 $notify_sub->($node) if defined $notify_sub;
-		 eval { _validate_submitted_content(scalar($wiki->retrieve_node("$node"))) }; $@; }
+		 my $content = $wiki->retrieve_node("$node");
+		 eval { _validate_submitted_content_omit_explanation($content) };
+		 $@; }
 	  grep { !$_->is_system }
 	  map { $self->nodename($_) }
 	  $wiki->list_all_nodes);
