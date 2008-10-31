@@ -424,7 +424,7 @@ sub _validate_submitted_content {
 
   # omit explanation:
   my $explanation = sub { die($say_spam_rule ? shift : "Sorry, spam detected.\n"); };
-  m!\[https?://[^|]+\|[^\]]*(click here|online here|for sale here|>+[\w ]+<+)[^\]]*\]!i
+  m{\[https?://[^|]+\|[^\]]*(click here|online here|for sale here|>+[\w ]+<+|!!!)[^\]]*\]}i
       and die $explanation->("Sorry, \"click here\" link detected.\n");
   if ($WIKI_SCAN) {
     if ($WIKI_SCAN >= 1) {
