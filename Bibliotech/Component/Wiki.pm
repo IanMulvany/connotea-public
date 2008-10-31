@@ -676,7 +676,7 @@ sub list_sorted_node_strings_with_prefix {
   $sth->execute($prefix.':%');
   my @nodes;
   while (my ($name) = $sth->fetchrow_array) {
-    push @nodes, $name;
+    push @nodes, decode_utf8($name) || $name;
   }
   return @nodes;
 }
@@ -687,7 +687,7 @@ sub list_sorted_node_strings_without_prefix {
   $sth->execute($prefix.':%');
   my @nodes;
   while (my ($name) = $sth->fetchrow_array) {
-    push @nodes, $name;
+    push @nodes, decode_utf8($name) || $name;
   }
   return @nodes;
 }
