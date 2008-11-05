@@ -14,7 +14,7 @@ use Wiki::Toolkit::Store::MySQL;
 use Wiki::Toolkit::Formatter::Default;
 use Wiki::Toolkit::Plugin::Diff;
 use Encode qw/decode_utf8 encode_utf8 is_utf8/;
-use List::MoreUtils qw/uniq/;
+use List::MoreUtils qw/any none uniq true/;
 use Bibliotech::DBI;
 use Bibliotech::Util;
 use Bibliotech::Antispam;
@@ -392,19 +392,25 @@ sub _top_words_are_repeated_over_and_over {
   return $top_1 > $total * 0.50 || $top_2 > $total * 0.55 || $top_3 > $total * 0.60;
 }
 
+sub _url_looks_academic {
+  local $_ = pop;
+  return m{\.(?:org|org\.[a-z]+|edu|edu\.[a-z]+|ac\.[a-z]+|gov|gov\.[a-z]+|[a-z]{2}\.us|int|ch)/?$}i ||
+         m{(?:nature|science|journal|society|westlaw|lexis|genetic|genome|genomic|medical|springer)};
+}
+
 sub _all_repeated_urls_or_heavily_repeated_url {
   local $_ = shift;
-  my @urls = m!\[(https?://[^\]\| ]+)!ig;
+  my @all_urls = m!\[(https?://[^\]\| ]+)!ig;
+  my @urls = grep { !_url_looks_academic($_) } @all_urls;
   return if @urls == 0;
   my %urls;
   $urls{$_}++ foreach (@urls);
-  return 1 unless grep { $_ == 1 } (values %urls);
-  return 1 if grep { $_ > 5 } (values %urls);
-  return 1 if do { my @multi = grep { $_ > 1 } (values %urls);
-		   scalar(@multi); } > 10;
-  return 1 if do { my @simple = grep { !m{\.(?:org|org\.\w+|edu|edu\.\w+|ac\.\w+|gov|gov\.\w+|int)/?$}i }
-		                grep { m{^http://(?:www\.)?\w+\.\w+(?:\.\w+)?/?$}i } (keys %urls);
-		   scalar(@simple); } > 10;
+  my @keys = keys %urls;
+  my @values = values %urls;
+  return 1 if none { $_ == 1 } @values;
+  return 2 if any { $_ > 10 } @values;
+  return 3 if true { $_ > 1 } @values > 10;
+  return 4 if true { m{^http://(?:www\.)?\w+\.\w+(?:\.\w+)?/?$}i } @keys > 10;
   return;
 }
 
@@ -451,8 +457,8 @@ sub _validate_submitted_content_omit_explanation {
       and die $explanation->("Sorry, too many uppercase letters.\n");
   _top_words_are_repeated_over_and_over($_)
       and die $explanation->("Sorry, the top words are over-repeated.\n");
-  _all_repeated_urls_or_heavily_repeated_url($_)
-      and die $explanation->("Sorry, too many repeated or domain-only URL\'s.\n");
+  my $code = _all_repeated_urls_or_heavily_repeated_url($_);
+  $code and die $explanation->("Sorry, too many repeated or domain-only URL\'s (code $code).\n");
 }
 
 sub plain_content {
