@@ -1,0 +1,57 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use lib '..';
+use Bibliotech::Fake;
+use Bibliotech::Component::Wiki;
+
+my $bibliotech = Bibliotech::Fake->new;
+my $wiki_component = Bibliotech::Component::Wiki->new({bibliotech => $bibliotech});
+my $wiki = $wiki_component->wiki_obj;
+
+my $list_filename = shift @ARGV;
+print 'List: ', $list_filename, "\n";
+my $list_fh;
+open $list_fh, '<'.$list_filename or die 'cannot open list file '.$list_filename.': '.$!;
+my $spam_filename = shift @ARGV;
+print 'Spam: ', $spam_filename, "\n";
+my $spam_fh;
+open $spam_fh, '>'.$spam_filename or die 'cannot open spam file '.$spam_filename.': '.$!;
+my $oldh = select($spam_fh);
+$| = 1;
+select($oldh);
+my $ham_filename = shift @ARGV;
+print 'Ham: ', $ham_filename, "\n";
+my $ham_fh;
+open $ham_fh, '>'.$ham_filename or die 'cannot open ham file '.$ham_filename.': '.$!;
+$oldh = select($spam_fh);
+$| = 1;
+select($oldh);
+$| = 1;
+
+while (my $nodename = <$list_fh>) {
+  chomp $nodename;
+  my $node = $wiki_component->nodename($nodename);
+  my $retrieved = $wiki_component->retrieve_node($wiki, $node, undef, undef);
+  my $content = $retrieved->content;
+  print $nodename, ":\n";
+  print $content;
+  print "\n" unless $content =~ /\n\z/;
+  print "\n---\n\n";
+  eval { Bibliotech::Component::Wiki::_validate_submitted_content($content, 1); };
+  print "Validation message: $@" if $@;
+  print "\n---\n\n";
+  print 'Is this spam? (Y/N) ';
+  my $choice = <>;
+  print "\n\n\n";
+  if ($choice =~ /^y/i) {
+    print $spam_fh $nodename, "\n";
+  }
+  else {
+    print $ham_fh $nodename, "\n";
+  }
+}
+
+close $list_fh;
+close $spam_fh;
+close $ham_fh;
