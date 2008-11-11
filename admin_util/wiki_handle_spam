@@ -9,30 +9,50 @@ my $bibliotech = Bibliotech::Fake->new;
 my $wiki_component = Bibliotech::Component::Wiki->new({bibliotech => $bibliotech});
 my $wiki = $wiki_component->wiki_obj;
 
-my $list_filename = shift @ARGV;
+my $list_filename = shift @ARGV or die "No list file specified\n";
 print 'List: ', $list_filename, "\n";
 my $list_fh;
 open $list_fh, '<'.$list_filename or die 'cannot open list file '.$list_filename.': '.$!;
-my $spam_filename = shift @ARGV;
+my $total_list_lines = 0;
+$total_list_lines++ while (<$list_fh>);
+seek $list_fh, 0, 0;
+
+my $spam_filename = shift @ARGV or die "No spam file specified\n";
 print 'Spam: ', $spam_filename, "\n";
 my $spam_fh;
-open $spam_fh, '>'.$spam_filename or die 'cannot open spam file '.$spam_filename.': '.$!;
+open $spam_fh, '>>'.$spam_filename or die 'cannot open spam file '.$spam_filename.': '.$!;
 my $oldh = select($spam_fh);
 $| = 1;
 select($oldh);
-my $ham_filename = shift @ARGV;
+
+my $ham_filename = shift @ARGV or die "No ham file specified\n";
 print 'Ham: ', $ham_filename, "\n";
 my $ham_fh;
-open $ham_fh, '>'.$ham_filename or die 'cannot open ham file '.$ham_filename.': '.$!;
+open $ham_fh, '>>'.$ham_filename or die 'cannot open ham file '.$ham_filename.': '.$!;
 $oldh = select($spam_fh);
 $| = 1;
 select($oldh);
+
+my $maybe_filename = shift @ARGV or die "No maybe file specified\n";
+print 'Maybe: ', $maybe_filename, "\n";
+my $maybe_fh;
+open $maybe_fh, '>>'.$maybe_filename or die 'cannot open maybe file '.$maybe_filename.': '.$!;
+$oldh = select($spam_fh);
+$| = 1;
+select($oldh);
+
 $| = 1;
 
+my $current_list_line = 0;
 while (my $nodename = <$list_fh>) {
+  $current_list_line++;
   chomp $nodename;
   my $node = $wiki_component->nodename($nodename);
   my $retrieved = $wiki_component->retrieve_node($wiki, $node, undef, undef);
+  if (not defined $retrieved) {
+    warn "$nodename not retrieved.\n";
+    next;
+  }
   my $content = $retrieved->content;
   print $nodename, ":\n";
   print $content;
@@ -41,17 +61,25 @@ while (my $nodename = <$list_fh>) {
   eval { Bibliotech::Component::Wiki::_validate_submitted_content($content, 1); };
   print "Validation message: $@" if $@;
   print "\n---\n\n";
-  print 'Is this spam? (Y/N) ';
+  print $current_list_line, ' / ', $total_list_lines, ': ';
+  print 'Is this spam? (Y/n/m) ';
   my $choice = <>;
-  print "\n\n\n";
-  if ($choice =~ /^y/i) {
-    print $spam_fh $nodename, "\n";
-  }
-  else {
+  if ($choice && $choice =~ /^n/i) {
     print $ham_fh $nodename, "\n";
+    print "Written to ham list.\n";
   }
+  elsif ($choice && $choice =~ /^m/i) {
+    print $maybe_fh $nodename, "\n";
+    print "Written to maybe list.\n";
+  }
+  elsif (!$choice || $choice =~ /^y/i || $choice eq "\n") {
+    print $spam_fh $nodename, "\n";
+    print "Written to spam list.\n";
+  }
+  print "\n\n\n\n";
 }
 
 close $list_fh;
 close $spam_fh;
 close $ham_fh;
+close $maybe_fh;
