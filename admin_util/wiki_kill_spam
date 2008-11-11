@@ -1,0 +1,15 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use lib '..';
+use Bibliotech::Fake;
+use Bibliotech::Component::Wiki;
+
+my $bibliotech = Bibliotech::Fake->new;
+my $wiki_component = Bibliotech::Component::Wiki->new({bibliotech => $bibliotech});
+my $wiki = $wiki_component->wiki_obj;
+while (<>) {
+  chomp;
+  print "Deleting $_...\n";
+  $wiki->delete_node($_);
+}
