@@ -392,6 +392,20 @@ sub _top_words_are_repeated_over_and_over {
   return $top_1 > $total * 0.50 || $top_2 > $total * 0.55 || $top_3 > $total * 0.60;
 }
 
+sub _looks_like_pills_for_sale {
+  local $_ = shift;
+  m/^\* buy \w+ online \*$/ and return 1;
+  m/x \d+ (?:pills|mg|caps)\| ?\$/ and return 2;
+  m/\d+ (?:pills|mg|caps) x \d+ mg\| ?\$/ and return 3;
+  return;
+}
+
+sub _many_urls_at_end {
+  local $_ = shift;
+  m|[\w\.]+\n+(^\[?https?://.*\]?[\n ]?){5,25}|m and return 1;
+  return;
+}
+
 sub _url_looks_academic {
   local $_ = pop;
   return m{\.(?:org|org\.[a-z]+|edu|edu\.[a-z]+|ac\.[a-z]+|gov|gov\.[a-z]+|[a-z]{2}\.us|int|ch)/?$}i ||
@@ -451,14 +465,16 @@ sub _validate_submitted_content_omit_explanation {
   }
   Bibliotech::Antispam::Util::scan_text_for_bad_uris($_)
       and die $explanation->("Sorry, bad URL detected.\n");
-  m|[\w\.]+\n+(^\[?https?://.*\]?[\n ]?){5,25}|m
-      and die $explanation->("Sorry, too many URL\'s at end.\n");
   _too_many_uppercase_letters($_)
       and die $explanation->("Sorry, too many uppercase letters.\n");
   _top_words_are_repeated_over_and_over($_)
       and die $explanation->("Sorry, the top words are over-repeated.\n");
-  my $code = _all_repeated_urls_or_heavily_repeated_url($_);
-  $code and die $explanation->("Sorry, too many repeated or domain-only URL\'s (code $code).\n");
+  _many_urls_at_end($_)
+      and die $explanation->("Sorry, too many URL\'s at end.\n");
+  _all_repeated_urls_or_heavily_repeated_url($_)
+      and die $explanation->("Sorry, too many repeated or domain-only URL\'s.\n");
+  _looks_like_pills_for_sale($_)
+      and die $explanation->("Sorry, looks like a table of prices.\n");
 }
 
 sub plain_content {
