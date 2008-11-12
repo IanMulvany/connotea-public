@@ -1157,7 +1157,7 @@ sub list_spam_nodes {
   return (grep { my $node = $_;
 		 $notify_sub->($node) if defined $notify_sub;
 		 my $content = $wiki->retrieve_node("$node");
-		 eval { _validate_submitted_content_omit_explanation($content) };
+		 eval { _validate_submitted_content($content) };
 		 $@; }
 	  grep { !$_->is_system }
 	  map { $self->nodename($_) }
