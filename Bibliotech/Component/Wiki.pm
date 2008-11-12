@@ -368,6 +368,12 @@ sub _without_wiki_explicit_links_and_spaces {
   return $_;
 }
 
+sub _without_titles {
+  local $_ = $_;
+  s|^=+ [^=\n]+ =+\n||m;
+  return $_;
+}
+
 sub _too_many_uppercase_letters {
   local $_ = shift;
   my $uc = do { my @uc = m/([A-Z])/g; scalar @uc; };  # count uppercase letters
@@ -442,8 +448,10 @@ sub _validate_submitted_content_give_explanation {
       and die "Sorry, too many external hyperlinks.\n";  # antispam, intentionally omit http/https/ftp or number
   length(_without_wiki_explicit_links_and_spaces($_)) == 0
       and die "Sorry, a wiki page may not consist solely of explicit links.\n";
-  m|\A= [^\n]+ =\n*\z|
-      and die "Sorry, a wiki page may not consist solely of a title.\n";
+  length(_without_titles($_)) == 0
+      and die "Sorry, a wiki page may not consist solely of one or more titles.\n";
+  length(_without_wiki_explicit_links_and_spaces(_without_titles($_))) == 0
+      and die "Sorry, a wiki page may not consist solely of titles and explicit links.\n";
 }
 
 sub _validate_submitted_content_omit_explanation {
@@ -864,7 +872,7 @@ sub version_counter {
   my $start = $version - 1;
   my $end   = $version - $count;
   for (my $older = $start; $older >= $end; $older--) {
-    $o .= ' '.$cgi->a({href => "${location}wiki/$node?version=$older"}, $older);
+    $o .= ' '.$cgi->a({href => "${location}wiki/$node?version=$older", rel => 'nofollow'}, $older);
   }
   $o .= ')';
 
@@ -966,7 +974,7 @@ sub print_page {
 				 $version ? $self->version_counter($node, $version) : (),
 				 $updated ? 'Last updated: '.$updated->label_plus_time.
 				            (defined $author ? ' by '.$author_a : '').
-				            ($comment ? " ($comment)" : '')
+				            ($comment ? ' ('.$cgi->escapeHTML($comment).')' : '')
 				          : (),
 				 ) || '&mdash;'
 			    ),
@@ -1563,9 +1571,11 @@ sub wikilink {
   my $text   = $custom_name || $self->wikiname($node, $version, $base, !$exists);
   my $href   =                 $self->wikihref($node, $version, $base, !$exists);
 
-  return $cgi->a({href => $href, class => 'wikilink wikiexist'   }, $text)
+  my @href = (href => $href);
+  push @href, (rel => 'nofollow') if $version;
+  return $cgi->a({@href, class => 'wikilink wikiexist'   }, $text)
       if $exists;
-  return $cgi->a({href => $href, class => 'wikilink wikinotexist'}, $text).
+  return $cgi->a({@href, class => 'wikilink wikinotexist'}, $text).
 	 $cgi->span({class => 'wikidunno'}, '?');
 }
 
