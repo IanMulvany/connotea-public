@@ -2,9 +2,12 @@
 use strict;
 use warnings;
 use lib '..';
+use List::MoreUtils qw(any);
 use Bibliotech::Fake;
 use Bibliotech::Component::Wiki;
 
 my $bibliotech = Bibliotech::Fake->new;
-my $wiki = Bibliotech::Component::Wiki->new({bibliotech => $bibliotech});
-print map { "$_\n" } $wiki->list_spam_nodes;
+my $wiki_component = Bibliotech::Component::Wiki->new({bibliotech => $bibliotech});
+my @whitelist = @ARGV ? (map { chomp; $_; } (<>)) : ();
+my $whitelisted = sub { my $node = shift; return any { lc($node) eq lc($_) } @whitelist; };
+print map { "$_\n" } grep { !$whitelisted->($_) } $wiki_component->list_spam_nodes;
