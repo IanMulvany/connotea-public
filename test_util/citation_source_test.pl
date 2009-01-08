@@ -53,9 +53,7 @@ sub process_uri {
     print "Transient error reported.\n";
     return;
   }
-  if ($understands_code != 1) {
-    print "URI understood, but lesser score reported (${understands_code})\n";
-  }
+  print 'URI understood', ($understands_code > 1 ? ", but lower priority score reported ($understands_code)" : ''), ".\n";
   my $new_uri = $c->filter($uri, $get);
   show_err_and_warn($c);
   if (!defined $new_uri) {

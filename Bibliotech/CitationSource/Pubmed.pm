@@ -29,7 +29,7 @@ sub name {
 }
 
 sub version {
-  '2.2';
+  '2.3';
 }
 
 sub understands {
@@ -49,23 +49,26 @@ sub understands {
   return 1 if $db and $id and $self->understands_id({db => $db, pubmed => $id});
 
   if (lc($uri->query_param('cmd')||'') eq 'search' and $uri->query_param('term')) {
-    return 1 if is_search_page_with_one_result($content_sub);
+    return 1 if _is_search_page_with_one_result($content_sub);
   }
 
   return 0;
 }
 
-sub is_search_page_with_one_result {
+sub _is_search_page_with_one_result {
   my $content_sub = shift or return;
   my ($response) = $content_sub->();
   return unless $response->is_success;
-  my $content = $response->decoded_content;
-  my @uids;
-  while ($content =~ /<dd class="abstract".*PMID: (\d+)/gs) {
-    push @uids, $1;
-  }
+  my @uids = _abstract_uids_from_search_page_html($response->decoded_content);
   return unless @uids == 1;
   return $uids[0];
+}
+
+sub _abstract_uids_from_search_page_html {
+  local $_ = shift or return ();
+  my @uids;
+  push @uids, $1 while (/<dd class="abstract".*?PMID: (\d+)\b/gs);
+  return @uids;
 }
 
 sub understands_id {
@@ -139,14 +142,15 @@ sub _db_and_id_from_url {
 
 sub _pmid_in_term {
   local $_ = shift or return;
-  /(\d+)/ and return $1;
+  /\b(\d+)\[uid\]/ and return $1;
+  /\b(\d{6,})\b(?!\[)/ and return $1;
   return;
 }
 
 sub citations {
   my ($self, $article_uri, $content_sub) = @_;
   my ($db, $id) = _db_and_id_from_url($article_uri);
-  $id ||= is_search_page_with_one_result($content_sub);
+  $id ||= _is_search_page_with_one_result($content_sub);
   return undef unless $db and $id;
   return $self->citations_id({db => $db, pubmed => $id});
 }
